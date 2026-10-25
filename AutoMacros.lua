@@ -1,4 +1,4 @@
--- AutoMacros 0.24.0 for WoW Forever (interface 16001)
+-- AutoMacros 0.25.0 for WoW Forever (interface 16001)
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
 -- out of combat. Item lists come from AutoBar's camelot data.
@@ -114,6 +114,190 @@ local function Picks()
     local key = CharKey()
     db.picks[key] = db.picks[key] or {}
     return db.picks[key]
+end
+
+-- ---------------------------------------------------------------------------
+-- Saved data. AutoMacrosDB is the saved-variables table. The game fills it in
+-- after this file has run, so it is always read through DB() and never kept in
+-- a local. Layout:
+--   schema            data version (see Init)
+--   sessions          how many times this data has been loaded (/amac status)
+--   style             look and feel, shared by all characters (only changed values)
+--   idx / picks       macro slot and flyout choice, per character
+--   enabled / custom  which categories are on, and your own categories
+--   learned           items sorted into categories, by the addon or by hand
+--   ignored           consumables checked and found to belong nowhere
+--   glow, noFlyout, stockTooltip, showNames, learnOff   on/off options
+-- ---------------------------------------------------------------------------
+local SCHEMA = 2
+local CLASSIFIER = 1   -- raise when the learning rules change, so items are checked again
+
+local STYLE_DEFAULTS = {
+    glowColor = { 1, 0.15, 0.15, 1 }, glowThickness = 3, glowTexture = "solid",
+    glowPulse = true, glowSpeed = 0.7,
+    tabColor = { 1, 0.82, 0, 0.95 }, tabHoverColor = { 1, 1, 1, 1 },
+    tabWidth = 18, tabHeight = 7, tabTexture = "solid",
+    flyoutBg = { 0, 0, 0, 0.65 }, flyoutBorderColor = { 0, 0, 0, 1 }, flyoutBorderSize = 1,
+    entrySize = 34, entrySpacing = 2,
+    entryBorderColor = { 0.1, 0.1, 0.1, 1 }, selectedColor = { 1, 0.82, 0, 1 }, entryHover = { 1, 1, 1, 0.25 },
+    closeDelay = 0.3,
+    tooltipColor = { 1, 0.3, 0.3, 1 },
+    euiSkin = true, euiAccent = false,
+}
+
+local function Style(key)
+    local s = DB().style
+    local v
+    if type(s) == "table" then v = s[key] end   -- (a false value must survive, so no "and/or" here)
+    if v == nil then v = STYLE_DEFAULTS[key] end
+    return v
+end
+
+-- EllesmereUI styling. skin is the table EllesmereUI hands to RegisterSkin; it
+-- stays nil when EllesmereUI is not installed or skinning is off for this addon.
+local skin
+local ApplyStyle   -- defined with the flyout code
+
+local function SkinActive()
+    return skin ~= nil and Style("euiSkin") ~= false
+end
+
+local function AccentRGB()
+    if SkinActive() and skin.GetAccentColor then
+        local ok, r, g, b = pcall(skin.GetAccentColor)
+        if ok and type(r) == "number" and type(g) == "number" and type(b) == "number" then return r, g, b end
+    end
+    return 1, 0.82, 0
+end
+
+-- colours that can follow the EllesmereUI accent colour
+local ACCENT_KEYS = { tabColor = true, selectedColor = true, flyoutBorderColor = true }
+local function StyleColor(key)
+    local c = Style(key)
+    if ACCENT_KEYS[key] and SkinActive() and Style("euiAccent") then
+        local r, g, b = AccentRGB()
+        return { r, g, b, c[4] or 1 }
+    end
+    return c
+end
+
+local function SetStyle(key, value)
+    local db = DB()
+    if type(db.style) ~= "table" then db.style = {} end
+    if type(value) == "table" then value = { value[1], value[2], value[3], value[4] } end
+    db.style[key] = value
+    if ApplyStyle then ApplyStyle() end
+end
+
+local function ResetStyle()
+    DB().style = nil
+    if ApplyStyle then ApplyStyle() end
+end
+
+-- Textures for borders and tabs. "solid" is a plain colour; the others are
+-- picture files tinted with the colour. LibSharedMedia status bars are offered
+-- too when that library is loaded.
+local TEXTURES = {
+    { key = "solid", label = "Solid colour" },
+    { key = "glow", label = "Soft glow", path = "Interface\\Buttons\\UI-ActionButton-Border", glow = true },
+    { key = "bar", label = "Status bar", path = "Interface\\TargetingFrame\\UI-StatusBar" },
+}
+
+local function TextureChoices(withGlow)
+    local list = {}
+    for _, t in ipairs(TEXTURES) do
+        if withGlow or not t.glow then list[#list + 1] = t end
+    end
+    local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
+    if LSM and LSM.HashTable then
+        local ok, tbl = pcall(LSM.HashTable, LSM, "statusbar")
+        if ok and type(tbl) == "table" then
+            local names = {}
+            for n in pairs(tbl) do names[#names + 1] = n end
+            table.sort(names)
+            for _, n in ipairs(names) do list[#list + 1] = { key = "lsm:" .. n, label = n, path = tbl[n] } end
+        end
+    end
+    return list
+end
+
+local function TextureInfo(key)
+    for _, t in ipairs(TEXTURES) do
+        if t.key == key then return t end
+    end
+    local name = type(key) == "string" and key:match("^lsm:(.+)$")
+    if name then
+        local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
+        if LSM and LSM.Fetch then
+            local ok, path = pcall(LSM.Fetch, LSM, "statusbar", name, true)
+            if ok and path then return { key = key, path = path } end
+        end
+    end
+    return TEXTURES[1]
+end
+
+local function Paint(tex, key, c)
+    local info = TextureInfo(key)
+    c = c or { 1, 1, 1, 1 }
+    if info.path and not info.glow then
+        pcall(tex.SetTexture, tex, info.path)
+        pcall(tex.SetVertexColor, tex, c[1], c[2], c[3], c[4] or 1)
+    else
+        pcall(tex.SetVertexColor, tex, 1, 1, 1, 1)
+        tex:SetColorTexture(c[1], c[2], c[3], c[4] or 1)
+    end
+end
+
+-- four textures drawn as a rectangle border just inside a frame
+local function MakeEdges(frame, layer)
+    local e = {}
+    for i = 1, 4 do e[i] = frame:CreateTexture(nil, layer or "OVERLAY") end
+    return e
+end
+
+local function PlaceEdges(e, frame, t)
+    if not t or t <= 0 then
+        for i = 1, 4 do e[i]:Hide() end
+        return
+    end
+    for i = 1, 4 do e[i]:ClearAllPoints(); e[i]:Show() end
+    e[1]:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+    e[1]:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
+    e[1]:SetHeight(t)
+    e[2]:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
+    e[2]:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+    e[2]:SetHeight(t)
+    e[3]:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -t)
+    e[3]:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, t)
+    e[3]:SetWidth(t)
+    e[4]:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, -t)
+    e[4]:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, t)
+    e[4]:SetWidth(t)
+end
+
+-- Items sorted into categories. Built-in lists come from DATA; the rest from
+-- db.learned (see "Learning new items" below).
+local learnedIdx = {}   -- set name -> { [itemID] = true }
+
+local function InSet(setName, id)
+    local set = DATA[setName]
+    if set and set[id] then return true end
+    local l = learnedIdx[setName]
+    return l ~= nil and l[id] == true
+end
+
+local function RebuildLearned()
+    for k in pairs(learnedIdx) do learnedIdx[k] = nil end
+    local learned = DB().learned
+    if type(learned) ~= "table" then return end
+    for id, rec in pairs(learned) do
+        if type(rec) == "table" and type(rec.sets) == "table" then
+            for _, s in ipairs(rec.sets) do
+                learnedIdx[s] = learnedIdx[s] or {}
+                learnedIdx[s][id] = true
+            end
+        end
+    end
 end
 
 -- Every button the addon can make. A button only exists once its category is
@@ -285,11 +469,11 @@ local function ScanBags()
 end
 
 -- Every usable item of a category that is in your bags, best first.
-local function Candidates(have, set)
+local function Candidates(have, setName)
     local level = UnitLevel("player") or 1
     local list = {}
     for id in pairs(have) do
-        if set[id] then
+        if InSet(setName, id) then
             local _, minLevel = ItemInfo(id)
             minLevel = tonumber(minLevel) or 0
             if minLevel <= level then
@@ -531,7 +715,7 @@ local function BodyMatches(m, body)
     local stem = m.label:gsub("s$", "")
     if body:find("No " .. stem, 1, true) then return true end
     local id = tonumber(body:match("item:(%d+)"))
-    if m.set then return id ~= nil and DATA[m.set][id] == true end
+    if m.set then return id ~= nil and InSet(m.set, id) end
     return (id ~= nil and HS_RANK[id] ~= nil) or body:find("Create Healthstone", 1, true) ~= nil
 end
 
@@ -603,11 +787,93 @@ local function Apply(m, body, icon, active)
 end
 
 -- ---------------------------------------------------------------------------
--- Highlight: a pulsing red border on any action button holding a macro whose
+-- Highlight: a pulsing border on any action button holding a macro whose
 -- category is empty. It only touches our own frames, so it also works in combat.
+-- Colour, thickness, texture and pulse come from the saved style.
 -- ---------------------------------------------------------------------------
-local GLOW_COLOR = { 1, 0.15, 0.15 }
-local GLOW_THICKNESS = 3
+local function StyleGlow(g, button)
+    local c = Style("glowColor")
+    local key = Style("glowTexture")
+    local info = TextureInfo(key)
+    local t = Style("glowThickness")
+    local off = math.max(1, t - 1)   -- thick borders grow outwards
+    g:ClearAllPoints()
+    g:SetPoint("TOPLEFT", button, "TOPLEFT", -off, off)
+    g:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", off, -off)
+    if info.glow then
+        for i = 1, 4 do g.edges[i]:Hide() end
+        local w = button.GetWidth and button:GetWidth() or 36
+        if type(w) ~= "number" or w <= 0 then w = 36 end
+        local size = w * (1.4 + t * 0.1)
+        g.soft:ClearAllPoints()
+        g.soft:SetPoint("CENTER", button, "CENTER", 0, 0)
+        g.soft:SetSize(size, size)
+        g.soft:SetTexture(info.path)
+        pcall(g.soft.SetBlendMode, g.soft, "ADD")
+        g.soft:SetVertexColor(c[1], c[2], c[3], c[4] or 1)
+        g.soft:Show()
+    else
+        g.soft:Hide()
+        for i = 1, 4 do Paint(g.edges[i], key, c) end
+        PlaceEdges(g.edges, g, t)
+    end
+    if g.anim then pcall(g.anim.SetDuration, g.anim, Style("glowSpeed")) end
+    if g.pulse and g:IsShown() then
+        if Style("glowPulse") then
+            local playing = false
+            pcall(function() playing = g.pulse:IsPlaying() end)
+            if not playing then g.pulse:Play() end
+        else
+            g.pulse:Stop()
+            g:SetAlpha(1)
+        end
+    end
+end
+
+-- the small tab on a button that has a flyout
+local function StyleArrow(a, hover)
+    a:SetSize(Style("tabWidth"), Style("tabHeight"))
+    Paint(a.tex, Style("tabTexture"), hover and Style("tabHoverColor") or StyleColor("tabColor"))
+end
+
+-- the popup frame: our own background and border, or the EllesmereUI panel look
+local function StyleFlyout(f)
+    local skinned = false
+    if SkinActive() and skin.Panel then skinned = pcall(skin.Panel, f, {}) end
+    f.skinned = skinned
+    if skinned then
+        f.bg:Hide()
+        for i = 1, 4 do f.edges[i]:Hide() end
+    else
+        local c = Style("flyoutBg")
+        f.bg:Show()
+        f.bg:SetColorTexture(c[1], c[2], c[3], c[4] or 1)
+        local bc = StyleColor("flyoutBorderColor")
+        for i = 1, 4 do f.edges[i]:SetColorTexture(bc[1], bc[2], bc[3], bc[4] or 1) end
+        PlaceEdges(f.edges, f, Style("flyoutBorderSize"))
+    end
+end
+
+-- one item button in the popup
+local function StyleEntry(e)
+    local size = Style("entrySize")
+    e:SetSize(size, size)
+    local c = e.selected and StyleColor("selectedColor") or Style("entryBorderColor")
+    e.border:SetColorTexture(c[1], c[2], c[3], c[4] or 1)
+    local h = Style("entryHover")
+    e.hl:SetColorTexture(h[1], h[2], h[3], h[4] or 1)
+    if SkinActive() then
+        if skin.SquareIcon and not e.squared then e.squared = pcall(skin.SquareIcon, e.icon, e) end
+        e.border:SetAlpha((e.squared and not e.selected) and 0 or 1)
+        if skin.GetFont then
+            local ok, font = pcall(skin.GetFont)
+            if ok and type(font) == "string" then pcall(e.count.SetFont, e.count, font, 11, "OUTLINE") end
+        end
+    else
+        e.border:SetAlpha(1)
+    end
+end
+
 local buttons = {}        -- action buttons found on screen
 local glows = {}          -- button -> border frame
 local emptyMacro = {}     -- macro index -> macro while its category is empty
@@ -687,21 +953,8 @@ local function GlowFor(button)
     if g then return g end
     g = CreateFrame("Frame", nil, button)
     g:SetFrameLevel((button:GetFrameLevel() or 1) + 10)
-    g:SetPoint("TOPLEFT", button, "TOPLEFT", -2, 2)
-    g:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 2, -2)
-    local r, gr, b = GLOW_COLOR[1], GLOW_COLOR[2], GLOW_COLOR[3]
-    local function Edge(p1, p2, w, h)
-        local tex = g:CreateTexture(nil, "OVERLAY")
-        tex:SetColorTexture(r, gr, b, 1)
-        tex:SetPoint(p1, g, p1)
-        tex:SetPoint(p2, g, p2)
-        if w then tex:SetWidth(w) end
-        if h then tex:SetHeight(h) end
-    end
-    Edge("TOPLEFT", "TOPRIGHT", nil, GLOW_THICKNESS)
-    Edge("BOTTOMLEFT", "BOTTOMRIGHT", nil, GLOW_THICKNESS)
-    Edge("TOPLEFT", "BOTTOMLEFT", GLOW_THICKNESS, nil)
-    Edge("TOPRIGHT", "BOTTOMRIGHT", GLOW_THICKNESS, nil)
+    g.edges = MakeEdges(g, "OVERLAY")
+    g.soft = g:CreateTexture(nil, "OVERLAY")
     pcall(function()   -- pulse; if the animation API differs it just stays solid
         local ag = g:CreateAnimationGroup()
         local anim = ag:CreateAnimation("Alpha")
@@ -714,9 +967,11 @@ local function GlowFor(button)
         anim:SetDuration(0.7)
         ag:SetLooping("BOUNCE")
         g.pulse = ag
+        g.anim = anim
     end)
     g:Hide()
     glows[button] = g
+    StyleGlow(g, button)
     return g
 end
 
@@ -732,7 +987,11 @@ local function ShowGlow(button, on)
     local g = GlowFor(button)
     if not g:IsShown() then
         g:Show()
-        if g.pulse then g.pulse:Play() end
+        if g.pulse and Style("glowPulse") then
+            g.pulse:Play()
+        else
+            g:SetAlpha(1)
+        end
     end
 end
 
@@ -781,8 +1040,6 @@ end
 -- always through SetAction, so a one-off edit gets overwritten and the tooltip
 -- flickers between the two. The replacement is therefore done every time the
 -- tooltip is built, with a per-frame check as a backstop.
-local TOOLTIP_COLOR = { 1, 0.3, 0.3 }
-
 local function CleanTooltip(tip)
     if DB().stockTooltip then return end
     local name = tip.GetName and tip:GetName()
@@ -811,7 +1068,8 @@ local function CleanTooltip(tip)
     local first = _G[name .. "TextLeft1"]
     if lines == 1 and first and first:GetText() == message then return end
     tip:ClearLines()
-    tip:AddLine(message, TOOLTIP_COLOR[1], TOOLTIP_COLOR[2], TOOLTIP_COLOR[3])
+    local tc = Style("tooltipColor")
+    tip:AddLine(message, tc[1], tc[2], tc[3])
     tip:Show()
 end
 
@@ -833,25 +1091,171 @@ end
 -- item class and subclass, and the "Restores ..." line of its tooltip). This is
 -- read-only and exists to see whether items can be sorted into food, water and
 -- potions from the client's own data instead of from fixed lists.
+-- ---------------------------------------------------------------------------
+-- Learning new items. An item that is in none of the built-in lists is sorted
+-- by what the game says about it: its item class (language independent) and the
+-- "Use:" lines of its tooltip. The result is saved in db.learned, so each item
+-- is only examined once. Anything the rules get wrong can be corrected by hand
+-- with /amac assign and /amac unassign, and hand-made entries always win.
+--   consumable, subclass Bandage            -> bandage
+--   Food & Drink, "Use:" restores health    -> food;  restores mana -> water
+--   Potion,       "Use:" restores health    -> health potion; mana -> mana potion
+--   Potion / Elixir / Flask, "Use:" raises Strength, Agility, Stamina or Intellect
+--                                           -> that stat's elixir button
+--   Scroll,       "Use:" raises one of those -> that stat's scroll button
+-- ---------------------------------------------------------------------------
+local LEARNABLE = {
+    "food", "water", "hpot", "mpot", "bandage", "antivenom",
+    "scroll_agility", "scroll_intellect", "scroll_stamina", "scroll_strength",
+    "elixir_agility", "elixir_intellect", "elixir_stamina", "elixir_strength",
+}
+local STAT_KEYS = { "strength", "agility", "stamina", "intellect" }   -- SPELL_STAT1..4_NAME
+
+local function ItemClass(id)
+    local fn = (C_Item and C_Item.GetItemInfoInstant) or GetItemInfoInstant
+    if not fn then return nil end
+    local ok, a, b, c, d, e, f, g = pcall(fn, id)
+    if not ok or a == nil then return nil end
+    if type(a) == "table" then return a.classID, a.subclassID or a.subClassID end
+    return f, g
+end
+
 local scanTip
-local function TooltipSummary(id)
+local function TooltipLines(id)
     if not scanTip then
         local ok, t = pcall(CreateFrame, "GameTooltip", "AutoMacrosScanTip", nil, "GameTooltipTemplate")
-        if not ok or not t then return "(no scan tooltip)" end
+        if not ok or not t then return nil end
         scanTip = t
     end
     pcall(scanTip.SetOwner, scanTip, UIParent, "ANCHOR_NONE")
     local ok = pcall(scanTip.SetItemByID, scanTip, id)
     if not ok then pcall(scanTip.SetHyperlink, scanTip, "item:" .. id) end
-    local found = {}
+    local lines = {}
     for i = 1, scanTip:NumLines() do
         local fs = _G["AutoMacrosScanTipTextLeft" .. i]
         local text = fs and fs:GetText()
-        if type(text) == "string" and (text:find("Restores") or text:find("Use:") or text:find("Must remain")) then
+        if type(text) == "string" then lines[#lines + 1] = text end
+    end
+    return lines
+end
+
+local function TooltipSummary(id)
+    local lines = TooltipLines(id)
+    if not lines then return "(no scan tooltip)" end
+    local found = {}
+    for _, text in ipairs(lines) do
+        if text:find("Restores") or text:find("Use:") or text:find("Must remain") then
             found[#found + 1] = text:sub(1, 90)
         end
     end
     return #found > 0 and table.concat(found, " | ") or "(no Restores/Use line)"
+end
+
+local function HasWord(low, ...)
+    for i = 1, select("#", ...) do
+        local w = select(i, ...)
+        if type(w) == "string" and w ~= "" and low:find(w:lower(), 1, true) then return true end
+    end
+    return false
+end
+
+-- Returns a list of set names (empty: belongs nowhere), or nil when the game has
+-- not delivered the item's data yet (it is tried again on the next update).
+local function Classify(id)
+    local class, sub = ItemClass(id)
+    if class == nil then return nil end
+    if class ~= 0 then return {} end
+    if sub == 7 then return { "bandage" } end
+    if sub ~= 1 and sub ~= 2 and sub ~= 3 and sub ~= 4 and sub ~= 5 then return {} end
+    local lines = TooltipLines(id)
+    if not lines or #lines < 2 or lines[1] == RETRIEVING_ITEM_INFO then return nil end
+    local use = ITEM_SPELL_TRIGGER_ONUSE or "Use:"
+    local health, mana, stats = false, false, {}
+    for _, text in ipairs(lines) do
+        if text:find(use, 1, true) and text:find("%d") then
+            local low = text:lower()
+            if HasWord(low, "health", HEALTH) then health = true end
+            if HasWord(low, "mana", MANA) then mana = true end
+            for i, key in ipairs(STAT_KEYS) do
+                local name = _G["SPELL_STAT" .. i .. "_NAME"] or (key:sub(1, 1):upper() .. key:sub(2))
+                if text:find(name, 1, true) then stats[key] = true end
+            end
+        end
+    end
+    local sets = {}
+    if sub == 5 then
+        if health then sets[#sets + 1] = "food" end
+        if mana then sets[#sets + 1] = "water" end
+    elseif sub == 1 and (health or mana) then
+        if health then sets[#sets + 1] = "hpot" end
+        if mana then sets[#sets + 1] = "mpot" end
+    elseif sub == 4 then
+        for _, key in ipairs(STAT_KEYS) do
+            if stats[key] then sets[#sets + 1] = "scroll_" .. key end
+        end
+    elseif sub == 1 or sub == 2 or sub == 3 then
+        for _, key in ipairs(STAT_KEYS) do
+            if stats[key] then sets[#sets + 1] = "elixir_" .. key end
+        end
+    end
+    return sets
+end
+
+local function InBuiltInList(id)
+    for _, s in ipairs(LEARNABLE) do
+        if DATA[s] and DATA[s][id] then return true end
+    end
+    return false
+end
+
+local function SetTitle(setName)
+    for _, e in ipairs(ALL) do
+        if e.set == setName then return e.title, e.key end
+    end
+    return setName
+end
+
+local sessionDone = {}   -- item IDs not worth looking at again this session
+local attempts = {}      -- item ID -> tries while the game had no data for it
+
+local function LearnNew(have)
+    local db = DB()
+    if db.learnOff then return end
+    local budget, changed = 40, false
+    for id in pairs(have) do
+        if budget <= 0 then break end
+        local known = type(db.learned) == "table" and db.learned[id]
+        local skip = known or sessionDone[id] or (type(db.ignored) == "table" and db.ignored[id] == CLASSIFIER)
+        if not skip and InBuiltInList(id) then
+            sessionDone[id] = true
+            skip = true
+        end
+        if not skip then
+            local class = ItemClass(id)
+            if class ~= nil and class ~= 0 then
+                sessionDone[id] = true            -- not a consumable
+            elseif class == 0 then
+                budget = budget - 1
+                local sets = Classify(id)
+                if sets == nil then
+                    attempts[id] = (attempts[id] or 0) + 1
+                    if attempts[id] > 20 then sessionDone[id] = true end
+                elseif #sets == 0 then
+                    if type(db.ignored) ~= "table" then db.ignored = {} end
+                    db.ignored[id] = CLASSIFIER
+                else
+                    if type(db.learned) ~= "table" then db.learned = {} end
+                    db.learned[id] = { sets = sets, how = "auto" }
+                    changed = true
+                    local titles = {}
+                    for _, s in ipairs(sets) do titles[#titles + 1] = (SetTitle(s)) end
+                    Print("learned " .. ItemRef(id) .. " as " .. table.concat(titles, " + ")
+                        .. " (/amac unassign " .. id .. " if that is wrong)")
+                end
+            end
+        end
+    end
+    if changed then RebuildLearned() end
 end
 
 local function ItemClassInfo(id)
@@ -878,6 +1282,9 @@ local function UpdateCore()
     end
     lastScrolls = scrolls
     lastLocs = locs or {}
+    RebuildLearned()
+    local okLearn, errLearn = pcall(LearnNew, have)
+    if not okLearn then Fail("learning", errLearn) end
     report.error = nil
     local inCombat = InCombatLockdown()
     pending = inCombat   -- macros are only rewritten out of combat
@@ -895,7 +1302,7 @@ local function UpdateCore()
             id = Chosen(m, list)
             body = id and SpellBody(id) or nil
         else
-            local list = Candidates(have, DATA[m.set] or {})
+            local list = Candidates(have, m.set)
             flyoutItems[m.name] = list
             id = Chosen(m, list)
             body = id and UseBody(id) or EmptyBody(m.label)
@@ -931,9 +1338,7 @@ end
 -- is available. Choosing rewrites the macro, so in combat the change is applied
 -- when combat ends.
 -- ---------------------------------------------------------------------------
-local ENTRY_SIZE = 34
 local MAX_ENTRIES = 10
-local CLOSE_DELAY = 0.3
 local arrows = {}      -- action button -> tab
 local entries = {}     -- pooled item buttons in the popup
 local hooked = {}      -- action buttons we have hooked OnEnter/OnLeave on
@@ -1023,9 +1428,10 @@ local function BuildFlyout()
     flyout:SetFrameStrata("DIALOG")
     flyout:SetClampedToScreen(true)
     if flyout.EnableMouse then flyout:EnableMouse(true) end
-    local bg = flyout:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0, 0, 0, 0.65)
+    flyout.bg = flyout:CreateTexture(nil, "BACKGROUND")
+    flyout.bg:SetAllPoints()
+    flyout.edges = MakeEdges(flyout, "BORDER")
+    StyleFlyout(flyout)
     flyout:SetScript("OnEnter", function(self) SetOver(self, true) end)
     flyout:SetScript("OnLeave", function(self) SetOver(self, false) end)
     flyout:SetScript("OnUpdate", function(self, elapsed)
@@ -1034,11 +1440,12 @@ local function BuildFlyout()
             self.idle = 0
         else
             self.idle = (self.idle or 0) + elapsed
-            if self.idle > CLOSE_DELAY then self:Hide() end
+            if self.idle > Style("closeDelay") then self:Hide() end
         end
     end)
     -- a click anywhere else closes it too
     flyout:SetScript("OnEvent", function(self)
+        if self.sticky then return end
         if self:IsShown() and not AnyOver() then self:Hide() end
     end)
     pcall(flyout.RegisterEvent, flyout, "GLOBAL_MOUSE_DOWN")
@@ -1051,7 +1458,6 @@ local function Entry(i)
     local e = entries[i]
     if e then return e end
     e = CreateFrame("Button", nil, flyout)
-    e:SetSize(ENTRY_SIZE, ENTRY_SIZE)
     e:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     e.border = e:CreateTexture(nil, "BACKGROUND")
     e.border:SetAllPoints()
@@ -1062,12 +1468,12 @@ local function Entry(i)
     if not ok or not fs then fs = e:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall") end
     fs:SetPoint("BOTTOMRIGHT", -3, 3)
     e.count = fs
-    local hl = e:CreateTexture(nil, "HIGHLIGHT")
-    hl:SetAllPoints()
-    hl:SetColorTexture(1, 1, 1, 0.25)
+    e.hl = e:CreateTexture(nil, "HIGHLIGHT")
+    e.hl:SetAllPoints()
     e:SetScript("OnClick", function(self)
         local m = flyout.macro
         if not m then return end
+        if m.preview then flyout:Hide() return end
         -- the best item is what "automatic" already uses, so picking it clears the choice
         local list = flyoutItems[m.name]
         local automatic = list and list[1] and list[1].id == self.itemID
@@ -1086,8 +1492,25 @@ local function Entry(i)
         SetOver(self, false)
         GameTooltip:Hide()
     end)
+    StyleEntry(e)
     entries[i] = e
     return e
+end
+
+-- sizes and places the item buttons and the popup from the saved style
+local function LayoutFlyout()
+    if not flyout then return end
+    local size, gap = Style("entrySize"), Style("entrySpacing")
+    local n = flyout.count or 0
+    for i = 1, n do
+        local e = entries[i]
+        if e then
+            e:SetSize(size, size)
+            e:ClearAllPoints()
+            e:SetPoint("BOTTOM", flyout, "BOTTOM", 0, 4 + (i - 1) * (size + gap))   -- best nearest the button
+        end
+    end
+    flyout:SetSize(size + 8, 8 + n * (size + gap) - gap)
 end
 
 -- button is the action button to open over (nil: middle of the screen, for
@@ -1105,7 +1528,7 @@ local function OpenFlyout(button, m, source, toggle)
     flyout.over = {}
     flyout.sticky = (button == nil)
     SetOver(source, true)
-    local chosen = Chosen(m, list)
+    local chosen = m.previewChosen or Chosen(m, list)
     local n = math.min(#list, MAX_ENTRIES)
     for i = 1, n do
         local e = Entry(i)
@@ -1116,17 +1539,13 @@ local function OpenFlyout(button, m, source, toggle)
         e.icon:SetTexture(isSpell and SpellIcon(list[i].id) or IconFor({ item = list[i].id }))
         local count = (not isSpell) and CountOf(list[i].id) or nil
         e.count:SetText((count and count > 1) and tostring(count) or "")
-        if list[i].id == chosen then
-            e.border:SetColorTexture(1, 0.82, 0, 1)       -- gold: the one in use
-        else
-            e.border:SetColorTexture(0.1, 0.1, 0.1, 1)
-        end
-        e:ClearAllPoints()
-        e:SetPoint("BOTTOM", flyout, "BOTTOM", 0, 4 + (i - 1) * (ENTRY_SIZE + 2))   -- best nearest the button
+        e.selected = (list[i].id == chosen)               -- highlighted border: the one in use
+        StyleEntry(e)
         e:Show()
     end
     for i = n + 1, #entries do entries[i]:Hide() end
-    flyout:SetSize(ENTRY_SIZE + 8, 8 + n * (ENTRY_SIZE + 2) - 2)
+    flyout.count = n
+    LayoutFlyout()
     flyout:ClearAllPoints()
     if button then
         flyout:SetPoint("BOTTOM", arrows[button] or button, "TOP", 0, 0)
@@ -1191,21 +1610,20 @@ local function ArrowFor(button)
     a = frame
     a.button = button
     a:SetFrameLevel((button:GetFrameLevel() or 1) + 12)
-    a:SetSize(18, 7)
     a:SetPoint("BOTTOM", button, "TOP", 0, -3)
     a.tex = a:CreateTexture(nil, "OVERLAY")
     a.tex:SetAllPoints()
-    a.tex:SetColorTexture(1, 0.82, 0, 0.95)
+    StyleArrow(a, false)
     a:RegisterForClicks("LeftButtonUp")
     a:SetScript("OnClick", function(self)
         if self.macro then SafeOpen(self.button, self.macro, self, true) end
     end)
     a:SetScript("OnEnter", function(self)
-        self.tex:SetColorTexture(1, 1, 1, 1)
+        StyleArrow(self, true)
         if self.macro and not DB().noFlyout then SafeOpen(self.button, self.macro, self) end
     end)
     a:SetScript("OnLeave", function(self)
-        self.tex:SetColorTexture(1, 0.82, 0, 0.95)
+        StyleArrow(self, false)
         SetOver(self, false)
     end)
     a:Hide()
@@ -1278,6 +1696,587 @@ RefreshArrows = function()
     end
 end
 
+-- ---------------------------------------------------------------------------
+-- Look and feel, and the options window. ApplyStyle redraws everything that
+-- has been built (highlights, tabs, popup) after a setting changes.
+-- ---------------------------------------------------------------------------
+local StyleOptions   -- defined below
+
+ApplyStyle = function()
+    for button, g in pairs(glows) do StyleGlow(g, button) end
+    for button, a in pairs(arrows) do StyleArrow(a, false) end
+    if flyout then
+        StyleFlyout(flyout)
+        for _, e in ipairs(entries) do StyleEntry(e) end
+        LayoutFlyout()
+    end
+    if StyleOptions then StyleOptions() end
+end
+
+-- A popup with made-up potions, to see the styling without needing items.
+local PREVIEW = { name = "AM_Preview", title = "Preview", label = "preview", preview = true, previewChosen = 929 }
+
+local function PreviewFlyout(anchor)
+    flyoutItems[PREVIEW.name] = { { id = 118 }, { id = 929 }, { id = 1710 }, { id = 3928 } }
+    if flyout and flyout:IsShown() then flyout:Hide() end
+    OpenFlyout(nil, PREVIEW, nil)
+    if anchor and flyout and flyout:IsShown() then
+        flyout:ClearAllPoints()
+        flyout:SetPoint("LEFT", anchor, "RIGHT", 12, 0)
+    end
+end
+
+local function Refresh()
+    pcall(SafeCollect)
+    Update()
+end
+
+-- ---- small widgets (no templates, so they look the same on every client) ----
+local ROW = 26
+
+local function MakeLabel(parent, text, x, y, w)
+    local fs = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    fs:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
+    fs:SetWidth(w or 180)
+    fs:SetJustifyH("LEFT")
+    fs:SetText(text)
+    return fs
+end
+
+local function Box(b)   -- grey outline with a dark inside
+    local edge = b:CreateTexture(nil, "BACKGROUND")
+    edge:SetAllPoints()
+    edge:SetColorTexture(0.5, 0.5, 0.5, 1)
+    local inner = b:CreateTexture(nil, "BORDER")
+    inner:SetPoint("TOPLEFT", b, "TOPLEFT", 1, -1)
+    inner:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -1, 1)
+    inner:SetColorTexture(0.05, 0.05, 0.05, 1)
+    return inner
+end
+
+local function MakeToggle(parent, x, y, get, set)
+    local b = CreateFrame("Button", nil, parent)
+    b:SetSize(18, 18)
+    b:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
+    Box(b)
+    local tick = b:CreateTexture(nil, "ARTWORK")
+    tick:SetPoint("TOPLEFT", b, "TOPLEFT", 4, -4)
+    tick:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -4, 4)
+    b.refresh = function()
+        local r, g, bl = AccentRGB()
+        tick:SetColorTexture(r, g, bl, 1)
+        if get() then tick:Show() else tick:Hide() end
+    end
+    b:SetScript("OnClick", function() set(not get()); b.refresh() end)
+    b.refresh()
+    return b
+end
+
+local function MakeSlider(parent, x, y, width, min, max, step, get, set)
+    local s = CreateFrame("Frame", nil, parent)
+    s:SetSize(width, 18)
+    s:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
+    s:EnableMouse(true)
+    local track = s:CreateTexture(nil, "BACKGROUND")
+    track:SetPoint("LEFT", s, "LEFT", 0, 0)
+    track:SetPoint("RIGHT", s, "RIGHT", 0, 0)
+    track:SetHeight(4)
+    track:SetColorTexture(0.25, 0.25, 0.25, 1)
+    local fill = s:CreateTexture(nil, "ARTWORK")
+    fill:SetPoint("LEFT", s, "LEFT", 0, 0)
+    fill:SetHeight(4)
+    local thumb = s:CreateTexture(nil, "OVERLAY")
+    thumb:SetSize(8, 14)
+    local value = s:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    value:SetPoint("LEFT", s, "RIGHT", 8, 0)
+    local fmt = (step >= 1) and "%d" or (step >= 0.1) and "%.1f" or "%.2f"
+    local function paint(v)
+        local frac = (max > min) and (v - min) / (max - min) or 0
+        if frac < 0 then frac = 0 elseif frac > 1 then frac = 1 end
+        local r, g, b = AccentRGB()
+        fill:SetColorTexture(r, g, b, 1)
+        fill:SetWidth(math.max(1, frac * width))
+        thumb:SetColorTexture(1, 1, 1, 1)
+        thumb:ClearAllPoints()
+        thumb:SetPoint("CENTER", s, "LEFT", frac * width, 0)
+        value:SetText(string.format(fmt, v))
+    end
+    local function fromCursor()
+        local scale = s:GetEffectiveScale() or 1
+        local cx = (GetCursorPosition() or 0) / scale
+        local frac = (cx - (s:GetLeft() or 0)) / width
+        if frac < 0 then frac = 0 elseif frac > 1 then frac = 1 end
+        local v = min + frac * (max - min)
+        v = math.floor(v / step + 0.5) * step
+        v = tonumber(string.format("%.4f", v))
+        if v < min then v = min elseif v > max then v = max end
+        paint(v)
+        if v ~= s.last then
+            s.last = v
+            set(v)
+        end
+    end
+    s:SetScript("OnMouseDown", function(self) self.drag = true; fromCursor() end)
+    s:SetScript("OnMouseUp", function(self) self.drag = nil end)
+    s:SetScript("OnHide", function(self) self.drag = nil end)
+    s:SetScript("OnUpdate", function(self)
+        if not self.drag then return end
+        if IsMouseButtonDown and not IsMouseButtonDown("LeftButton") then self.drag = nil return end
+        fromCursor()
+    end)
+    s.refresh = function()
+        local v = tonumber(get()) or min
+        s.last = v
+        paint(v)
+    end
+    s.refresh()
+    return s
+end
+
+-- the colour picker differs between client versions, so both forms are handled
+local function PickColor(r, g, b, onChange)
+    local function read()
+        local nr, ng, nb = ColorPickerFrame:GetColorRGB()
+        onChange(nr, ng, nb)
+    end
+    local function cancel() onChange(r, g, b) end
+    pcall(function() ColorPickerFrame:SetFrameStrata("FULLSCREEN_DIALOG") end)
+    if ColorPickerFrame.SetupColorPickerAndShow then
+        ColorPickerFrame:SetupColorPickerAndShow({
+            r = r, g = g, b = b, hasOpacity = false, swatchFunc = read, cancelFunc = cancel })
+    else
+        ColorPickerFrame.func = read
+        ColorPickerFrame.cancelFunc = cancel
+        ColorPickerFrame.opacityFunc = nil
+        ColorPickerFrame.hasOpacity = false
+        ColorPickerFrame.previousValues = { r = r, g = g, b = b }
+        ColorPickerFrame:SetColorRGB(r, g, b)
+        ColorPickerFrame:Hide()
+        ColorPickerFrame:Show()
+    end
+end
+
+local function MakeColor(parent, x, y, key, hasAlpha)
+    local b = CreateFrame("Button", nil, parent)
+    b:SetSize(36, 18)
+    b:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
+    local inner = Box(b)
+    local sw = b:CreateTexture(nil, "ARTWORK")
+    sw:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -1)
+    sw:SetPoint("BOTTOMRIGHT", inner, "BOTTOMRIGHT", -1, 1)
+    local alpha
+    b.refresh = function()
+        local c = Style(key)
+        sw:SetColorTexture(c[1], c[2], c[3], 1)
+        if alpha then alpha.refresh() end
+    end
+    b:SetScript("OnClick", function()
+        local c = Style(key)
+        local ok, err = pcall(PickColor, c[1], c[2], c[3], function(r, g, bl)
+            SetStyle(key, { r, g, bl, Style(key)[4] or 1 })
+            b.refresh()
+        end)
+        if not ok then Fail("colour picker", err) end
+    end)
+    if hasAlpha then
+        alpha = MakeSlider(parent, x + 46, y, 80, 0, 1, 0.05,
+            function() return Style(key)[4] or 1 end,
+            function(v) local c = Style(key); SetStyle(key, { c[1], c[2], c[3], v }) end)
+    end
+    b.refresh()
+    return b
+end
+
+local function MakeChoice(parent, x, y, width, list, get, set)
+    local b = CreateFrame("Button", nil, parent)
+    b:SetSize(width, 18)
+    b:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
+    Box(b)
+    local fs = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    fs:SetPoint("CENTER", b, "CENTER", 0, 0)
+    b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    local function index(l)
+        local cur = get()
+        for i, v in ipairs(l) do
+            if v.key == cur then return i end
+        end
+        return 1
+    end
+    b.refresh = function()
+        local l = list()
+        local v = l[index(l)]
+        fs:SetText(v and v.label or "?")
+    end
+    b:SetScript("OnClick", function(self, button)
+        local l = list()
+        local i = index(l)
+        if button == "RightButton" then
+            i = i - 1
+            if i < 1 then i = #l end
+        else
+            i = i + 1
+            if i > #l then i = 1 end
+        end
+        set(l[i].key)
+        self.refresh()
+    end)
+    b.refresh()
+    return b
+end
+
+local function MakeButton(parent, x, y, width, text, onClick)
+    local b = CreateFrame("Button", nil, parent)
+    b:SetSize(width, 22)
+    b:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
+    local inner = Box(b)
+    inner:SetColorTexture(0.15, 0.15, 0.15, 1)
+    local hl = b:CreateTexture(nil, "HIGHLIGHT")
+    hl:SetAllPoints()
+    hl:SetColorTexture(1, 1, 1, 0.15)
+    local fs = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    fs:SetPoint("CENTER", b, "CENTER", 0, 0)
+    fs:SetText(text)
+    b:SetScript("OnClick", onClick)
+    return b
+end
+
+-- A sample action button, so a change can be seen on the spot.
+local function MakePreview(parent, x, y, kind)
+    local f = CreateFrame("Frame", nil, parent)
+    f:SetSize(36, 36)
+    f:SetPoint("TOPLEFT", parent, "TOPLEFT", x + 10, y - 16)
+    local icon = f:CreateTexture(nil, "ARTWORK")
+    icon:SetAllPoints()
+    icon:SetTexture(IconFor({ item = 929 }))
+    if kind == "glow" then
+        ShowGlow(f, true)
+    else
+        local a = ArrowFor(f)
+        if a then a:Show() end
+    end
+    return f
+end
+
+-- ---- the settings, grouped into pages ----
+local function SToggle(label, key)
+    return { type = "toggle", label = label,
+        get = function() return Style(key) and true or false end,
+        set = function(v) SetStyle(key, v) end }
+end
+
+local function LearnedSummary()
+    local learned = DB().learned
+    local n, auto, lines = 0, 0, {}
+    if type(learned) == "table" then
+        local ids = {}
+        for id in pairs(learned) do ids[#ids + 1] = id end
+        table.sort(ids)
+        for _, id in ipairs(ids) do
+            local rec = learned[id]
+            n = n + 1
+            if type(rec) ~= "table" or rec.how ~= "manual" then auto = auto + 1 end
+            if #lines < 4 and type(rec) == "table" then
+                local t = {}
+                for _, s in ipairs(rec.sets or {}) do t[#t + 1] = (SetTitle(s)) end
+                lines[#lines + 1] = ItemRef(id) .. " - " .. table.concat(t, ", ")
+            end
+        end
+    end
+    local head = string.format("Learned items: %d (%d automatic, %d by hand). /amac learned lists them all.", n, auto, n - auto)
+    return head .. (#lines > 0 and ("\n" .. table.concat(lines, "\n")) or "")
+end
+
+local GROUPS = {
+    { name = "Highlight", preview = "glow", items = {
+        { type = "toggle", label = "Highlight empty buttons",
+            get = function() return DB().glow ~= false end,
+            set = function(v) DB().glow = v; RefreshGlow() end },
+        { type = "color", label = "Colour", key = "glowColor", alpha = true },
+        { type = "range", label = "Thickness", key = "glowThickness", min = 1, max = 8, step = 1 },
+        { type = "choice", label = "Texture", key = "glowTexture", list = function() return TextureChoices(true) end },
+        SToggle("Pulse", "glowPulse"),
+        { type = "range", label = "Pulse time (seconds)", key = "glowSpeed", min = 0.2, max = 2, step = 0.1 },
+    } },
+    { name = "Tab", preview = "tab", items = {
+        { type = "toggle", label = "Open the flyout on hover",
+            get = function() return not DB().noFlyout end,
+            set = function(v) DB().noFlyout = not v; Refresh() end },
+        { type = "color", label = "Tab colour", key = "tabColor", alpha = true },
+        { type = "color", label = "Tab colour on hover", key = "tabHoverColor", alpha = true },
+        { type = "range", label = "Tab width", key = "tabWidth", min = 8, max = 40, step = 1 },
+        { type = "range", label = "Tab height", key = "tabHeight", min = 3, max = 16, step = 1 },
+        { type = "choice", label = "Tab texture", key = "tabTexture", list = function() return TextureChoices(false) end },
+    } },
+    { name = "Popup", items = {
+        { type = "button", label = "Show a preview popup", action = function(anchor) PreviewFlyout(anchor) end },
+        { type = "color", label = "Background", key = "flyoutBg", alpha = true },
+        { type = "color", label = "Border", key = "flyoutBorderColor", alpha = true },
+        { type = "range", label = "Border size", key = "flyoutBorderSize", min = 0, max = 4, step = 1 },
+        { type = "range", label = "Item size", key = "entrySize", min = 24, max = 56, step = 1 },
+        { type = "range", label = "Item spacing", key = "entrySpacing", min = 0, max = 10, step = 1 },
+        { type = "color", label = "Item border", key = "entryBorderColor", alpha = true },
+        { type = "color", label = "Chosen item border", key = "selectedColor", alpha = true },
+        { type = "color", label = "Item hover", key = "entryHover", alpha = true },
+        { type = "range", label = "Close delay (seconds)", key = "closeDelay", min = 0.1, max = 1.5, step = 0.1 },
+    } },
+    { name = "General", items = {
+        { type = "toggle", label = "Clean \"No X in inventory\" tooltip",
+            get = function() return not DB().stockTooltip end, set = function(v) DB().stockTooltip = not v end },
+        { type = "color", label = "Empty tooltip colour", key = "tooltipColor" },
+        { type = "toggle", label = "Hide macro names on buttons",
+            get = function() return not DB().showNames end,
+            set = function(v) DB().showNames = not v; Refresh() end },
+        { type = "toggle", label = "Learn new items automatically",
+            get = function() return not DB().learnOff end,
+            set = function(v) DB().learnOff = (not v) or nil; if v then Update() end end },
+        { type = "text", text = LearnedSummary },
+        { type = "eui", items = {
+            SToggle("Use EllesmereUI styling", "euiSkin"),
+            SToggle("EllesmereUI accent colour", "euiAccent"),
+        } },
+        { type = "button", label = "Reset appearance", action = function() ResetStyle() end, refreshAll = true },
+    } },
+}
+
+-- Builds one page into parent, starting at y0 (negative = down). Returns the y
+-- below the last row. native: parent is an EllesmereUI page, so its own toggle
+-- and header widgets are used where they work.
+local function BuildPage(parent, group, x0, y0, native)
+    local y = y0
+    local refreshers = {}
+    local W = native and EllesmereUI and EllesmereUI.Widgets or nil
+    if W and W.SectionHeader then
+        local ok, _, h = pcall(W.SectionHeader, W, parent, group.name, y)
+        if ok then y = y - ((type(h) == "number") and h or 28) end
+    end
+    if group.preview then
+        MakePreview(parent, x0, y, group.preview)
+        local hint = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        hint:SetPoint("TOPLEFT", parent, "TOPLEFT", x0 + 70, y - 22)
+        hint:SetWidth(300)
+        hint:SetJustifyH("LEFT")
+        hint:SetText("A sample button. Click a swatch to pick a colour, click a texture box to cycle it (right-click goes back).")
+        y = y - 62
+    end
+    local items = {}
+    for _, item in ipairs(group.items) do
+        if item.type == "eui" then
+            if EllesmereUI then
+                for _, sub in ipairs(item.items) do items[#items + 1] = sub end
+            end
+        else
+            items[#items + 1] = item
+        end
+    end
+    local ctlX = x0 + 190
+    for _, item in ipairs(items) do
+        local rowH = ROW
+        if item.type == "toggle" then
+            local done = false
+            if W and W.Toggle then
+                local ok, f, h = pcall(W.Toggle, W, parent, item.label, y, item.get, item.set)
+                if ok and f then
+                    done = true
+                    rowH = (type(h) == "number") and h or 30
+                end
+            end
+            if not done then
+                MakeLabel(parent, item.label, x0, y - 2)
+                refreshers[#refreshers + 1] = MakeToggle(parent, ctlX, y, item.get, item.set).refresh
+            end
+        elseif item.type == "color" then
+            MakeLabel(parent, item.label, x0, y - 2)
+            refreshers[#refreshers + 1] = MakeColor(parent, ctlX, y, item.key, item.alpha).refresh
+        elseif item.type == "range" then
+            MakeLabel(parent, item.label, x0, y - 2)
+            refreshers[#refreshers + 1] = MakeSlider(parent, ctlX, y, 130, item.min, item.max, item.step,
+                function() return Style(item.key) end, function(v) SetStyle(item.key, v) end).refresh
+        elseif item.type == "choice" then
+            MakeLabel(parent, item.label, x0, y - 2)
+            refreshers[#refreshers + 1] = MakeChoice(parent, ctlX, y, 150, item.list,
+                function() return Style(item.key) end, function(v) SetStyle(item.key, v) end).refresh
+        elseif item.type == "button" then
+            local b
+            b = MakeButton(parent, x0, y, 170, item.label, function()
+                item.action(b)
+                if item.refreshAll then
+                    if parent.amRefresh then parent.amRefresh() end
+                    if parent.amRefreshAll then parent.amRefreshAll() end
+                end
+            end)
+            rowH = 30
+        elseif item.type == "text" then
+            local fs = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            fs:SetPoint("TOPLEFT", parent, "TOPLEFT", x0, y - 2)
+            fs:SetWidth(380)
+            fs:SetJustifyH("LEFT")
+            refreshers[#refreshers + 1] = function() fs:SetText(item.text()) end
+            fs:SetText(item.text())
+            rowH = 70
+        end
+        y = y - rowH
+    end
+    parent.amRefresh = function()
+        for _, f in ipairs(refreshers) do f() end
+    end
+    return y
+end
+
+-- ---- the stand-alone window: /amac options ----
+local optionsPanel
+local pages, tabs = {}, {}
+
+local function ShowTab(i)
+    local p = optionsPanel
+    for j, page in ipairs(pages) do
+        if j ~= i then page:Hide() end
+    end
+    local page = pages[i]
+    if not page.built then
+        page.built = true
+        BuildPage(page, GROUPS[i], 0, 0, false)
+        page.amRefreshAll = function() for _, pg in ipairs(pages) do if pg.amRefresh then pg.amRefresh() end end end
+    end
+    page:Show()
+    if page.amRefresh then page.amRefresh() end
+    p.current = i
+    for j, t in ipairs(tabs) do
+        local r, g, b = AccentRGB()
+        if j == i then t.bar:SetColorTexture(r, g, b, 1) else t.bar:SetColorTexture(0.3, 0.3, 0.3, 1) end
+    end
+end
+
+local function BuildOptions()
+    if optionsPanel then return optionsPanel end
+    local p = CreateFrame("Frame", "AutoMacrosOptions", UIParent)
+    optionsPanel = p
+    p:SetSize(450, 460)
+    p:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    p:SetFrameStrata("DIALOG")
+    p:SetClampedToScreen(true)
+    p:EnableMouse(true)
+    p:SetMovable(true)
+    p:RegisterForDrag("LeftButton")
+    p:SetScript("OnDragStart", function(self) self:StartMoving() end)
+    p:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
+    p.bg = p:CreateTexture(nil, "BACKGROUND")
+    p.bg:SetAllPoints()
+    p.edges = MakeEdges(p, "BORDER")
+    local title = p:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", p, "TOPLEFT", 16, -14)
+    title:SetText("AutoMacros")
+    local close = MakeButton(p, 450 - 16 - 24, -12, 24, "X", function() p:Hide() end)
+    for i, group in ipairs(GROUPS) do
+        local t = CreateFrame("Button", nil, p)
+        t:SetSize(96, 24)
+        t:SetPoint("TOPLEFT", p, "TOPLEFT", 16 + (i - 1) * 100, -44)
+        t.text = t:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        t.text:SetPoint("CENTER", t, "CENTER", 0, 2)
+        t.text:SetText(group.name)
+        t.bar = t:CreateTexture(nil, "ARTWORK")
+        t.bar:SetPoint("BOTTOMLEFT", t, "BOTTOMLEFT", 0, 0)
+        t.bar:SetPoint("BOTTOMRIGHT", t, "BOTTOMRIGHT", 0, 0)
+        t.bar:SetHeight(2)
+        t:SetScript("OnClick", function() ShowTab(i) end)
+        tabs[i] = t
+        local page = CreateFrame("Frame", nil, p)
+        page:SetPoint("TOPLEFT", p, "TOPLEFT", 16, -80)
+        page:SetPoint("BOTTOMRIGHT", p, "BOTTOMRIGHT", -16, 16)
+        page:Hide()
+        pages[i] = page
+    end
+    p:SetScript("OnShow", function() ShowTab(p.current or 1) end)
+    p:SetScript("OnHide", function()
+        if flyout and flyout:IsShown() and flyout.macro == PREVIEW then flyout:Hide() end
+    end)
+    if UISpecialFrames then table.insert(UISpecialFrames, "AutoMacrosOptions") end
+    p:Hide()
+    StyleOptions()
+    return p
+end
+
+StyleOptions = function()
+    local p = optionsPanel
+    if not p then return end
+    local skinned = false
+    if SkinActive() and skin.Panel then skinned = pcall(skin.Panel, p, {}) end
+    if skinned then
+        p.bg:Hide()
+        for i = 1, 4 do p.edges[i]:Hide() end
+    else
+        p.bg:Show()
+        p.bg:SetColorTexture(0.06, 0.06, 0.06, 0.96)
+        for i = 1, 4 do p.edges[i]:SetColorTexture(0.4, 0.4, 0.4, 1) end
+        PlaceEdges(p.edges, p, 1)
+    end
+    for j, t in ipairs(tabs) do
+        local r, g, b = AccentRGB()
+        if j == p.current then t.bar:SetColorTexture(r, g, b, 1) else t.bar:SetColorTexture(0.3, 0.3, 0.3, 1) end
+    end
+end
+
+-- ---- EllesmereUI: a page in its settings, and its look for the popup ----
+-- Only the published EllesmereUI interfaces are used (RegisterSkin and
+-- RegisterPlugin); everything is wrapped so a change on their side cannot
+-- break this addon.
+local skinRegistered, pluginRegistered = false, false
+
+local function RegisterEUI()
+    if not EllesmereUI then return end
+    if not skinRegistered and EllesmereUI.RegisterSkin then
+        skinRegistered = true
+        local ok, err = pcall(EllesmereUI.RegisterSkin, "AutoMacros", function(S)
+            skin = S
+            if S.OnLooksChanged then pcall(S.OnLooksChanged, function() ApplyStyle() end) end
+            ApplyStyle()
+        end)
+        if not ok then Fail("EllesmereUI skin", err) end
+    end
+    if not pluginRegistered and EllesmereUI.RegisterPlugin then
+        pluginRegistered = true
+        local names = {}
+        for _, g in ipairs(GROUPS) do names[#names + 1] = g.name end
+        local ok, err = pcall(EllesmereUI.RegisterPlugin, "AutoMacros", {
+            label = "AutoMacros",
+            position = "bottom",
+            modules = { {
+                key = "options",
+                title = "AutoMacros",
+                description = "Empty-button highlight, flyout tab and popup styling",
+                pages = names,
+                buildPage = function(pageName, parent, yOffset)
+                    local y = yOffset or 0
+                    local group
+                    for _, g in ipairs(GROUPS) do
+                        if g.name == pageName then group = g end
+                    end
+                    if not group then return math.abs(y) end
+                    local ok2, newY = pcall(BuildPage, parent, group, 20, y, true)
+                    if not ok2 then
+                        Fail("EllesmereUI page", newY)
+                        return math.abs(y)
+                    end
+                    return math.abs(newY)
+                end,
+                onReset = function() ResetStyle() end,
+            } },
+        })
+        if not ok then
+            pluginRegistered = false
+            Fail("EllesmereUI page", err)
+        end
+    end
+end
+pcall(RegisterEUI)
+
+local function OpenOptions(standalone)
+    if not standalone and pluginRegistered and EllesmereUI and EllesmereUI.OpenPlugin then
+        if pcall(EllesmereUI.OpenPlugin, "AutoMacros") then return end
+    end
+    local p = BuildOptions()
+    if p:IsShown() then p:Hide() else p:Show() end
+end
+
 local function Schedule()
     if timerSet then return end
     timerSet = true
@@ -1299,6 +2298,27 @@ local function ScheduleGlow()
     if C_Timer and C_Timer.After then C_Timer.After(0.3, run) else run() end
 end
 
+-- Runs once per login. The saved data is already loaded by now.
+local function Init()
+    local db = DB()
+    report.priorSessions = tonumber(db.sessions) or 0
+    db.sessions = report.priorSessions + 1
+    if (tonumber(db.schema) or 0) < SCHEMA then
+        db.schema = SCHEMA   -- version 2 added style, learned and ignored; older data needs no conversion
+    end
+    if db.classifier ~= CLASSIFIER then
+        -- the learning rules changed: forget automatic results, keep hand-made ones
+        if type(db.learned) == "table" then
+            for id, rec in pairs(db.learned) do
+                if type(rec) ~= "table" or rec.how ~= "manual" then db.learned[id] = nil end
+            end
+        end
+        db.ignored = nil
+        db.classifier = CLASSIFIER
+    end
+    pcall(RegisterEUI)   -- in case EllesmereUI loaded after this addon
+end
+
 local BAR_EVENTS = {
     ACTIONBAR_SLOT_CHANGED = true, ACTIONBAR_PAGE_CHANGED = true,
     UPDATE_BONUS_ACTIONBAR = true, UPDATE_SHAPESHIFT_FORM = true,
@@ -1306,6 +2326,10 @@ local BAR_EVENTS = {
 
 local frame = CreateFrame("Frame")
 frame:SetScript("OnEvent", function(_, event)
+    if event == "PLAYER_LOGIN" then
+        local ok, err = pcall(Init)
+        if not ok then Fail("startup", err) end
+    end
     if event == "PLAYER_REGEN_ENABLED" then
         if pending then Schedule() end
     elseif BAR_EVENTS[event] then
@@ -1350,6 +2374,7 @@ SlashCmdList["AUTOMACROS"] = function(msg)
                 e.custom and " - custom" or ""))
         end
         Print("/amac add <name>, /amac remove <name>, /amac custom <name> <items|spells> <id,id,...>")
+        Print("/amac options, /amac assign <item> <name>, /amac unassign <item>, /amac learned, /amac status")
         return
     elseif msg:match("^%s*add%s+") or msg:match("^%s*remove%s+") then
         local verb, key = msg:match("^%s*(%a+)%s+(%S+)")
@@ -1388,6 +2413,81 @@ SlashCmdList["AUTOMACROS"] = function(msg)
             db.custom[name] = { title = name:sub(1, 1):upper() .. name:sub(2), kind = kind, ids = ids }
             Print("custom category " .. name .. ": " .. #ids .. " " .. kind .. " - it appears on your next update")
         end
+    elseif msg:match("^%s*options") or msg:match("^%s*config") or msg:match("^%s*opt") then
+        local ok, err = pcall(OpenOptions, msg:find("classic", 1, true) ~= nil or msg:find("standalone", 1, true) ~= nil)
+        if not ok then Fail("options window", err) end
+        return
+    elseif msg:match("^%s*style%s+reset") then
+        ResetStyle()
+        Print("look and feel back to the defaults")
+        return
+    elseif msg:match("^%s*assign%s+") or msg:match("^%s*unassign%s+") then
+        local verb, rest = msg:match("^%s*(%a+)%s+(.+)$")
+        local id = tonumber(rest:match("item:(%d+)")) or tonumber(rest:match("%d+"))
+        if not id then
+            Print("usage: /amac assign <item id or item link> <category>   or   /amac unassign <item id or link>")
+            return
+        end
+        local db = DB()
+        if verb == "unassign" then
+            if type(db.learned) == "table" then db.learned[id] = nil end
+            if type(db.ignored) ~= "table" then db.ignored = {} end
+            db.ignored[id] = CLASSIFIER   -- and do not learn it again by itself
+            RebuildLearned()
+            Print(ItemRef(id) .. " [" .. id .. "] removed from the learned items")
+        else
+            local keyword = rest:gsub("|c%x+|hitem:[^|]*|h%[.-%]|h|r", " "):match("%a[%w_]*")
+            local e = keyword and find(keyword)
+            if not e or not e.set then
+                Print("assign needs an item category: " .. "/amac list shows them (spell categories cannot take items)")
+                return
+            end
+            if type(db.learned) ~= "table" then db.learned = {} end
+            local rec = db.learned[id]
+            if type(rec) ~= "table" or rec.how ~= "manual" then rec = { sets = {}, how = "manual" } end
+            local have = false
+            for _, s in ipairs(rec.sets) do if s == e.set then have = true end end
+            if not have then rec.sets[#rec.sets + 1] = e.set end
+            db.learned[id] = rec
+            if type(db.ignored) == "table" then db.ignored[id] = nil end
+            RebuildLearned()
+            Print(ItemRef(id) .. " [" .. id .. "] now counts as " .. e.title .. (Enabled(e) and "" or (" (the button is off: /amac add " .. e.key .. ")")))
+        end
+    elseif msg:match("^%s*learned") then
+        local learned = DB().learned
+        local ids = {}
+        if type(learned) == "table" then for id in pairs(learned) do ids[#ids + 1] = id end end
+        table.sort(ids)
+        if #ids == 0 then
+            Print("nothing learned yet - items missing from the built-in lists are sorted as you pick them up")
+        else
+            for i, id in ipairs(ids) do
+                local rec = learned[id]
+                local t = {}
+                for _, s in ipairs(rec.sets or {}) do t[#t + 1] = (SetTitle(s)) end
+                Print(string.format("[%d] %s - %s (%s)", id, ItemRef(id), table.concat(t, ", "), rec.how or "?"))
+                if i >= 30 then Print("(first 30 shown of " .. #ids .. ")") break end
+            end
+        end
+        return
+    elseif msg:match("^%s*learn") then
+        local db = DB()
+        if msg:find("off", 1, true) then db.learnOff = true
+        elseif msg:find("on", 1, true) then db.learnOff = nil
+        else db.learnOff = (not db.learnOff) or nil end
+        Print("learning new items: " .. (db.learnOff and "off" or "on"))
+        return
+    elseif msg:match("^%s*status") then
+        local db = DB()
+        local n = 0
+        if type(db.learned) == "table" then for _ in pairs(db.learned) do n = n + 1 end end
+        local styled = 0
+        if type(db.style) == "table" then for _ in pairs(db.style) do styled = styled + 1 end end
+        Print(string.format("saved data: schema %s, loaded %s time(s) (%s)", tostring(db.schema), tostring(db.sessions),
+            (report.priorSessions or 0) > 0 and "restored from the last session" or "new, or not restored from the last session"))
+        Print(string.format("style settings changed: %d, learned items: %d, EllesmereUI: %s", styled, n,
+            skin and "styling the popup" or (EllesmereUI and "found, not skinning (turn it on in EllesmereUI)" or "not installed")))
+        return
     elseif msg:match("^%s*next") then
         local name = NextScroll()
         Print(name and ("Comprehend button: " .. name) or "fewer than two untranslated scrolls in your bags")
@@ -1442,6 +2542,8 @@ SlashCmdList["AUTOMACROS"] = function(msg)
         else
             Print("  ActionButton1 does not exist")
         end
+        Print(string.format("  saved data: schema %s, session %s, restored %s", tostring(DB().schema),
+            tostring(DB().sessions), (report.priorSessions or 0) > 0 and "yes" or "no"))
         Print("  last error: " .. tostring(report.lastError))
         return
     elseif msg:match("^%s*flyout%s+test") then

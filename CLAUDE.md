@@ -18,11 +18,27 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   (bump the middle number by 1 per iteration: 0.24.0 -> 0.25.0 -> 0.26.0).
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.lua` / `AutoMacros.toc` are always the current version.
-- **Current version: 0.24.0.** Bump the version in the .toc and anywhere else it appears.
+- **Current version: 0.25.0.** Bump the version in the .toc and anywhere else it appears.
+- When Lewis asks for a zip (for uploading to uiforever.com), build
+  `releases/AutoMacros-<version>.zip` containing an `AutoMacros/` folder with only the
+  addon files (`AutoMacros.toc`, `AutoMacros.lua`) — no CLAUDE.md, `previous/`, or `.git`.
 - Lewis edits the Lua himself. Before building a new version, diff against the last one you
   produced and **merge his edits** — never overwrite them.
 
-## Current feature set (0.24.0)
+## Added in 0.25.0 (built in Claude on the web)
+- Item learning: consumables missing from the built-in lists are classified once by item
+  class/subclass + tooltip "Use:" line and saved in `AutoMacrosDB.learned` (bumping `CLASSIFIER`
+  re-checks automatic results). `/amac assign|unassign|learned|learn on/off`. Only consumable
+  subclasses 1-5 and 7 are considered — unverified whether Forever puts potions/food in subclass 0.
+- Saved data: `AutoMacrosDB` now has `schema`, `sessions`, `style`, `learned`, `ignored`;
+  `/amac status` reports whether data was restored.
+- Options window: `/amac options` (tabs Highlight / Tab / Popup / General), all style values in
+  `STYLE_DEFAULTS`, `/amac style reset`. Sliders use GetCursorPosition (may misbehave in simulator).
+- EllesmereUI: optional skin + settings page via `EllesmereUI.RegisterSkin` / `RegisterPlugin`
+  (API names unverified against EllesmereUI's source; all calls are pcall-wrapped).
+  `.toc` has `## OptionalDeps: EllesmereUI, LibSharedMedia-3.0`.
+
+## Feature set as of 0.24.0
 - Macros are a category catalog: `/amac list`, `/amac add`, `/amac remove`, `/amac custom`
   (user-defined buttons).
 - Categories: Healthstone, health potion, mana potion, food, water, bandage, anti-venom,
