@@ -1,4 +1,4 @@
--- AutoMacros 0.90.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.91.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one file for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -3249,14 +3249,36 @@ UI.BUTTON_GROUPS = {
     { name = "Class", keys = { "portals", "comprehend" } },
 }
 
--- The Popout page's Direction section: a note, then a dropdown per button
--- (Automatic, Up, Down, Left, Right), saved in db.popDir (Automatic = not saved).
+-- the buttons switched on for this character
+function UI.EnabledButtons()
+    local list = {}
+    for _, e in ipairs(UI.AvailableButtons()) do
+        if Enabled(e) then list[#list + 1] = e end
+    end
+    return list
+end
+
+-- which buttons the Direction section lists: the page is built again when this
+-- changes (see UI.ShowPanel)
+function UI.DirectionStamp()
+    local keys = {}
+    for _, e in ipairs(UI.EnabledButtons()) do keys[#keys + 1] = e.key end
+    return table.concat(keys, ",")
+end
+
+-- The Popout page's Direction section: a note, then a dropdown per button that
+-- is on (Automatic, Up, Down, Left, Right), saved in db.popDir (Automatic = not saved).
 function UI.DirectionItems()
     local items = { { type = "text", height = 50, text = function()
         return "Automatic opens away from the screen edge: to the right on a bar down the left side,"
             .. " to the left on the right side, up from a bar at the bottom, down from one at the top."
     end } }
-    for _, e in ipairs(UI.AvailableButtons()) do
+    local list = UI.EnabledButtons()
+    if #list == 0 then
+        items[#items + 1] = { type = "text", height = 24,
+            text = function() return "No buttons are on yet (see the AutoMacros page)." end }
+    end
+    for _, e in ipairs(list) do
         items[#items + 1] = { type = "choice", label = e.title, list = function() return POPOUT.DIRS end,
             get = function()
                 local d = DB().popDir
@@ -3573,7 +3595,8 @@ local PAGES = {
             { type = "choice", label = "Texture", key = "glowTexture", list = function() return TextureChoices(true) end },
         } },
     } },
-    { name = "Popout", header = "flyout", previewSide = "right", sections = {
+    -- stamp: built again when shown if this has changed (the Direction list)
+    { name = "Popout", header = "flyout", previewSide = "right", stamp = UI.DirectionStamp, sections = {
         { name = "Behaviour", items = {
             -- one row: "Popout on hover [x]   Close delay <slider>"
             { type = "row", items = {
@@ -3948,8 +3971,18 @@ function UI.ShowPanel(i)
         pn.host.fixedH = math.max(100, pn.host:GetHeight() or 0)
     end
     if page.header then UI.ShowHeader(page.header, pn.host, pn.host:GetWidth()) end
+    local stamp = page.stamp and page.stamp() or nil
+    if pn.built and stamp ~= pn.stamp then
+        -- what the page lists has changed: build it again on a fresh sheet
+        pn.content:Hide()
+        local content = CreateFrame("Frame", nil, pn.scroll)
+        content:SetSize(pn.width, 10)
+        content.amNarrow = pn.content.amNarrow
+        pn.scroll:SetScrollChild(content)
+        pn.content, pn.built = content, false
+    end
     if not pn.built then
-        pn.built = true
+        pn.built, pn.stamp = true, stamp
         local y = 0
         for _, section in ipairs(UI.PageSections(page)) do
             y = BuildPage(pn.content, section, 0, y, false) - 10

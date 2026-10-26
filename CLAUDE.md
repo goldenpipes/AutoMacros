@@ -24,7 +24,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   not yet tested = `--prerelease`. Every iteration is still committed and pushed.
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.lua` / `AutoMacros.toc` are always the current version.
-- **Current version: 0.90.0.**
+- **Current version: 0.91.0.**
 - **Copy the current files into `previous/<version>/` BEFORE the first edit of a new iteration**
   (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version in the .toc and anywhere else it appears.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
@@ -62,6 +62,14 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.91.0
+- 0.90.0 **confirmed in retail**: bars at the top, bottom, left and right all open the right way.
+- Lewis: Direction list only for buttons that are on. `UI.EnabledButtons()`;
+  `UI.DirectionItems` lists those (a note when none). Pages are built once, so PAGES entries
+  may have `stamp = fn`: UI.ShowPanel rebuilds the page on a fresh scroll child (old content
+  hidden) when the stamp differs from the one it was built with. Popout's stamp =
+  `UI.DirectionStamp` (enabled keys joined).
 
 ## 0.90.0 — popout directions; "flyout" is now "popout"
 - Lewis: **call it "popout", not "flyout"** in everything players see (page "Popout",

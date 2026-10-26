@@ -4,7 +4,13 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
-## 0.90.0 - 2026-10-26 (pre-release, not yet tested in game)
+## 0.91.0 - 2026-10-26 (pre-release)
+
+### Changed
+- The Popout page's Direction list shows only the buttons you have switched on. It updates
+  when you switch buttons on or off.
+
+## 0.90.0 - 2026-10-26 (pre-release, tested in retail)
 
 ### Added
 - Popouts open in any direction. On Automatic (the default) each button works it out from
