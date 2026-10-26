@@ -365,7 +365,7 @@ SlashCmdList["AUTOMACROS"] = function(msg)
                 e.custom and " - custom" or ""))
         end
         Print("/amac add <name>, /amac remove <name>, /amac custom <name> <items|spells> <id,id,...>")
-        Print("/amac options, /amac assign <item> <name>, /amac unassign <item>, /amac learned, /amac status")
+        Print("/amac options, /amac assign <item> <name>, /amac unassign <item>, /amac learned, /amac status, /amac test")
         return
     elseif msg:match("^%s*add%s+") or msg:match("^%s*remove%s+") then
         local verb, key = msg:match("^%s*(%a+)%s+(%S+)")
@@ -447,6 +447,15 @@ SlashCmdList["AUTOMACROS"] = function(msg)
             RebuildLearned()
             Print(ItemRef(id) .. " [" .. id .. "] now counts as " .. e.title .. (Enabled(e) and "" or (" (the button is off: /amac add " .. e.key .. ")")))
         end
+    elseif msg:match("^%s*test") then
+        -- /amac test [first] [last] | /amac test stop  (see RulesTest)
+        if msg:find("stop", 1, true) then
+            if testRun then testRun.stop = true else Print("no rules test is running") end
+        else
+            local first, last = msg:match("(%d+)%D+(%d+)")
+            RulesTest(tonumber(first), tonumber(last))
+        end
+        return
     elseif msg:match("^%s*learned") then
         local learned = DB().learned
         local ids = {}

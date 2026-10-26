@@ -278,3 +278,121 @@ function LearnNew(have, loud)
     if changed then RebuildLearned() end
     return waiting
 end
+
+-- ---------------------------------------------------------------------------
+-- /amac test [first] [last]: runs the learning rules over every item ID in a
+-- range (default 1-25000, all of vanilla) using this client's own item data,
+-- to find items the rules put on the wrong button or miss. Nothing is learned
+-- or changed; the result goes to db.test (saved on /reload or logout):
+--   build, interface, first, last, counts[set] = how many
+--   items[id]   = "sets | class.sub | name | Use: ..."   sorted onto a button
+--   unsorted[id] = the same with "-"   a consumable or misc item with a "Use:"
+--                                     line that fits no button (possible misses)
+--   nodata      = IDs the game gave no data for
+-- Steps, a few items at a time so the game and server keep up: find the IDs
+-- that exist in classes worth a look (no server needed), ask the server for
+-- their data, sort them; items still without data are tried again, 6 rounds.
+-- ---------------------------------------------------------------------------
+TEST_STEP = 20      -- items asked for / sorted per tick
+TEST_TICK = 0.25    -- seconds between ticks
+
+-- "sets | class.sub | name | Use: ... | well fed ..." for the saved result
+function TestLine(id, sets)
+    local class, sub = ItemInstant(id)
+    local lines = TooltipLines(id) or {}
+    local parts = { #sets > 0 and table.concat(sets, "+") or "-", tostring(class) .. "." .. tostring(sub), lines[1] or "?" }
+    local use = ITEM_SPELL_TRIGGER_ONUSE or "Use:"
+    for _, text in ipairs(lines) do
+        if text:find(use, 1, true) or text:lower():find("well fed", 1, true) then parts[#parts + 1] = text end
+    end
+    return table.concat(parts, " | ")
+end
+
+function RulesTest(first, last)
+    if testRun then Print("the rules test is already running (/amac test stop)") return end
+    first, last = first or 1, last or 25000
+    local version, build, _, iface = GetBuildInfo()
+    local res = { build = tostring(version) .. " " .. tostring(build), interface = iface, first = first, last = last,
+        counts = {}, items = {}, unsorted = {}, nodata = {} }
+    local run = { res = res, next = first, found = {}, asked = 0, sorting = 1, retry = {}, round = 1 }
+    testRun = run
+    local request = (C_Item and C_Item.RequestLoadItemDataByID) or GetItemInfo
+    Print(string.format("rules test: items %d-%d on %s. Stay logged in; it takes a few minutes (/amac test stop)",
+        first, last, res.build))
+    local function finish(note)
+        testRun = nil
+        for _, id in ipairs(run.retry) do res.nodata[#res.nodata + 1] = id end
+        DB().test = res
+        local sorted, unsorted = 0, 0
+        for _ in pairs(res.items) do sorted = sorted + 1 end
+        for _ in pairs(res.unsorted) do unsorted = unsorted + 1 end
+        Print(string.format("rules test %s: %d items looked at, %d sorted onto buttons, %d with a Use: line on none,"
+            .. " %d without data. /reload to save it to disk.", note, #run.found, sorted, unsorted, #res.nodata))
+    end
+    local function step()
+        if run.stop then return finish("stopped") end
+        -- 1. which IDs exist in classes worth a look (the client knows without the server)
+        if run.next <= last then
+            for _ = 1, 1000 do
+                local id = run.next
+                if id > last then break end
+                run.next = id + 1
+                local class = ItemInstant(id)
+                if class ~= nil and LOOKED_AT[class] then run.found[#run.found + 1] = id end
+            end
+            if run.next > last then
+                Print(string.format("rules test: %d items to look at, asking the server for them...", #run.found))
+            end
+            return TEST_TICK
+        end
+        -- 2. ask the server for their data, a few at a time
+        if run.asked < #run.found then
+            for _ = 1, TEST_STEP do
+                run.asked = run.asked + 1
+                local id = run.found[run.asked]
+                if not id then break end
+                pcall(request, id)
+            end
+            return TEST_TICK
+        end
+        -- 3. sort them; those without data yet go round again
+        local list = run.round == 1 and run.found or run.list
+        for _ = 1, TEST_STEP do
+            local id = list[run.sorting]
+            if not id then break end
+            run.sorting = run.sorting + 1
+            local ok, sets = pcall(Classify, id)
+            if not ok then
+                sets = {}   -- (a rule failed on this item: kept as unsorted, with its text)
+            end
+            if sets == nil then
+                run.retry[#run.retry + 1] = id
+            elseif #sets > 0 then
+                res.items[id] = TestLine(id, sets)
+                for _, s in ipairs(sets) do res.counts[s] = (res.counts[s] or 0) + 1 end
+            else
+                local class = ItemInstant(id)
+                if class == 0 or class == 15 then
+                    local line = TestLine(id, sets)
+                    if line:find(ITEM_SPELL_TRIGGER_ONUSE or "Use:", 1, true) then res.unsorted[id] = line end
+                end
+            end
+        end
+        if list[run.sorting] then return TEST_TICK end
+        if #run.retry == 0 or run.round >= 6 then return finish("done") end
+        -- a round over the items that had no data yet, after giving the server a moment
+        run.list, run.retry, run.sorting, run.round = run.retry, {}, 1, run.round + 1
+        for _, id in ipairs(run.list) do pcall(request, id) end
+        return 3
+    end
+    local function tick()
+        local ok, wait = pcall(step)
+        if not ok then
+            testRun = nil
+            Fail("rules test", wait)
+        elseif wait and testRun == run then
+            C_Timer.After(wait, tick)
+        end
+    end
+    tick()
+end

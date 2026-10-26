@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.102.0.**
+- **Current version: 0.103.0.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -83,6 +83,21 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.103.0 — in-game rules test; Classic Era set up
+- Lewis installed **Classic Era** (1.15.9, interface 11509) and will mostly play Forever, so
+  rules are checked on Classic first. `_classic_era_\Interface\AddOns\AutoMacros` is now a
+  **junction to this project folder** (created 2026-10-26; the game hadn't made AddOns yet),
+  like retail's. Its saved data: `_classic_era_\WTF\Account\<acct>\SavedVariables\AutoMacros.lua`.
+  `.build.info`: Forever 1.60.1.70532 (16001), retail 12.1.5.70575, Classic Era 1.15.9.70576.
+- Instead of scraping Wowhead (category pages 403 to scripts; lists not needed at runtime):
+  `/amac test [first] [last]` (Learning.lua, `RulesTest`, state `testRun`): finds IDs in the
+  range whose class is in LOOKED_AT (ItemInstant, no server), requests their data
+  (C_Item.RequestLoadItemDataByID or GetItemInfo, TEST_STEP 20 per TEST_TICK 0.25 s), runs
+  Classify, no-data items retried up to 6 rounds (3 s apart). Saves `db.test`: build,
+  interface, first, last, counts[set], items[id] = "sets | class.sub | name | Use/well fed
+  lines" (`TestLine`), unsorted[id] (class 0/15 with a Use: line, no button), nodata. Learns
+  nothing. Next: Lewis runs it on Classic Era, /reload, then read the file and fix rules.
 
 ## 0.102.0 — split into files (no behaviour change)
 - Lewis asked whether to split the Lua (efficiency: none; reasons: the 200-local limit at

@@ -4,6 +4,14 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.103.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Added
+- `/amac test`: checks the item sorting rules against every item in the game (all of vanilla
+  by default, or `/amac test <first ID> <last ID>`), using your client's own item data. It
+  changes nothing; the result is saved for checking after a `/reload`. `/amac test stop`
+  stops it.
+
 ## 0.102.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Changed
