@@ -74,6 +74,8 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   Everything (flyout, tabs, highlight, empty tooltip, label hiding) goes through it.
 - `/amac debug` is the tool for this: per action button kind/id/name/"ours", per category its
   remembered slot and "on a bar Nx".
+- **Confirmed in retail** (Lewis's /amac debug after the fix): every bar button matches its
+  own category, each "on a bar 1x".
 
 ## 0.89.2 — macro slots move
 - 0.89.1 confirmed in retail: 1711 -> scroll_stamina, 27499 -> scroll_intellect,

@@ -4,7 +4,7 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
-## 0.89.3 - 2026-10-26 (pre-release)
+## 0.89.3 - 2026-10-26 (pre-release, tested in retail)
 
 ### Fixed
 - A button could still open another button's flyout (hovering Bandage showed your water), get
