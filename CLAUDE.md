@@ -23,13 +23,16 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - **GitHub Releases** are only for builds worth downloading: tested in game = normal release;
   not yet tested = `--prerelease`. Every iteration is still committed and pushed.
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
-  The top-level `AutoMacros.lua` / `AutoMacros.toc` are always the current version.
-- **Current version: 0.101.0.**
-- **Copy the current files into `previous/<version>/` BEFORE the first edit of a new iteration**
-  (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version in the .toc and anywhere else it appears.
+  The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
+  (up to 0.101.0 it was one `AutoMacros.lua`).
+- **Current version: 0.102.0.**
+- **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
+  `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
+  to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
   `releases/AutoMacros-<version>.zip` containing an `AutoMacros/` folder with only the
-  addon files (`AutoMacros.toc`, `AutoMacros.lua`) — no CLAUDE.md, `previous/`, or `.git`.
+  addon files (`AutoMacros.toc` and the `.lua` files it lists) — no CLAUDE.md, `tools/`,
+  `previous/`, or `.git`.
 - **GitHub:** public repo https://github.com/goldenpipes/AutoMacros, branch `master`.
   git = GitHub Desktop's `%LOCALAPPDATA%\GitHubDesktop\app-*\resources\app\git\cmd\git.exe`
   (not on PATH; resolve the wildcard, the folder changes when Desktop updates). Push auth is
@@ -42,11 +45,29 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   produced and **merge his edits** — never overwrite them.
 
 ## Before handing over any build — always
-- Run `python -I tools\luacheck.py AutoMacros.lua`. It checks block/bracket structure and the
-  number of **top-level locals**: WoW's Lua 5.1 refuses a file with more than 200, and then
-  NOTHING loads (no slash commands, no macros, no EllesmereUI page). 0.30.0 broke this way
-  (205). New top-level helpers belong in a table (the options code uses `UI.*`), not new locals.
+- Run `python -I tools\luacheck.py AutoMacros.toc`. For every file the .toc lists it checks
+  block/bracket structure, the shared-table header, and the number of **top-level locals**:
+  WoW's Lua 5.1 refuses a file with more than 200, and then NOTHING loads (0.30.0 broke this
+  way). Since the split each file has only its header's 2.
 - There is no Lua interpreter here; the checker is the only pre-flight test.
+
+## Code layout (since 0.102.0)
+- Files, in .toc (load) order: Core (lists, saved data, style, colours, CATALOG, on/off,
+  Print/Note/Fail), Macros (bag scan, choosing, macro text, Find/Apply/DeleteManaged), Art
+  (BLIZZ_ART, button art, StyleGlow, StyleArrow, popout bar art), Bars (POPOUT direction,
+  finding action buttons, highlight, empty tooltip), Learning (Classify, LearnNew), Update
+  (AutoEnable, UpdateCore, Update), Popout (the popout, indicators, labels), Widgets, Options
+  (UI: Buttons page, availability, recipes, previews), OptionsPages (PAGES, BuildPage, the
+  AddOns panel), EllesmereUI, Events (Schedule, bar watcher, migrations, Init, events, /amac).
+- **Every file starts with** `local ADDON, ns = ...` / `setmetatable(ns, { __index = _G })` /
+  `setfenv(1, ns)`: the addon's table is each file's environment. A name assigned at a
+  file's top level (`function Update()`, `MACROS = {}`) is shared with all files; anything
+  not ours falls through to _G. Use `local` only for what one file/function needs.
+  **Real globals must be written as `_G.X`** (AutoMacrosDB, SLASH_AUTOMACROS1/2); a plain
+  `X = ...` lands in the addon's table.
+- Names resolve when code runs, so a function may use names another file defines later;
+  only code that runs while the files load needs things from earlier files (order matters
+  for e.g. CATALOG using TRAVEL_SPELLS).
 
 ## Next up (left off 2026-10-26)
 - 0.88.0 built and checked, not tested in game. Lewis decided to **wait for Forever's release**
@@ -62,6 +83,15 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.102.0 — split into files (no behaviour change)
+- Lewis asked whether to split the Lua (efficiency: none; reasons: the 200-local limit at
+  191, and readability). Done mechanically with a one-off script: top-level `local`s
+  dropped (190 names), forward declarations removed, AutoMacrosDB/SLASH_ written via _G,
+  cut at section boundaries in the original order. Checked: the code lines of the 12 files
+  equal the old file's line for line (4171), apart from those changes; the old file's only
+  real global writes were exactly those three. `tools/luacheck.py` now takes the .toc.
+  **Not run in game yet** (setfenv on the chunk is standard Lua 5.1, used by other addons).
 
 ## 0.101.0 — chat toggles
 - Lewis: option in General to show/hide chat messages; he chose two separate toggles.

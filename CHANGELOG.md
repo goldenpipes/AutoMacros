@@ -4,6 +4,13 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.102.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Changed
+- The addon's code is split into several files instead of one big one. Nothing changes in
+  game. If you install by hand, copy the whole AutoMacros folder (and delete the old
+  AutoMacros.lua if it is still there; the new files no longer use it).
+
 ## 0.101.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Added
