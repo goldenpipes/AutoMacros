@@ -24,7 +24,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   not yet tested = `--prerelease`. Every iteration is still committed and pushed.
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.lua` / `AutoMacros.toc` are always the current version.
-- **Current version: 0.88.2.**
+- **Current version: 0.89.0.**
 - **Copy the current files into `previous/<version>/` BEFORE the first edit of a new iteration**
   (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version in the .toc and anywhere else it appears.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
@@ -62,6 +62,23 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.89.0 — on/off per character, "in bags" indicator
+- Lewis: on/off per character. `OnOff()` (top-level, like Picks/MacroSlots) =
+  `db.enabledBy[CharKey()]`. Migration: old account-wide `db.enabled` copied to every char
+  known from `idx`/`picks` (+ current), then `db.enabled = nil`. Enabled, AutoEnable,
+  UI.SetEnabled use OnOff.
+- General-tab (shared) macros: the toDelete loop skips DeleteManaged while another character's
+  enabledBy has the key on (prints that). Character-tab macros and removed custom categories
+  delete as before. AutoEnable's "macro already made" switch-on now only for character-scope
+  macros (a new char no longer inherits every shared button).
+- Lewis: show on the options page which off buttons you carry items for. `Stocked(e, have)`
+  (count; AutoEnable uses it too) + `UI.CouldUse(e)` (0 when on) using `report.have` (last
+  scan, set in UpdateCore). Icon strip: green NumberFontNormal count bottom-right
+  (SetIgnoreParentAlpha, the icon is at 0.5 when off) + tooltip line; checkbox labels (Blizzard
+  path) "(n in bags)" in `UI.HAVE_COLOR`, refreshed. EUI's TripleRow labels are static: no
+  count there. `report.afterUpdate` (set next to StyleOptions) refreshes visible pages after
+  every Update. Top-level locals 190/200.
 
 ## 0.88.2
 - 0.88.1 confirmed in retail (Lewis, new character, bought food/water): Hearthstone -> travel,

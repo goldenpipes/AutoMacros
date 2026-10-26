@@ -4,6 +4,21 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.89.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Added
+- The Buttons settings page shows which switched-off buttons you could use: a green number on
+  the icon and "(3 in bags)" next to the checkbox when you carry matching items. It updates as
+  your bags change.
+
+### Changed
+- Which buttons are on or off is now saved per character. Your current choices are copied to
+  each of your characters once, then each can be changed on its own.
+- Turning off a button whose macro is shared by all characters (everything except Healthstone,
+  Comprehend and Portals) no longer deletes the macro while another character still uses it.
+- A new character only gets buttons switched on for what it carries, not for macros your other
+  characters made.
+
 ## 0.88.2 - 2026-10-26 (pre-release)
 
 ### Fixed

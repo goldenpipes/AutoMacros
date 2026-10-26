@@ -1,4 +1,4 @@
--- AutoMacros 0.88.2 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.89.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one file for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -93,6 +93,32 @@ local function MacroSlots()
     return db.idx[key]
 end
 
+-- Which buttons are on, per character (button key -> true / false; nil = not
+-- set yet, see Enabled). Before 0.89.0 it was one list for the whole account
+-- (db.enabled): the first time this runs it is copied to every character the
+-- addon knows (from idx and picks), then dropped.
+local function OnOff()
+    local db = DB()
+    if type(db.enabledBy) ~= "table" then db.enabledBy = {} end
+    if type(db.enabled) == "table" then
+        local chars = { [CharKey()] = true }
+        for _, t in ipairs({ db.idx, db.picks }) do
+            if type(t) == "table" then for k in pairs(t) do chars[k] = true end end
+        end
+        for k in pairs(chars) do
+            if type(db.enabledBy[k]) ~= "table" then
+                local copy = {}
+                for key, v in pairs(db.enabled) do copy[key] = v end
+                db.enabledBy[k] = copy
+            end
+        end
+        db.enabled = nil
+    end
+    local key = CharKey()
+    if type(db.enabledBy[key]) ~= "table" then db.enabledBy[key] = {} end
+    return db.enabledBy[key]
+end
+
 -- ---------------------------------------------------------------------------
 -- Saved data. AutoMacrosDB is the saved-variables table. The game fills it in
 -- after this file has run, so it is always read through DB() and never kept in
@@ -101,7 +127,8 @@ end
 --   sessions          how many times this data has been loaded (/amac status)
 --   style             look and feel, shared by all characters (only changed values)
 --   idx / picks       macro slot and flyout choice, per character
---   enabled / custom  which categories are on, and your own categories
+--   enabledBy         which categories are on, per character (was enabled, account-wide)
+--   custom            your own categories
 --   learned           items sorted into categories, by the addon or by hand
 --   ignored           consumables checked and found to belong nowhere (see LearnNew)
 --   glow, noFlyout, stockTooltip, showNames   on/off options
@@ -452,12 +479,12 @@ local MACROS = {}            -- the categories in use for this character (rebuil
 local ALL = {}               -- every category, built-in and custom, for /amac list
 local EMPTY_MESSAGE = {}     -- macro name when empty -> tooltip message
 
--- On or off as you set it. Untouched, your own categories and the mage scroll
--- button are on; item buttons stay off until you first carry their items
--- (AutoEnable then switches them on for good).
+-- On or off as you set it on this character. Untouched, your own categories
+-- and the mage scroll button are on; item buttons stay off until you first
+-- carry their items (AutoEnable then switches them on for good).
 local function Enabled(e)
-    local on = DB().enabled
-    if on and on[e.key] ~= nil then return on[e.key] end
+    local on = OnOff()
+    if on[e.key] ~= nil then return on[e.key] end
     if e.custom or e.special == "scroll" then return e.default == true end
     return false
 end
@@ -2037,29 +2064,30 @@ end
 
 local pending, timerSet, glowTimerSet = false, false, false
 
--- Switches on, for good, every item button you have not set yourself once you
--- carry something for it, and any whose macro an earlier version already made
--- (so nobody loses a button from their bars). Returns true when one changed.
+-- How many different items you carry for a button (travel: also the teleport
+-- spells you know); 0 = none.
+local function Stocked(e, have)
+    if e.special == "healthstone" then return BestHealthstone(have) and 1 or 0 end
+    if e.kind == "travel" then return #TravelOptions(e, have) end
+    if e.set then return #Candidates(have, e.set) end
+    return 0
+end
+
+-- Switches on, for good, every item button this character has not set once
+-- it carries something for it, and any of its own (character tab) macros an
+-- earlier version already made (so nobody loses a button from their bars).
+-- Returns true when one changed.
 local function AutoEnable(have)
-    local db = DB()
+    local on = OnOff()
     local _, class = UnitClass("player")
     local changed = false
     for _, e in ipairs(ALL) do
-        local saved = type(db.enabled) == "table" and db.enabled[e.key]
-        if saved == nil and not e.custom and e.special ~= "scroll" and e.kind ~= "spells"
+        if on[e.key] == nil and not e.custom and e.special ~= "scroll" and e.kind ~= "spells"
             and (not e.class or e.class == class) then
-            local stocked
-            if e.special == "healthstone" then
-                stocked = BestHealthstone(have) ~= nil or class == "WARLOCK"
-            elseif e.kind == "travel" then
-                stocked = #TravelOptions(e, have) > 0
-            elseif e.set then
-                stocked = #Candidates(have, e.set) > 0
-            end
-            local made = FindMacro(e, true) ~= nil
+            local stocked = Stocked(e, have) > 0 or (e.special == "healthstone" and class == "WARLOCK")
+            local made = e.scope == "character" and FindMacro(e, true) ~= nil
             if stocked or made then
-                db.enabled = db.enabled or {}
-                db.enabled[e.key] = true
+                on[e.key] = true
                 changed = true
                 if stocked and not made then Print(e.title .. ": turned on (you are carrying some)") end
             end
@@ -2078,6 +2106,7 @@ local function UpdateCore()
     end
     lastScrolls = scrolls
     lastLocs = locs or {}
+    report.have = have   -- for the settings page (UI.CouldUse)
     RebuildLearned()
     local okLearn, errLearn = pcall(LearnNew, have)
     if not okLearn then Fail("learning", errLearn) end
@@ -2091,8 +2120,19 @@ local function UpdateCore()
     if not inCombat then
         for key, e in pairs(toDelete) do
             toDelete[key] = nil
-            -- skipped if it was switched back on in the meantime
-            if not Enabled(e) or e.removed then DeleteManaged(e) end
+            -- skipped if it was switched back on in the meantime. A shared
+            -- (general tab) macro stays while another character has it on.
+            local elsewhere = false
+            if not e.removed and e.scope ~= "character" then
+                for char, t in pairs(DB().enabledBy or {}) do
+                    if char ~= CharKey() and type(t) == "table" and t[e.key] then elsewhere = true end
+                end
+            end
+            if elsewhere and not Enabled(e) then
+                Print(e.title .. ": off on this character (its macro stays: another character uses it)")
+            elseif not Enabled(e) or e.removed then
+                DeleteManaged(e)
+            end
         end
     end
     local emptyState = {}
@@ -2154,6 +2194,7 @@ end
 local function Update()
     local ok, err = pcall(UpdateCore)
     if not ok then Fail("update", err) end
+    if report.afterUpdate then pcall(report.afterUpdate) end   -- the settings page, if open
     -- items still waiting for their data: look again in a second
     if report.learnWaiting and not report.learnRetry and C_Timer and C_Timer.After then
         report.learnRetry = true
@@ -3026,9 +3067,7 @@ local RefreshHeaders, RefreshOptions   -- defined below
 
 -- Turns a button on or off, the same as /amac add and /amac remove.
 function UI.SetEnabled(e, on)
-    local db = DB()
-    db.enabled = db.enabled or {}
-    db.enabled[e.key] = on and true or false
+    OnOff()[e.key] = on and true or false
     if not on then
         toDelete[e.key] = e   -- its macro goes on the next update
         if InCombatLockdown() then Print(e.title .. ": macro will be deleted when combat ends") end
@@ -3037,6 +3076,16 @@ function UI.SetEnabled(e, on)
     RefreshHeaders()
     RefreshOptions()
 end
+
+-- How many different items you carry for a button that is off (0 when it is
+-- on or you carry none): the settings show it, so you know it could be used.
+function UI.CouldUse(e)
+    if Enabled(e) or not report.have then return 0 end
+    local ok, n = pcall(Stocked, e, report.have)
+    return ok and n or 0
+end
+
+UI.HAVE_COLOR = "|cff40ff40"   -- the "in bags" note
 
 -- Puts a button's macro on the cursor, to drop on any action bar (Blizzard's,
 -- EllesmereUI's, ...). A button that is off is switched on first, which makes
@@ -3122,6 +3171,10 @@ UI.HEADERS.buttons = function(f, width)
                 GameTooltip:SetOwner(self, "ANCHOR_TOP")
                 GameTooltip:AddLine(self.entry.title)
                 GameTooltip:AddLine(Enabled(self.entry) and "On - click to turn off" or "Off - click to turn on", 1, 0.82, 0)
+                local n = UI.CouldUse(self.entry)
+                if n > 0 then
+                    GameTooltip:AddLine(string.format("You carry %d matching item%s", n, n == 1 and "" or "s"), 0.25, 1, 0.25)
+                end
                 GameTooltip:AddLine("Drag onto an action bar to place it", 0.7, 0.7, 0.7)
                 GameTooltip:Show()
             end)
@@ -3138,13 +3191,24 @@ UI.HEADERS.buttons = function(f, width)
         local on = Enabled(e)
         pcall(b.icon.SetDesaturated, b.icon, not on)
         b:SetAlpha(on and 1 or 0.5)
+        -- off, but you carry items for it: a green count in the corner
+        local n = UI.CouldUse(e)
+        if not b.have then
+            b.have = b:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+            b.have:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -2, 2)
+            b.have:SetTextColor(0.25, 1, 0.25)
+            -- the button is at half alpha when off: keep the count bright
+            if b.have.SetIgnoreParentAlpha then pcall(b.have.SetIgnoreParentAlpha, b.have, true) end
+        end
+        b.have:SetText(n > 0 and n or "")
         b:Show()
     end
     for i = #list + 1, #f.icons do f.icons[i]:Hide() end
-    f.hint = f.hint or UI.SmallText(f, "Click an icon to turn its button on or off (off deletes its macro). Drag one onto an action bar.")
+    f.hint = f.hint or UI.SmallText(f, "Click an icon to turn its button on or off for this character. A green number: you carry that many matching items. Drag one onto an action bar.")
     f.hint:ClearAllPoints()
+    f.hint:SetWidth(width - 20)
     f.hint:SetPoint("TOP", f, "TOP", 0, -16 - rows * (size + gap) - 4)
-    return 16 + rows * (size + gap) + 30
+    return 16 + rows * (size + gap) + 4 + math.max(26, (f.hint:GetStringHeight() or 12) + 8)
 end
 
 -- Highlight: an empty button with the highlight next to one in stock.
@@ -3663,7 +3727,15 @@ local function BuildPage(parent, group, x0, y0, native)
                             local x = lx + j * 170
                             refreshers[#refreshers + 1] = MakeToggle(parent, x, y - h,
                                 function() return Enabled(e) end, function(v) UI.SetEnabled(e, v) end).refresh
-                            MakeLabel(parent, e.title .. (e.custom and " (custom)" or ""), x + 26, y - h - 2, 138)
+                            local fs = MakeLabel(parent, "", x + 26, y - h - 2, 138)
+                            -- "(3 in bags)" while it is off and you carry matching items
+                            local function label()
+                                local n = UI.CouldUse(e)
+                                fs:SetText(Loc(e.title .. (e.custom and " (custom)" or ""))
+                                    .. (n > 0 and (" " .. UI.HAVE_COLOR .. "(" .. n .. " in bags)|r") or ""))
+                            end
+                            label()
+                            refreshers[#refreshers + 1] = label
                         end
                     end
                     th = ROW
@@ -3846,6 +3918,13 @@ end
 StyleOptions = function()
     RefreshHeaders()
     UI.RefreshPanels()
+end
+
+-- after every update (bags changed, items sorted): the "in bags" counts on
+-- whichever of our pages is open (both only touch what is on screen)
+report.afterUpdate = function()
+    UI.RefreshPanels()
+    RefreshHeaders()
 end
 
 -- ---- EllesmereUI: a page in its settings, and its look for the popup ----
@@ -4142,7 +4221,7 @@ SlashCmdList["AUTOMACROS"] = function(msg)
             Print("no category called " .. key .. " - /amac list shows them")
             return
         end
-        Print(e.title .. (verb == "add" and ": on" or ": off - its macro is deleted"))
+        Print(e.title .. (verb == "add" and ": on for this character" or ": off for this character"))
         UI.SetEnabled(e, verb == "add")   -- the same as the settings checkbox
         if verb == "add" and e.class and select(2, UnitClass("player")) ~= e.class then
             Print(e.title .. " is a " .. e.class:lower() .. " button, so it will not appear on this character")
