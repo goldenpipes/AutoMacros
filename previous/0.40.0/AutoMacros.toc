@@ -1,0 +1,8 @@
+## Interface: 16001, 120100, 120105
+## Title: AutoMacros
+## Notes: Keeps draggable macros (Healthstone, potions, food, water) pointed at the best item in your bags. Type /automacros for status.
+## Version: 0.40.0
+## SavedVariables: AutoMacrosDB
+## OptionalDeps: EllesmereUI, LibSharedMedia-3.0
+
+AutoMacros.lua
