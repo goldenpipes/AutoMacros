@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.104.0.**
+- **Current version: 0.104.1.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -83,6 +83,15 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.104.1 — soft glow
+- Lewis (Classic Era screenshot, Highlight page, Soft glow, thickness 5): a hard red box inset
+  in the button. The Blizzard-look soft glow cropped UI-ActionButton-Border less for more
+  thickness (0.80.0), which only shrinks its ring towards the middle. Now (StyleGlow, Art.lua):
+  square buttons (`not BLIZZ_ART.Rounded()`, i.e. Classic and EUI) use the FadeEdge gradients
+  from the button edge (depth t x 3 px; inset only with the EUI look); rounded (retail) draw
+  `t` copies of the ring at a fixed crop 0.21 (`g.softs`), copy i inset (i-1) x 2 px. The
+  retail look is **unverified**.
 
 ## 0.104.0 — Classic Era: rules by text, not subclass
 - Lewis (character Carkke-Mankrik, Classic Era): food on Restore Health. Its saved data:

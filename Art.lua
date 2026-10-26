@@ -262,11 +262,11 @@ function StyleGlow(g, button)
     g:SetPoint("TOPLEFT", button, "TOPLEFT", inset, -inset)
     g:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
     for i = 1, 4 do g.edges[i]:Hide() end
-    if g.soft then g.soft:Hide() end
+    for _, s in ipairs(g.softs or {}) do s:Hide() end
     for _, cell in ipairs(g.cells or {}) do cell:Hide() end
-    if soft and look then
-        -- EllesmereUI's square buttons: fading in from the edges over the icon,
-        -- thickness x3 screen pixels deep
+    if soft and (look or not rounded) then
+        -- square buttons (EllesmereUI's, Classic's): fading in from the edges
+        -- over the icon, thickness x3 screen pixels deep
         local w = button:GetWidth()
         if type(w) ~= "number" or w <= 0 then w = 36 end
         local d = math.min(t * 3 * px, w * 0.45)
@@ -278,22 +278,30 @@ function StyleGlow(g, button)
         e[4]:SetPoint("TOPRIGHT", g, "TOPRIGHT", 0, 0); e[4]:SetPoint("BOTTOMRIGHT", g, "BOTTOMRIGHT", 0, 0); e[4]:SetWidth(d)
         for i, side in ipairs({ "top", "bottom", "left", "right" }) do FadeEdge(e[i], side, c) end
     elseif soft then
-        -- Blizzard's item-border glow over the button, tinted. Its ring sits on
-        -- the button's edge; showing more of the art around it (less cropped)
-        -- makes the glow reach further in, so thickness sets the crop. Drawn
-        -- added on, so opacity dims the color itself. Clipped to the button's
-        -- shape on retail.
-        if not g.soft then g.soft = g:CreateTexture(nil, "OVERLAY") end
-        local s = g.soft
-        s:SetTexture(BLIZZ_ART.GLOW)
-        pcall(s.SetBlendMode, s, "ADD")
-        local crop = math.max(0.02, 0.21 - (t - 1) * 0.035)
-        s:SetTexCoord(crop, 1 - crop, crop, 1 - crop)
-        s:ClearAllPoints()
-        s:SetAllPoints(g)
+        -- Retail's buttons (cut corners): Blizzard's item-border glow, tinted,
+        -- its ring on the button's edge (always cropped the same: cropping less
+        -- only shrank the ring away from the edge, 0.104.0). Each step of
+        -- thickness adds another copy 2 screen pixels further in, so the glow
+        -- reaches deeper in the button's own shape. Drawn added on, so opacity
+        -- dims the color itself.
+        g.softs = g.softs or {}
         local a = c[4] or 1
-        s:SetVertexColor(c[1] * a, c[2] * a, c[3] * a, 1)   -- (its ring is already rounded)
-        s:Show()
+        for i = 1, t do
+            local s = g.softs[i]
+            if not s then
+                s = g:CreateTexture(nil, "OVERLAY")
+                g.softs[i] = s
+            end
+            s:SetTexture(BLIZZ_ART.GLOW)
+            pcall(s.SetBlendMode, s, "ADD")
+            s:SetTexCoord(0.21, 0.79, 0.21, 0.79)
+            local ins = Snap(g, (i - 1) * 2 * px)
+            s:ClearAllPoints()
+            s:SetPoint("TOPLEFT", g, "TOPLEFT", ins, -ins)
+            s:SetPoint("BOTTOMRIGHT", g, "BOTTOMRIGHT", -ins, ins)
+            s:SetVertexColor(c[1] * a, c[2] * a, c[3] * a, 1)   -- (its ring is already rounded)
+            s:Show()
+        end
     elseif rounded then
         -- On the button's frame ring. In the frame art (88 px wide in
         -- uiactionbar2x, drawn 46 wide on a 45 wide button) the grey ring starts
