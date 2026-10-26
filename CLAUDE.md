@@ -24,6 +24,13 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - When Lewis asks for a zip (for uploading to uiforever.com), build
   `releases/AutoMacros-<version>.zip` containing an `AutoMacros/` folder with only the
   addon files (`AutoMacros.toc`, `AutoMacros.lua`) — no CLAUDE.md, `previous/`, or `.git`.
+- **GitHub:** public repo https://github.com/goldenpipes/AutoMacros, branch `master`.
+  git = GitHub Desktop's `%LOCALAPPDATA%\GitHubDesktop\app-*\resources\app\git\cmd\git.exe`
+  (not on PATH; resolve the wildcard, the folder changes when Desktop updates). Push auth is
+  the GitHub CLI `C:\Program Files\GitHub CLI\gh.exe` (logged in as goldenpipes; set up as
+  git's credential helper for github.com in the global gitconfig). When a version is
+  committed: `git push origin master`; for a release, also build the zip and
+  `gh release create v<version> releases/AutoMacros-<version>.zip --title "AutoMacros <version>" --notes "<summary>"`.
 - Lewis edits the Lua himself. Before building a new version, diff against the last one you
   produced and **merge his edits** — never overwrite them.
 
