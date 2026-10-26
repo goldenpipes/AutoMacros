@@ -24,7 +24,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   not yet tested = `--prerelease`. Every iteration is still committed and pushed.
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.lua` / `AutoMacros.toc` are always the current version.
-- **Current version: 0.88.1.**
+- **Current version: 0.88.2.**
 - **Copy the current files into `previous/<version>/` BEFORE the first edit of a new iteration**
   (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version in the .toc and anywhere else it appears.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
@@ -62,6 +62,15 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.88.2
+- 0.88.1 confirmed in retail (Lewis, new character, bought food/water): Hearthstone -> travel,
+  vanilla drinks -> water, breads/cheese/kimchi -> food, flyouts updated by themselves; no
+  consumable left in `ignored` with a bare sig. Gumweed 82392 (novelty, "random effect")
+  correctly fits nothing.
+- Fix: Classify's well-fed branch returned no sig, so buff food was re-sorted every session.
+- Wowhead's retail XML (`https://www.wowhead.com/item=<id>&xml`) is handy for identifying an
+  item ID from SavedVariables (name, class/subclass, tooltip).
 
 ## 0.88.1 — half-loaded tooltips
 - First Midnight run of 0.88.0: Hearthstone (6948), Ice Cold Milk, Melon Juice, Sweet Nectar,

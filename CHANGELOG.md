@@ -4,7 +4,12 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
-## 0.88.1 - 2026-10-26 (pre-release, not yet tested in game)
+## 0.88.2 - 2026-10-26 (pre-release)
+
+### Fixed
+- Buff food was sorted again every session instead of being remembered.
+
+## 0.88.1 - 2026-10-26 (pre-release, tested in retail)
 
 ### Fixed
 - Some items (your Hearthstone, several drinks and breads) were checked before the game had

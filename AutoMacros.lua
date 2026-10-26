@@ -1,4 +1,4 @@
--- AutoMacros 0.88.1 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.88.2 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one file for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -1936,7 +1936,7 @@ local function Classify(id)
     if cure then return { "antivenom" }, sig end   -- "Use: Cures 1 poison effect ..."
     local sets = {}
     if sub == 5 then
-        if wellFed then return { "food_buff" } end
+        if wellFed then return { "food_buff" }, sig end
         if health then sets[#sets + 1] = "food" end
         if mana then sets[#sets + 1] = "water" end
     elseif sub == 1 and rage then
