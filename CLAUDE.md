@@ -695,6 +695,11 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Titles use readable names: "Health Potion", "Mana Potion"; labels are plural where Lewis set them.
 
 ## Roadmap / ideas
+- **Flyout direction** (Lewis, 2026-10-25): the popup always opens upward now (LayoutFlyout
+  stacks items above the button and its indicator). It needs to open up/down/left/right
+  depending on where the button is (e.g. a bar at the top of the screen or a vertical bar at
+  the side), probably automatic from the button's screen position, maybe with a setting. The
+  indicator, the bar-art dividers (vertical vs horizontal) and the settings demo must follow.
 - A config page for options and customization.
 - Possibly derive categories from client item class data instead of hardcoded lists.
 - Disease-removal items category (requested alongside bandages/anti-venom).
