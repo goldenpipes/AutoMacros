@@ -1,4 +1,4 @@
--- AutoMacros 0.88.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.88.1 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one file for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -107,7 +107,7 @@ end
 --   glow, noFlyout, stockTooltip, showNames   on/off options
 -- ---------------------------------------------------------------------------
 local SCHEMA = 2
-local CLASSIFIER = 3   -- raise when the learning rules change, so items are checked again
+local CLASSIFIER = 4   -- raise when the learning rules change, so items are checked again
 
 local STYLE_DEFAULTS = {
     glowColor = { 1, 0.15, 0.15, 1 }, glowThickness = 3, glowTexture = "solid",
@@ -1875,7 +1875,8 @@ local function HasWord(low, ...)
 end
 
 -- Returns a list of set names (empty: belongs nowhere), or nil when the game has
--- not delivered the item's data yet (it is tried again on the next update).
+-- not delivered the item's data yet, or not its "Use:" text (tried again a
+-- second later, see Update).
 -- The second result is the item's signature: a number made from everything the
 -- rules looked at (class, subclass, the "Use:" and "well fed" lines with their
 -- numbers left out, so cooldowns and scaling do not count). LearnNew compares
@@ -1893,9 +1894,10 @@ local function Classify(id)
     if not lines or #lines < 2 or lines[1] == RETRIEVING_ITEM_INFO then return nil end
     local use = ITEM_SPELL_TRIGGER_ONUSE or "Use:"
     local health, mana, rage, damage, weapon, travel, wellFed, cure = false, false, false, false, false, false, false, false
-    local stats = {}
+    local stats, hasUse = {}, false
     for _, text in ipairs(lines) do
         local low = text:lower()
+        if text:find(use, 1, true) then hasUse = true end
         if low:find("well fed", 1, true) or text:find(use, 1, true) then
             for i = 1, #low do
                 local c = low:byte(i)
@@ -1917,6 +1919,16 @@ local function Classify(id)
                     if text:find(name, 1, true) then stats[key] = true end
                 end
             end
+        end
+    end
+    if not hasUse then
+        -- The item has a use effect but its "Use:" text has not arrived yet (the
+        -- game loads the spell's text after the item): ask for it, try again later.
+        local getSpell = (C_Item and C_Item.GetItemSpell) or GetItemSpell
+        local ok, _, spellID = pcall(getSpell, id)
+        if ok and spellID then
+            if C_Spell and C_Spell.RequestLoadSpellData then pcall(C_Spell.RequestLoadSpellData, spellID) end
+            return nil
         end
     end
     if travel then return { "travel" }, sig end
@@ -1968,11 +1980,12 @@ local attempts = {}      -- item ID -> tries while the game had no data for it
 --   ignored[id] = "manual"      /amac unassign
 -- (Before 0.85.0 both kinds of ignored were a number; those count as automatic
 -- and are checked once more.)
+-- Returns true while items are left to look at (no data yet, or over budget).
 local function LearnNew(have)
     local db = DB()
-    local budget, changed = 40, false
+    local budget, changed, waiting = 40, false, false
     for id in pairs(have) do
-        if budget <= 0 then break end
+        if budget <= 0 then waiting = true break end
         local rec = type(db.learned) == "table" and db.learned[id] or nil
         local ign = type(db.ignored) == "table" and db.ignored[id] or nil
         local manual = (type(rec) == "table" and rec.how == "manual") or ign == "manual"
@@ -1988,7 +2001,7 @@ local function LearnNew(have)
                 local sets, sig = Classify(id)
                 if sets == nil then
                     attempts[id] = (attempts[id] or 0) + 1
-                    if attempts[id] > 20 then sessionDone[id] = true end
+                    if attempts[id] > 20 then sessionDone[id] = true else waiting = true end
                 else
                     sessionDone[id] = true
                     local old = type(rec) == "table" and rec or (type(ign) == "table" and ign) or nil
@@ -2019,6 +2032,7 @@ local function LearnNew(have)
         end
     end
     if changed then RebuildLearned() end
+    return waiting
 end
 
 local pending, timerSet, glowTimerSet = false, false, false
@@ -2067,6 +2081,7 @@ local function UpdateCore()
     RebuildLearned()
     local okLearn, errLearn = pcall(LearnNew, have)
     if not okLearn then Fail("learning", errLearn) end
+    report.learnWaiting = okLearn and errLearn or nil
     local okAuto, autoChanged = pcall(AutoEnable, have)
     if not okAuto then Fail("switching buttons on", autoChanged)
     elseif autoChanged then pcall(RebuildMacros) end
@@ -2139,6 +2154,11 @@ end
 local function Update()
     local ok, err = pcall(UpdateCore)
     if not ok then Fail("update", err) end
+    -- items still waiting for their data: look again in a second
+    if report.learnWaiting and not report.learnRetry and C_Timer and C_Timer.After then
+        report.learnRetry = true
+        C_Timer.After(1, function() report.learnRetry = nil; Update() end)
+    end
 end
 
 -- ---------------------------------------------------------------------------

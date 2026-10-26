@@ -24,7 +24,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   not yet tested = `--prerelease`. Every iteration is still committed and pushed.
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.lua` / `AutoMacros.toc` are always the current version.
-- **Current version: 0.88.0.**
+- **Current version: 0.88.1.**
 - **Copy the current files into `previous/<version>/` BEFORE the first edit of a new iteration**
   (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version in the .toc and anywhere else it appears.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
@@ -62,6 +62,19 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.88.1 — half-loaded tooltips
+- First Midnight run of 0.88.0: Hearthstone (6948), Ice Cold Milk, Melon Juice, Sweet Nectar,
+  Mulgore Spice Bread, Homemade Cherry Pie were saved in `ignored` with the bare sig
+  (class*1000+sub, e.g. 5 / 15000) = **no "Use:" line seen**. Every item that showed a Use line
+  was sorted right. Cause (inferred): retail delivers the item before its spell text, so the
+  scan tooltip had no Use line. Likely also behind many 0.85.0 retail audit misses.
+- Classify: no Use line but `GetItemSpell` (C_Item or global) gives a spellID -> return nil
+  (no data yet) after `C_Spell.RequestLoadSpellData`. LearnNew returns `waiting` (nil
+  results under 20 tries, or budget used up) -> `report.learnWaiting`; Update re-runs itself
+  1 s later while waiting (`report.learnRetry` guard). CLASSIFIER 4 redoes saved results.
+- Reading the bare-sig pattern in SavedVariables (`ignored[id].sig == class*1000+sub`) is a
+  quick way to spot items sorted without their Use text.
 
 ## 0.88.0 — every current client
 - Lewis wants Midnight (retail), MoP Classic, Classic Era/Hardcore/SoD and TBC Anniversary

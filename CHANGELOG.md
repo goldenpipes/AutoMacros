@@ -4,6 +4,13 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.88.1 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Fixed
+- Some items (your Hearthstone, several drinks and breads) were checked before the game had
+  loaded their "Use:" text and were wrongly remembered as fitting no button. The addon now
+  waits for that text and looks again a second later. Items affected are sorted again.
+
 ## 0.88.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Added
