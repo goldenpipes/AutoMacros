@@ -1,4 +1,4 @@
--- AutoMacros 0.89.2 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.89.3 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one file for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -2473,25 +2473,24 @@ local function SafeOpen(...)
     if not ok then Print("flyout error: " .. tostring(err)) end
 end
 
--- The macro on an action button, if it is one of ours. A macro with no
--- #showtooltip reports its own index; one whose #showtooltip resolves to an item
--- reports that item instead, so those are recognised by the macro's name, checked
--- against the macro we keep at the slot we remembered.
+-- The macro on an action button, if it is one of ours: found by the macro's
+-- name, checked against the macros we keep. The number GetActionInfo gives for
+-- a macro is not always its place in the macro list (retail gives another
+-- number, an item's when #showtooltip shows one), so that is only used when the
+-- client gives no name.
 MacroOnButton = function(b)
     local ok, slot = pcall(ButtonSlot, b)
     if not (ok and slot) then return nil end
     local kind, id = GetActionInfo(slot)
     if kind ~= "macro" then return nil end
-    local m = macroAt[id]
-    if m then return m end
     local text = GetActionText and GetActionText(slot)
     if type(text) == "string" and text ~= "" then
         for idx, mm in pairs(macroAt) do
-            local name = GetMacroInfo(idx)
-            if name == text then return mm end
+            if GetMacroInfo(idx) == text then return mm end
         end
+        return nil
     end
-    return nil
+    return macroAt[id]
 end
 
 local function OnButtonEnter(b)

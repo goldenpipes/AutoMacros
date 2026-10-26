@@ -24,7 +24,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   not yet tested = `--prerelease`. Every iteration is still committed and pushed.
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.lua` / `AutoMacros.toc` are always the current version.
-- **Current version: 0.89.2.**
+- **Current version: 0.89.3.**
 - **Copy the current files into `previous/<version>/` BEFORE the first edit of a new iteration**
   (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version in the .toc and anywhere else it appears.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
@@ -62,6 +62,18 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.89.3 — GetActionInfo's macro number is not the macro index
+- 0.89.2 did not fix Lewis's bug. `/amac debug` in retail showed the real cause: action slot 7
+  "holds macro 6 named Bandage", but Bandage is macro index 2 and Water is index 6. Retail's
+  GetActionInfo(slot) for a macro returns a number that is **not** the GetMacroInfo index
+  (his six: 6..11 in another order vs indexes 1..6 alphabetical). MacroOnButton looked it up
+  in macroAt (index -> category) first, so 6 hit Water.
+- Fix: MacroOnButton matches GetActionText(slot) (macro name; works with our label hiding)
+  against GetMacroInfo(idx) of our macros; macroAt[id] only when the client gives no name.
+  Everything (flyout, tabs, highlight, empty tooltip, label hiding) goes through it.
+- `/amac debug` is the tool for this: per action button kind/id/name/"ours", per category its
+  remembered slot and "on a bar Nx".
 
 ## 0.89.2 — macro slots move
 - 0.89.1 confirmed in retail: 1711 -> scroll_stamina, 27499 -> scroll_intellect,
