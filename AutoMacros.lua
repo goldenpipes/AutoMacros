@@ -1,11 +1,11 @@
--- AutoMacros 0.86.0 for WoW Forever (interface 16001; also loads in retail for testing)
+-- AutoMacros 0.87.0 for WoW Forever (interface 16001; also loads in retail for testing)
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
--- out of combat. Item lists come from AutoBar's camelot data, cut down to
--- vanilla items only (no TBC or later, no Season of Discovery).
+-- out of combat. There are no built-in item lists: items are sorted by what the
+-- game says about them (see "Learning new items") and the result is saved.
 
 local ADDON = ...
-local DATA = {}
+local DATA = {}   -- item lists of your own categories (/amac custom), set name -> { [id] = true }
 
 local function ToSet(list)
     local set = {}
@@ -13,92 +13,6 @@ local function ToSet(list)
     return set
 end
 
-DATA.food = ToSet({
-    117, 414, 422, 761, 961, 1113, 1114, 1119, 1165, 1321, 1326, 1487,
-    1707, 2070, 2287, 2679, 3770, 3771, 3927, 4418, 4536, 4537, 4538, 4539,
-    4540, 4541, 4542, 4544, 4599, 4601, 4602, 4604, 4605, 4606, 4607, 4608,
-    4656, 5057, 5066, 5349, 5478, 5525, 5526, 5845, 6299, 6458, 6807, 7097,
-    7228, 8075, 8076, 8543, 8932, 8948, 8950, 8952, 8953, 9681, 11109, 11415,
-    11444, 12238, 12763, 13546, 13755, 13893, 16166, 16167, 16168, 16169, 16170, 16171,
-    16766, 17119, 17344, 17406, 17407, 17408, 18255, 18632, 18633, 18635, 19223, 19224,
-    19225, 19304, 19305, 19306, 21030, 21031, 21033, 21552, 22324, 23160,
-})
-DATA.water = ToSet({
-    159, 1179, 1205, 1267, 1268, 1645, 1708, 2071, 2136, 2288, 3772, 3773,
-    4791, 5350, 8077, 8078, 8079, 8766, 9451, 17404, 18300, 19299, 19300, 23161,
-})
-DATA.hpot = ToSet({
-    118, 858, 929, 1710, 3928, 4596, 13446, 17348, 17349, 18839,
-})
-DATA.mpot = ToSet({
-    2455, 3087, 3385, 3827, 6149, 13443, 13444, 17351, 17352, 18253, 18841,
-})
-
-DATA.bandage = ToSet({
-    1251, 2581, 3530, 3531, 6450, 6451, 8544, 8545, 14529, 14530,
-})
-DATA.antivenom = ToSet({
-    2633, 3386, 6452, 6453, 9030, 12586, 13462, 19440,
-})
-DATA.scroll_agility = ToSet({
-    1477, 3012, 4425, 10309,
-})
-DATA.elixir_agility = ToSet({
-    2457, 3390, 8412, 8949, 9187, 13452,
-})
-DATA.scroll_intellect = ToSet({
-    955, 2290, 4419, 10308, 12458,
-})
-DATA.elixir_intellect = ToSet({
-    3383, 8423, 9179, 13447, 13511,
-})
-DATA.scroll_stamina = ToSet({
-    1180, 1711, 4422, 10307,
-})
-DATA.elixir_stamina = ToSet({
-    13453, 17048, 20709, 21114, 21151,
-})
-DATA.scroll_strength = ToSet({
-    954, 2289, 4426, 10310, 12451,
-})
-DATA.elixir_strength = ToSet({
-    2454, 3391, 6662, 8410, 9206, 13453,
-})
--- AutoBar: Misc.Explosives.Engineering, Misc.Explosives.Other, Muffin.Explosives
-DATA.explosives = ToSet({
-    4358, 4360, 4365, 4370, 4374, 4378, 4380, 4384, 4390, 4394, 4403, 6714,
-    10507, 10514, 10562, 10586, 15993, 16005, 16040, 18588, 18641, 4598, 11566,
-})
--- AutoBar: Muffin.Potion.Rage
-DATA.rage = ToSet({
-    5631, 5633, 13442,
-})
--- AutoBar: Muffin.Food.Health.Buff, Muffin.Food.Mana.Buff, Muffin.Food.Combo.Buff
-DATA.food_buff = ToSet({
-    724, 733, 787, 1017, 1082, 2680, 2681, 2682, 2683, 2684, 2685, 2687,
-    2888, 3220, 3662, 3663, 3664, 3665, 3666, 3726, 3727, 3728, 3729, 4457,
-    4592, 4593, 4594, 5095, 5472, 5474, 5476, 5477, 5479, 5480, 5527, 6038,
-    6290, 6316, 6887, 6888, 6890, 7806, 7807, 7808, 8364, 8957, 11584, 11950,
-    12209, 12210, 12212, 12213, 12214, 12215, 12216, 12218, 12224, 13810, 13851, 13927,
-    13928, 13929, 13930, 13931, 13932, 13933, 13934, 13935, 16971, 17197, 17198, 17222,
-    18045, 18254, 20074, 20452, 21023, 21072, 21217, 10841, 13813, 19318,
-})
--- AutoBar: Muffin.Flask
-DATA.flask = ToSet({
-    13510, 13511, 13512, 13513,
-})
--- AutoBar: Consumable.Weapon Buff (sharpening and weight stones, mana and wizard oils, misc)
-DATA.weapon_buff = ToSet({
-    2862, 2863, 2871, 7964, 12404, 18262, 23122,
-    3239, 3240, 3241, 7965, 12643,
-    20745, 20747, 20748, 22521, 20744, 20746, 20749, 20750, 22522,
-    3824, 3829, 23123,
-})
--- AutoBar: Misc.Hearth and Muffin.Misc.Hearth. Hearthstone, the engineering
--- teleporters (Everlook, Gadgetzan) and Atiesh; worn ones count too (see ScanBags).
-DATA.travel = ToSet({
-    6948, 18984, 18986, 22589, 22630, 22631, 22632,
-})
 local HEARTHSTONE = 6948
 -- Spells on the Hearth/Teleport button, for whichever class knows them: Astral
 -- Recall (Shaman), Teleport: Moonglade (Druid) and the mage city teleports.
@@ -171,8 +85,7 @@ end
 --   enabled / custom  which categories are on, and your own categories
 --   learned           items sorted into categories, by the addon or by hand
 --   ignored           consumables checked and found to belong nowhere (see LearnNew)
---   audit             what learning makes of the built-in lists (/amac audit)
---   glow, noFlyout, stockTooltip, showNames, learnOff   on/off options
+--   glow, noFlyout, stockTooltip, showNames   on/off options
 -- ---------------------------------------------------------------------------
 local SCHEMA = 2
 local CLASSIFIER = 3   -- raise when the learning rules change, so items are checked again
@@ -427,8 +340,8 @@ local function PlaceEdges(e, frame, t)
     e[4]:SetWidth(t)
 end
 
--- Items sorted into categories. Built-in lists come from DATA; the rest from
--- db.learned (see "Learning new items" below).
+-- Items sorted into categories: db.learned (see "Learning new items" below),
+-- plus DATA for your own categories.
 local learnedIdx = {}   -- set name -> { [itemID] = true }
 
 local function InSet(setName, id)
@@ -1889,7 +1802,7 @@ if GameTooltip then
 end
 
 -- ---------------------------------------------------------------------------
--- Learning new items. An item that is in none of the built-in lists is sorted
+-- Learning new items. Every item you carry is sorted
 -- by what the game says about it: its item class (language independent) and the
 -- "Use:" lines of its tooltip. The result is saved in db.learned, so each item
 -- is only examined once. Anything the rules get wrong can be corrected by hand
@@ -1911,12 +1824,6 @@ end
 -- Items of other classes are only checked for teleporting: misc items and
 -- armour (rings, cloaks, trinkets); anything else is skipped.
 -- ---------------------------------------------------------------------------
-local LEARNABLE = {
-    "food", "water", "hpot", "mpot", "bandage", "antivenom",
-    "scroll_agility", "scroll_intellect", "scroll_stamina", "scroll_strength",
-    "elixir_agility", "elixir_intellect", "elixir_stamina", "elixir_strength",
-    "explosives", "rage", "food_buff", "flask", "weapon_buff", "travel",
-}
 -- item classes worth a look: consumable, armour, trade goods, miscellaneous
 local LOOKED_AT = { [0] = true, [4] = true, [7] = true, [15] = true }
 local STAT_KEYS = { "strength", "agility", "stamina", "intellect" }   -- SPELL_STAT1..4_NAME
@@ -2022,13 +1929,6 @@ local function Classify(id)
     return sets, sig
 end
 
-local function InBuiltInList(id)
-    for _, s in ipairs(LEARNABLE) do
-        if DATA[s] and DATA[s][id] then return true end
-    end
-    return false
-end
-
 local function SetTitle(setName)
     for _, e in ipairs(ALL) do
         if e.set == setName then return e.title, e.key end
@@ -2051,14 +1951,13 @@ local attempts = {}      -- item ID -> tries while the game had no data for it
 -- and are checked once more.)
 local function LearnNew(have)
     local db = DB()
-    if db.learnOff then return end
     local budget, changed = 40, false
     for id in pairs(have) do
         if budget <= 0 then break end
         local rec = type(db.learned) == "table" and db.learned[id] or nil
         local ign = type(db.ignored) == "table" and db.ignored[id] or nil
         local manual = (type(rec) == "table" and rec.how == "manual") or ign == "manual"
-        if not sessionDone[id] and (manual or InBuiltInList(id)) then
+        if not sessionDone[id] and manual then
             sessionDone[id] = true
         end
         if not sessionDone[id] then
@@ -3465,9 +3364,6 @@ local PAGES = {
             { type = "color", label = "Tooltip text color", key = "tooltipColor" },
         } },
         { name = "Item learning", items = {
-            { type = "toggle", label = "Learn new items automatically",
-                get = function() return not DB().learnOff end,
-                set = function(v) DB().learnOff = (not v) or nil; if v then Update() end end },
             { type = "text", text = UI.LearnedSummary },
         } },
         { name = "Appearance", items = {
@@ -4128,6 +4024,7 @@ local function Init()
         end
         db.classifier = CLASSIFIER
     end
+    db.audit, db.learnOff = nil, nil   -- gone in 0.87.0 (no built-in lists; learning is always on)
     pcall(RegisterEUI)   -- in case EllesmereUI loaded after this addon
     local okPanel, errPanel = pcall(UI.RegisterBlizzPanel)   -- Esc > Options > AddOns
     if not okPanel then Fail("options page", errPanel) end
@@ -4171,105 +4068,6 @@ for _, event in ipairs({
     pcall(frame.RegisterEvent, frame, event)   -- skip events this client lacks
 end
 
--- /amac audit: sorts every item on the built-in lists by the learning rules
--- alone and compares, to see which lists learning makes unnecessary. A few
--- items at a time, as a tooltip needs the item's data (which can take a
--- moment); items without data are tried again, up to 6 rounds. The result is
--- saved in db.audit (client build; per list: right = count, miss = ids learning
--- would not put there, extra = other lists learning would add them to, nodata;
--- why[id] = what the rules saw for each missed item, see UI.AuditWhy).
--- "class.sub | name | Use: line(s)" for a missed item, so the rules can be
--- fixed from what the client really says about it.
-function UI.AuditWhy(id)
-    local class, sub = ItemInstant(id)
-    local parts = { tostring(class) .. "." .. tostring(sub) }
-    local lines = TooltipLines(id) or {}
-    parts[#parts + 1] = lines[1] or "?"
-    local use = ITEM_SPELL_TRIGGER_ONUSE or "Use:"
-    for _, text in ipairs(lines) do
-        if text:find(use, 1, true) or text:lower():find("well fed", 1, true) then parts[#parts + 1] = text end
-    end
-    return table.concat(parts, " | ")
-end
-
-function UI.Audit()
-    if UI.auditing then Print("the audit is already running") return end
-    local todo, owner = {}, {}
-    for _, s in ipairs(LEARNABLE) do
-        for id in pairs(DATA[s] or {}) do
-            if not owner[id] then owner[id] = {}; todo[#todo + 1] = id end
-            owner[id][s] = true
-        end
-    end
-    table.sort(todo)
-    local version, build, _, iface = GetBuildInfo()
-    local res = { build = tostring(version) .. " " .. tostring(build), interface = iface, items = #todo, sets = {}, why = {} }
-    for _, s in ipairs(LEARNABLE) do res.sets[s] = { right = 0, miss = {}, extra = {}, nodata = {} } end
-    local pos, round, retry = 1, 1, {}
-    UI.auditing = true
-    Print("audit: checking " .. #todo .. " listed items against the learning rules...")
-    local function finish()
-        UI.auditing = nil
-        for _, id in ipairs(todo) do
-            for s in pairs(owner[id]) do table.insert(res.sets[s].nodata, id) end
-        end
-        DB().audit = res
-        local full = {}
-        for _, s in ipairs(LEARNABLE) do
-            local r = res.sets[s]
-            local n = r.right + #r.miss + #r.nodata
-            if n > 0 then
-                if #r.miss == 0 and #r.nodata == 0 then full[#full + 1] = s end
-                Print(string.format("%s: %d/%d learned right, %d not, %d no data%s", s, r.right, n, #r.miss, #r.nodata,
-                    #r.extra > 0 and (", " .. #r.extra .. " also land elsewhere") or ""))
-            end
-        end
-        Print("learning covers fully: " .. (#full > 0 and table.concat(full, ", ") or "none")
-            .. " - details saved (AutoMacrosDB.audit), /reload to write them to disk")
-    end
-    local function step()
-        for _ = 1, 20 do
-            local id = todo[pos]
-            if not id then break end
-            pos = pos + 1
-            local sets = Classify(id)
-            if sets == nil then
-                retry[#retry + 1] = id
-            else
-                local got = {}
-                for _, s in ipairs(sets) do
-                    got[s] = true
-                    if not owner[id][s] then table.insert(res.sets[s].extra, id) end
-                end
-                for s in pairs(owner[id]) do
-                    local r = res.sets[s]
-                    if got[s] then r.right = r.right + 1 else r.miss[#r.miss + 1] = id; res.why[id] = true end
-                end
-                if res.why[id] == true then res.why[id] = UI.AuditWhy(id) end
-            end
-        end
-        local wait = 0.1
-        if pos > #todo then
-            if #retry == 0 or round >= 6 then
-                todo = retry   -- what is left had no data
-                return finish()
-            end
-            todo, retry, pos, round, wait = retry, {}, 1, round + 1, 1
-        end
-        return wait
-    end
-    local function tick()
-        local ok, wait = pcall(step)
-        if not ok then
-            UI.auditing = nil
-            Fail("audit", wait)
-        elseif wait then
-            if C_Timer and C_Timer.After then C_Timer.After(wait, tick) else tick() end
-        end
-    end
-    tick()
-end
-
 SLASH_AUTOMACROS1 = "/automacros"
 SLASH_AUTOMACROS2 = "/amac"
 SlashCmdList["AUTOMACROS"] = function(msg)
@@ -4296,7 +4094,7 @@ SlashCmdList["AUTOMACROS"] = function(msg)
                 e.custom and " - custom" or ""))
         end
         Print("/amac add <name>, /amac remove <name>, /amac custom <name> <items|spells> <id,id,...>")
-        Print("/amac options, /amac assign <item> <name>, /amac unassign <item>, /amac learned, /amac audit, /amac status")
+        Print("/amac options, /amac assign <item> <name>, /amac unassign <item>, /amac learned, /amac status")
         return
     elseif msg:match("^%s*add%s+") or msg:match("^%s*remove%s+") then
         local verb, key = msg:match("^%s*(%a+)%s+(%S+)")
@@ -4378,16 +4176,13 @@ SlashCmdList["AUTOMACROS"] = function(msg)
             RebuildLearned()
             Print(ItemRef(id) .. " [" .. id .. "] now counts as " .. e.title .. (Enabled(e) and "" or (" (the button is off: /amac add " .. e.key .. ")")))
         end
-    elseif msg:match("^%s*audit") then
-        UI.Audit()
-        return
     elseif msg:match("^%s*learned") then
         local learned = DB().learned
         local ids = {}
         if type(learned) == "table" then for id in pairs(learned) do ids[#ids + 1] = id end end
         table.sort(ids)
         if #ids == 0 then
-            Print("nothing learned yet - items missing from the built-in lists are sorted as you pick them up")
+            Print("nothing learned yet - items are sorted as you pick them up")
         else
             for i, id in ipairs(ids) do
                 local rec = learned[id]
@@ -4397,13 +4192,6 @@ SlashCmdList["AUTOMACROS"] = function(msg)
                 if i >= 30 then Print("(first 30 shown of " .. #ids .. ")") break end
             end
         end
-        return
-    elseif msg:match("^%s*learn") then
-        local db = DB()
-        if msg:find("off", 1, true) then db.learnOff = true
-        elseif msg:find("on", 1, true) then db.learnOff = nil
-        else db.learnOff = (not db.learnOff) or nil end
-        Print("learning new items: " .. (db.learnOff and "off" or "on"))
         return
     elseif msg:match("^%s*status") then
         local db = DB()

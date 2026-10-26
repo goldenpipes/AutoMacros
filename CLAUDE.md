@@ -24,7 +24,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   not yet tested = `--prerelease`. Every iteration is still committed and pushed.
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.lua` / `AutoMacros.toc` are always the current version.
-- **Current version: 0.86.0.**
+- **Current version: 0.87.0.**
 - **Copy the current files into `previous/<version>/` BEFORE the first edit of a new iteration**
   (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version in the .toc and anywhere else it appears.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
@@ -49,10 +49,22 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - There is no Lua interpreter here; the checker is the only pre-flight test.
 
 ## Next up (left off 2026-10-25)
-- 0.86.0 built and checked, not tested in game. Next: Lewis runs `/amac audit` + `/reload`
-  **on Forever** (retail data says little about vanilla items), then read
-  `_forever_\WTF\Account\<acct>\SavedVariables\AutoMacros.lua` (`audit.why`), fix the rules
-  from it, and drop list items learning gets right.
+- 0.87.0 built and checked, not tested in game. Buttons now depend entirely on the learning
+  rules, so they must be right on Forever. Offered Lewis an offline check: Wowhead's per-item
+  XML for Forever (`https://www.wowhead.com/forever/item=<id>&xml`, works from PowerShell;
+  gives class, subclass, htmlTooltip with the "Use:" text) for the vanilla consumables in
+  `previous/0.86.0/AutoMacros.lua` DATA, run through a Python copy of Classify. Wowhead's
+  listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
+  scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
+  API or download.
+
+## 0.87.0 — no built-in lists
+- Lewis: the lists aren't needed; learn items dynamically and keep the result in
+  SavedVariables (already how `learned`/`ignored` work). All DATA lists, LEARNABLE,
+  InBuiltInList, `/amac audit` (UI.Audit, UI.AuditWhy), `learnOff` (toggle + `/amac learn`)
+  removed; Init clears `db.audit` and `db.learnOff`. `DATA` remains only for custom
+  categories (`/amac custom`). HEARTHSTONE, TRAVEL_SPELLS, HS_RANK, CREATE_HS unchanged.
+  The vanilla lists (338 items) are kept in `previous/0.86.0/` for testing the rules.
 
 ## 0.86.0 — vanilla only
 - Lewis: **only Classic/Forever (vanilla) items matter, not retail.** DATA and TRAVEL_SPELLS

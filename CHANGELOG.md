@@ -4,6 +4,19 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.87.0 - 2026-10-25 (pre-release, not yet tested in game)
+
+### Changed
+- No more built-in item lists. Every item you carry is sorted by what the game says about it
+  (item type and its "Use:" text) the first time it is in your bags, and the result is saved,
+  so it is never looked at again unless Blizzard changes the item. New items, including ones
+  added to WoW Forever later, work without an addon update.
+- Item learning is always on, as the buttons now depend on it.
+
+### Removed
+- `/amac audit` and `/amac learn on/off`, and the "Learn new items automatically" option.
+  Use `/amac assign` and `/amac unassign` if an item ends up on the wrong button.
+
 ## 0.86.0 - 2026-10-25 (pre-release, not yet tested in game)
 
 ### Added
