@@ -4,6 +4,16 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.104.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Fixed
+- Classic Era: food and drink went on Restore Health, buff food too, and bandages on the
+  Explosive button. Classic Era files nearly every consumable simply as "Consumable", so
+  food, drink, buff food, bandages, flasks and rage potions are now recognised by their
+  tooltip ("Must remain seated while eating", "well fed", "Heals 301 damage over 7 sec.",
+  "one flask at a time"). Restore Health and Mana only take things that work at once.
+  Everything is sorted again once.
+
 ## 0.103.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Added

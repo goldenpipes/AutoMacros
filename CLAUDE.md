@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.103.0.**
+- **Current version: 0.104.0.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -83,6 +83,21 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.104.0 — Classic Era: rules by text, not subclass
+- Lewis (character Carkke-Mankrik, Classic Era): food on Restore Health. Its saved data:
+  Goldenbark Apple 4539, Raw Rainbow Fin Albacore 6361, Raw Slitherskin Mackerel 6303 ->
+  hpot; Crispy Lizard Tail 5479 (buff food) -> hpot; Heavy Linen Bandage 3531 -> explosives.
+  **Classic Era's client reports nearly all consumables as subclass 0 "Consumable"**
+  (Wowhead's classic pages show 0.5 / 0.7 etc., the client does not), so sub 5 / 7 / 3 / 1
+  rules missed and food fell through to "restoring", the bandage ("Heals 301 damage over
+  7 sec.") to sub 0 + damage = explosives.
+- Classify (CLASSIFIER 11): new text flags `bandaged` (heals + damage), `flask` ("one flask" /
+  "persists through death"); for consumables (`own`, i.e. not quest/misc): bandage -> flask
+  -> well fed = food_buff -> seated + health/mana = food/water -> rage -> restoring =
+  hpot/mpot -> stats ... The sub 5 / sub 1 conditions are gone (early returns for sub 7 / 3
+  kept). Quest/misc items still only restoring + buffs.
+- Process slip: previous/0.103.0 was saved from git (HEAD) after the first edit had started.
 
 ## 0.103.0 — in-game rules test; Classic Era set up
 - Lewis installed **Classic Era** (1.15.9, interface 11509) and will mostly play Forever, so

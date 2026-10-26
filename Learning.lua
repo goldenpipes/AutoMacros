@@ -17,11 +17,13 @@ setfenv(1, ns)
 --     curse, magic, stuns or snares       -> debuff cure (Jungle Remedy,
 --                    Restorative Potion; First Aid's poultices and tourniquets
 --                    are trade goods)
---   consumable, subclass Bandage            -> bandage
---   consumable, subclass Flask              -> flask
---   Food & Drink, tooltip says "well fed"   -> buff food
---   Food & Drink, "Use:" restores health    -> food;  restores mana -> water
---   Potion,       "Use:" gives rage         -> rage potion
+--   (Classic Era files nearly all consumables as plain "Consumable", so the
+--    next ones go by the text; the subclass is used where a client has one)
+--   consumable, subclass Bandage or "Heals 301 damage over 7 sec."  -> bandage
+--   consumable, subclass Flask or "one flask" / "persists through death" -> flask
+--   consumable, tooltip says "well fed"      -> buff food
+--   consumable, "must remain seated", restores health -> food;  mana -> water
+--   consumable, "Use:" gives rage            -> rage potion
 --   any other consumable, "Use:" restores health -> restore health; mana -> restore mana
 --                    (potions, healthstones, mana gems, runes; Rejuvenation: both)
 --   any other consumable (elixir, scroll, potion, Juju, E'ko, quest rewards),
@@ -97,6 +99,9 @@ function Classify(id)
     local health, mana, rage, damage, weapon, travel, wellFed = false, false, false, false, false, false, false
     local stats, hasUse, restore, buff, armor, resist, seated = {}, false, false, false, false, false, false
     local cure = false   -- removes a debuff
+    -- Classic Era files nearly every consumable as plain "Consumable" (subclass
+    -- 0), not Food & Drink, Potion, Bandage, Flask: those are known by their text
+    local bandaged, flask = false, false
     for _, text in ipairs(lines) do
         local low = text:lower()
         if text:find(use, 1, true) then hasUse = true end
@@ -120,12 +125,16 @@ function Classify(id)
             end
             -- real food and drink: "Must remain seated while eating"
             if HasWord(low, "seated", "while eating", "while drinking") then seated = true end
+            -- "You can only have the effect of one flask at a time. This effect persists through death."
+            if HasWord(low, "one flask", "persists through death") then flask = true end
             if text:find("%d") then
                 if HasWord(low, "health", HEALTH) then health = true end
                 if HasWord(low, "mana", MANA) then mana = true end
                 if low:find("%f[%a]rage%f[%A]") then rage = true end   -- the word, not "average"
                 if HasWord(low, "damage") then damage = true end
                 if HasWord(low, "restore") then restore = true end   -- a potion that heals, not one that raises health
+                -- a bandage: "Heals 301 damage over 7 sec."
+                if HasWord(low, "heals") and HasWord(low, "damage") then bandaged = true end
                 -- raises something for a while (not "permanently", like an armor kit)
                 -- (and not a fishing lure: "increases fishing by 25")
                 if HasWord(low, "increase", "improve", "grant", "raise")
@@ -166,21 +175,24 @@ function Classify(id)
     -- quest and misc items (quest rewards are often one or the other) count
     -- for what helps you: restoring health or mana, and buffs
     if class == 12 or class == 15 then sub = -1 end
-    if sub == -1 and not (restoring or next(stats) or armor or resist or buff) then
+    local own = sub ~= -1   -- a consumable (not a quest or misc item)
+    if not own and not (restoring or next(stats) or armor or resist or buff) then
         -- a quest or misc item that does none of that
-    elseif sub == 5 and restoring and not seated and not wellFed then
-        -- in Food & Drink but works at once, like a potion: Whipper Root Tuber
-        if health then sets[#sets + 1] = "hpot" end
-        if mana then sets[#sets + 1] = "mpot" end
-    elseif sub == 5 then
-        if wellFed then return { "food_buff" }, sig end
+    elseif own and bandaged then
+        sets[#sets + 1] = "bandage"
+    elseif own and flask then
+        sets[#sets + 1] = "flask"
+    elseif own and wellFed then
+        sets[#sets + 1] = "food_buff"
+    elseif own and seated and (health or mana) then
+        -- food and drink: you sit to eat it ("Must remain seated while eating")
         if health then sets[#sets + 1] = "food" end
         if mana then sets[#sets + 1] = "water" end
-    elseif sub == 1 and rage then
+    elseif own and rage then
         sets[#sets + 1] = "rage"
     elseif sub ~= 6 and restoring then
-        -- potions, healthstones, mana gems, runes, ... (food, flasks and
-        -- bandages were sorted above; Rejuvenation Potions go on both)
+        -- at once, no sitting: potions, healthstones, mana gems, runes, Whipper
+        -- Root Tuber (filed with food) ... (Rejuvenation Potions go on both)
         if health then sets[#sets + 1] = "hpot" end
         if mana then sets[#sets + 1] = "mpot" end
     elseif sub ~= 6 and next(stats) then   -- (6: item enhancements, worn on gear)
@@ -190,7 +202,7 @@ function Classify(id)
     elseif sub ~= 6 and (resist or armor) then
         if resist then sets[#sets + 1] = "buff_resistance" end
         if armor then sets[#sets + 1] = "buff_armor" end
-    elseif weapon and sub ~= -1 then
+    elseif weapon and own then
         sets[#sets + 1] = "weapon_buff"
     elseif sub == 0 and damage and not buff then
         sets[#sets + 1] = "explosives"

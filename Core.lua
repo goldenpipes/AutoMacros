@@ -1,4 +1,4 @@
--- AutoMacros 0.103.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.104.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -159,7 +159,7 @@ end
 --   glow, noFlyout, stockTooltip, showNames, quiet, noEmptyMsg   on/off options
 -- ---------------------------------------------------------------------------
 SCHEMA = 2
-CLASSIFIER = 10   -- raise when the learning rules change, so items are checked again
+CLASSIFIER = 11   -- raise when the learning rules change, so items are checked again
 
 STYLE_DEFAULTS = {
     glowColor = { 1, 0.15, 0.15, 1 }, glowThickness = 3, glowTexture = "solid",
