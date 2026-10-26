@@ -4,6 +4,16 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.93.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Added
+- **Resistance** button: the Fire, Frost, Nature, Shadow, Arcane and Holy Protection Potions
+  and anything else that raises a resistance (e.g. Gift of Arthas).
+
+### Changed
+- The Protection button is now **Armor Buff**: Scroll of Protection, Elixirs of Defense and
+  anything else that raises Armor or Defense. Its settings and macro carry over.
+
 ## 0.92.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Added

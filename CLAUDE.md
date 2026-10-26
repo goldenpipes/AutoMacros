@@ -24,7 +24,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   not yet tested = `--prerelease`. Every iteration is still committed and pushed.
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.lua` / `AutoMacros.toc` are always the current version.
-- **Current version: 0.92.0.**
+- **Current version: 0.93.0.**
 - **Copy the current files into `previous/<version>/` BEFORE the first edit of a new iteration**
   (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version in the .toc and anywhere else it appears.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
@@ -62,6 +62,19 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.93.0 — Armor Buff and Resistance
+- Lewis likes Other Buffs; attack power items stay there (vanilla has ~3: Winterfall
+  Firewater, Juju Might, Elixir of Demonslaying - from memory). Resistance gets its own
+  button; armor/defense separate from it.
+- 0.92.0's `protection` button -> `armor` ("Armor Buff", set `buff_armor`, saved name still
+  AM_Protection, oldNames Protection/No Protection, alias protection): `armor` flag = buff
+  word + armor/ARMOR/defense. New `resistance` ("Resistance", AM_Resist, `buff_resistance`):
+  `resist` flag = buff word + "resist", or "absorb" + damage (protection potions). Both
+  checked after the stat buffs; an item can get both. CLASSIFIER 7. Init moves
+  enabledBy/popDir `protection` -> `armor` (for anyone who ran 0.92.0).
+- Forever tooltips checked: Gift of Arthas 9088 -> resistance, Elixir of Defense 8951 ->
+  armor, Fire Protection Potion 6049 -> resistance, Elixir of Lesser Fortitude 3825 -> stamina.
 
 ## 0.92.0 — buff buttons by buff, not by item type
 - Lewis: scrolls and buff potions etc. should share a button per buff type; Flask, Buff Food,

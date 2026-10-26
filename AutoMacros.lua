@@ -1,4 +1,4 @@
--- AutoMacros 0.92.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.93.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one file for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -134,7 +134,7 @@ end
 --   glow, noFlyout, stockTooltip, showNames   on/off options
 -- ---------------------------------------------------------------------------
 local SCHEMA = 2
-local CLASSIFIER = 6   -- raise when the learning rules change, so items are checked again
+local CLASSIFIER = 7   -- raise when the learning rules change, so items are checked again
 
 local STYLE_DEFAULTS = {
     glowColor = { 1, 0.15, 0.15, 1 }, glowThickness = 3, glowTexture = "solid",
@@ -457,11 +457,16 @@ local CATALOG = {
       placeholder = { item = 2454 } },
     { key = "spirit", name = "AM_Spirit", title = "Spirit Buff", empty = "No Spirit Buff", label = "spirit buffs",
       set = "buff_spirit", placeholder = { item = 1181 } },   -- Scroll of Spirit
-    -- raises Armor (Scroll of Protection, Elixir of Defense) or absorbs damage
-    -- (the Fire, Frost, Nature, Shadow, Arcane and Holy Protection Potions)
-    { key = "protection", name = "AM_Protection", title = "Protection", empty = "No Protection",
-      label = "armor or protection", set = "buff_protection", placeholder = { item = 3013 } },   -- Scroll of Protection
-    -- anything else a "Use:" line raises: attack power, spell damage, crit, resistances, speed, ...
+    -- raises Armor or Defense (Scroll of Protection, Elixirs of Defense). Was
+    -- "Protection" in 0.92.0, with the resistance items in it too.
+    { key = "armor", alias = "protection", name = "AM_Protection", title = "Armor Buff", empty = "No Armor Buff",
+      label = "armor buffs", set = "buff_armor", oldNames = { "Protection", "No Protection" },
+      placeholder = { item = 3013 } },   -- Scroll of Protection
+    -- raises a resistance, or absorbs one school's damage (the Fire, Frost,
+    -- Nature, Shadow, Arcane and Holy Protection Potions)
+    { key = "resistance", name = "AM_Resist", title = "Resistance", empty = "No Resistance",
+      label = "resistance", set = "buff_resistance", placeholder = { item = 6049 } },   -- Fire Protection Potion
+    -- anything else a "Use:" line raises: attack power, spell damage, crit, speed, ...
     { key = "otherbuff", name = "AM_OtherBuff", title = "Other Buffs", empty = "No Other Buffs", label = "other buffs",
       set = "buff_other", placeholder = { item = 12820 } },   -- Winterfall Firewater
     { key = "explosives", name = "AM_Explosive", title = "Explosive", empty = "No Explosives", label = "explosives",
@@ -1972,9 +1977,10 @@ end
 --     "Use:" raises Strength, Agility, Stamina, Intellect or Spirit
 --                                           -> that stat's buff button
 --                    ("maximum health", Fortitude elixirs, counts as Stamina)
---   any other consumable, "Use:" raises Armor or absorbs damage
---                                           -> protection (Scroll of Protection,
---                                              Elixir of Defense, protection potions)
+--   any other consumable, "Use:" raises Armor or Defense
+--                                           -> armor buff (Scroll of Protection, Elixir of Defense)
+--   any other consumable, "Use:" raises a resistance or absorbs damage
+--                                           -> resistance (protection potions, Gift of Arthas)
 --   Item Enhancement / other consumable, "Use:" mentions your weapon
 --                                           -> weapon buff
 --   other consumable, "Use:" does damage    -> explosives (retail files them here)
@@ -2036,7 +2042,7 @@ local function Classify(id)
     if not lines or #lines < 2 or lines[1] == RETRIEVING_ITEM_INFO then return nil end
     local use = ITEM_SPELL_TRIGGER_ONUSE or "Use:"
     local health, mana, rage, damage, weapon, travel, wellFed, cure = false, false, false, false, false, false, false, false
-    local stats, hasUse, restore, buff, protect = {}, false, false, false, false
+    local stats, hasUse, restore, buff, armor, resist = {}, false, false, false, false, false
     for _, text in ipairs(lines) do
         local low = text:lower()
         if text:find(use, 1, true) then hasUse = true end
@@ -2060,8 +2066,9 @@ local function Classify(id)
                 -- raises something for a while (not "permanently", like an armor kit)
                 if HasWord(low, "increase", "improve", "grant", "raise")
                     and not HasWord(low, "permanent") then buff = true end
-                -- raises Armor, or a protection potion: "Absorbs 1950 to 3250 fire damage"
-                if (buff and HasWord(low, "armor", ARMOR)) or (HasWord(low, "absorb") and damage) then protect = true end
+                if buff and HasWord(low, "armor", ARMOR, "defense") then armor = true end
+                -- raises a resistance, or a protection potion: "Absorbs 1950 to 3250 fire damage"
+                if (buff and HasWord(low, "resist")) or (HasWord(low, "absorb") and damage) then resist = true end
                 for i, key in ipairs(STAT_KEYS) do
                     local name = _G["SPELL_STAT" .. i .. "_NAME"] or (key:sub(1, 1):upper() .. key:sub(2))
                     if text:find(name, 1, true) then stats[key] = true end
@@ -2086,7 +2093,7 @@ local function Classify(id)
     if class == 12 then sub = -1 elseif class ~= 0 then return {}, sig end
     if cure and class == 0 then return { "antivenom" }, sig end   -- "Use: Cures 1 poison effect ..."
     local sets = {}
-    if sub == -1 and not (next(stats) or protect or buff) then
+    if sub == -1 and not (next(stats) or armor or resist or buff) then
         -- a quest item that is no buff
     elseif sub == 5 then
         if wellFed then return { "food_buff" }, sig end
@@ -2101,8 +2108,9 @@ local function Classify(id)
         for _, key in ipairs(STAT_KEYS) do
             if stats[key] then sets[#sets + 1] = "buff_" .. key end
         end
-    elseif sub ~= 6 and protect then
-        sets[#sets + 1] = "buff_protection"
+    elseif sub ~= 6 and (resist or armor) then
+        if resist then sets[#sets + 1] = "buff_resistance" end
+        if armor then sets[#sets + 1] = "buff_armor" end
     elseif weapon and sub ~= -1 then
         sets[#sets + 1] = "weapon_buff"
     elseif sub == 0 and damage and not buff then
@@ -3268,8 +3276,8 @@ end
 UI.BUTTON_GROUPS = {
     { name = "Recovery", keys = { "healthstone", "healthpot", "manapot", "ragepot", "bandage", "antivenom" } },
     { name = "Food & Drink", keys = { "food", "water", "bufffood" } },
-    { name = "Buffs", keys = { "agility", "intellect", "stamina", "strength", "spirit", "protection",
-        "otherbuff", "flask", "weaponbuff" } },
+    { name = "Buffs", keys = { "agility", "intellect", "stamina", "strength", "spirit", "armor",
+        "resistance", "otherbuff", "flask", "weaponbuff" } },
     { name = "Utility", keys = { "travel", "explosives" } },
     { name = "Class", keys = { "portals", "comprehend" } },
 }
@@ -4435,6 +4443,17 @@ local function Init()
     db.audit, db.learnOff = nil, nil   -- gone in 0.87.0 (no built-in lists; learning is always on)
     local okMerge, errMerge = pcall(UI.MergeBuffButtons)
     if not okMerge then Fail("merging the buff buttons", errMerge) end
+    -- 0.93.0: 0.92.0's Protection button is Armor Buff now (resistance items got their own)
+    for _, t in pairs(type(db.enabledBy) == "table" and db.enabledBy or {}) do
+        if type(t) == "table" and t.protection ~= nil then
+            if t.armor == nil then t.armor = t.protection end
+            t.protection = nil
+        end
+    end
+    if type(db.popDir) == "table" and db.popDir.protection then
+        db.popDir.armor = db.popDir.armor or db.popDir.protection
+        db.popDir.protection = nil
+    end
     pcall(RegisterEUI)   -- in case EllesmereUI loaded after this addon
     local okPanel, errPanel = pcall(UI.RegisterBlizzPanel)   -- Esc > Options > AddOns
     if not okPanel then Fail("options page", errPanel) end
