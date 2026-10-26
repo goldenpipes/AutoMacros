@@ -4,6 +4,20 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.86.0 - 2026-10-25 (pre-release, not yet tested in game)
+
+### Added
+- Anti-venoms are now recognised automatically (any item whose "Use:" line cures poison).
+- `/amac audit` also saves what the game says about each item it could not sort (item type
+  and "Use:" text), so the automatic sorting can be improved from real data.
+
+### Changed
+- The built-in item lists now hold original (vanilla) items only. Items from Burning Crusade
+  onward and Season of Discovery were removed, which makes the addon lighter. The
+  Hearth/Teleport button no longer lists later-expansion teleport items or spells (Death Gate,
+  Zen Pilgrimage, Exodar/Silvermoon/Shattrath teleports).
+- Items the automatic sorting had already checked are checked once more with the new rules.
+
 ## 0.85.0 - 2026-10-25 (pre-release, not yet tested in game)
 
 First public release.

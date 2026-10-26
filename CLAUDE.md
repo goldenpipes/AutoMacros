@@ -24,7 +24,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   not yet tested = `--prerelease`. Every iteration is still committed and pushed.
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.lua` / `AutoMacros.toc` are always the current version.
-- **Current version: 0.85.0.**
+- **Current version: 0.86.0.**
 - **Copy the current files into `previous/<version>/` BEFORE the first edit of a new iteration**
   (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version in the .toc and anywhere else it appears.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
@@ -49,10 +49,21 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - There is no Lua interpreter here; the checker is the only pre-flight test.
 
 ## Next up (left off 2026-10-25)
-- 0.85.0 is built and checked but **not tested in game** (Lewis couldn't run WoW). Waiting on
-  him to test it and run `/amac audit` + `/reload` in retail (later Forever). Then read
-  `_retail_\WTF\Account\GOLDENPIPES\SavedVariables\AutoMacros.lua` (`audit`), add an
-  anti-venom learning rule, and trim DATA to only the items learning misses (0.86.0).
+- 0.86.0 built and checked, not tested in game. Next: Lewis runs `/amac audit` + `/reload`
+  **on Forever** (retail data says little about vanilla items), then read
+  `_forever_\WTF\Account\<acct>\SavedVariables\AutoMacros.lua` (`audit.why`), fix the rules
+  from it, and drop list items learning gets right.
+
+## 0.86.0 — vanilla only
+- Lewis: **only Classic/Forever (vanilla) items matter, not retail.** DATA and TRAVEL_SPELLS
+  cut to vanilla (picked per item, not a plain ID cutoff: TBC starts ~22800 among late-vanilla
+  Naxx/holiday items; SoD 2xxxxx gone too). 671 -> 338 listed items.
+- Retail audit (0.85.0, build 12.1.5): only bandage fully learned; misses were mostly the
+  vanilla items, likely because retail files old consumables differently (unverified).
+- Anti-venom rule: "Use:" line with poison + cure/remove -> antivenom (class 0 only, before
+  the subclass rules). CLASSIFIER 3.
+- Audit saves `audit.why[id]` = "class.sub | name | Use:/well fed lines" for every miss
+  (`UI.AuditWhy`).
 
 ## 0.85.0 — lighter: learning first, bar watcher only when needed
 - Lewis wants the addon very lightweight and asked whether the built-in item lists are needed

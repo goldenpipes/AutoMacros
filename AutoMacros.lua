@@ -1,7 +1,8 @@
--- AutoMacros 0.85.0 for WoW Forever (interface 16001; also loads in retail for testing)
+-- AutoMacros 0.86.0 for WoW Forever (interface 16001; also loads in retail for testing)
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
--- out of combat. Item lists come from AutoBar's camelot data.
+-- out of combat. Item lists come from AutoBar's camelot data, cut down to
+-- vanilla items only (no TBC or later, no Season of Discovery).
 
 local ADDON = ...
 local DATA = {}
@@ -20,76 +21,57 @@ DATA.food = ToSet({
     7228, 8075, 8076, 8543, 8932, 8948, 8950, 8952, 8953, 9681, 11109, 11415,
     11444, 12238, 12763, 13546, 13755, 13893, 16166, 16167, 16168, 16169, 16170, 16171,
     16766, 17119, 17344, 17406, 17407, 17408, 18255, 18632, 18633, 18635, 19223, 19224,
-    19225, 19304, 19305, 19306, 21030, 21031, 21033, 21552, 22324, 22895, 23160, 249796,
-    250081, 251917, 252022, 252023, 252026, 252028, 252029, 252030, 252032, 260623, 260624, 260625,
-    260627, 260628, 267474, 278117, 278118, 278119, 278120, 278121, 278122, 278265, 278569,
+    19225, 19304, 19305, 19306, 21030, 21031, 21033, 21552, 22324, 23160,
 })
 DATA.water = ToSet({
     159, 1179, 1205, 1267, 1268, 1645, 1708, 2071, 2136, 2288, 3772, 3773,
     4791, 5350, 8077, 8078, 8079, 8766, 9451, 17404, 18300, 19299, 19300, 23161,
-    227813, 231778, 252027, 252031, 285359,
 })
 DATA.hpot = ToSet({
-    118, 858, 929, 1710, 3928, 4596, 13446, 17348, 17349, 18839, 22829, 23579,
-    23822, 28100, 31676, 31838, 31839, 31852, 31853, 32763, 32784, 32904, 32905, 32910,
-    32947, 33092, 33447, 33934, 39327, 39671, 39971, 41166, 43531, 43569, 45277, 57191,
-    63144, 63300, 64994, 76097, 80040, 88416, 92954, 92979, 109223, 115498, 117415, 118916,
-    118917, 127834, 129196, 136569, 138486, 140351, 142325, 144396, 152494, 152615, 156634, 167917,
-    169451,
+    118, 858, 929, 1710, 3928, 4596, 13446, 17348, 17349, 18839,
 })
 DATA.mpot = ToSet({
-    2455, 3087, 3385, 3827, 6149, 13443, 13444, 17351, 17352, 18253, 18841, 22832,
-    22850, 23578, 23823, 28101, 31677, 31840, 31841, 31854, 31855, 32762, 32783, 32902,
-    32903, 32909, 32948, 33093, 33448, 33935, 34440, 35287, 40067, 40087, 42545, 43530,
-    43570, 45276, 57192, 57193, 57194, 63145, 64993, 76092, 76098, 109221, 109222, 118262,
-    118278, 127835, 127846, 140347, 152495, 152561, 168502,
+    2455, 3087, 3385, 3827, 6149, 13443, 13444, 17351, 17352, 18253, 18841,
 })
 
 DATA.bandage = ToSet({
-    1251, 2581, 3530, 3531, 6450, 6451, 8544, 8545, 14529, 14530, 21990, 21991,
-    34721, 34722, 53049, 53050, 53051, 72985, 72986, 111603, 133940, 133942, 136653, 142332,
-    158381, 158382, 173191, 173192,
+    1251, 2581, 3530, 3531, 6450, 6451, 8544, 8545, 14529, 14530,
 })
 DATA.antivenom = ToSet({
-    2633, 3386, 6452, 6453, 9030, 12586, 13462, 19440, 25550, 31437,
+    2633, 3386, 6452, 6453, 9030, 12586, 13462, 19440,
 })
 DATA.scroll_agility = ToSet({
-    1477, 3012, 4425, 10309, 27498, 33457, 43463, 43464,
+    1477, 3012, 4425, 10309,
 })
 DATA.elixir_agility = ToSet({
-    2457, 3390, 8412, 8949, 9187, 13452, 22831, 28104, 32598, 32599, 33208, 47499,
-    58087, 58145, 58149, 65455, 75525, 76089, 118630,
+    2457, 3390, 8412, 8949, 9187, 13452,
 })
 DATA.scroll_intellect = ToSet({
-    955, 2290, 4419, 10308, 12458, 27499, 33458, 37091, 37092,
+    955, 2290, 4419, 10308, 12458,
 })
 DATA.elixir_intellect = ToSet({
-    3383, 8423, 9179, 13447, 13511, 28104, 32067, 32596, 32600, 32601, 33208, 47499,
-    58086, 58149, 65455, 75525, 76093, 118632,
+    3383, 8423, 9179, 13447, 13511,
 })
 DATA.scroll_stamina = ToSet({
-    1180, 1711, 4422, 10307, 27502, 33461, 37093, 37094,
+    1180, 1711, 4422, 10307,
 })
 DATA.elixir_stamina = ToSet({
-    13453, 17048, 20709, 21114, 21151, 28104, 30615, 32596, 32597, 32598, 32599, 32600,
-    32601, 33208, 58085, 65455,
+    13453, 17048, 20709, 21114, 21151,
 })
 DATA.scroll_strength = ToSet({
-    954, 2289, 4426, 10310, 12451, 27503, 33462, 43465, 43466,
+    954, 2289, 4426, 10310, 12451,
 })
 DATA.elixir_strength = ToSet({
-    2454, 3391, 6662, 8410, 9206, 13453, 22824, 22828, 22837, 28104, 32597, 32598,
-    33208, 47499, 58088, 58146, 58149, 65455, 75525, 76095, 118631,
+    2454, 3391, 6662, 8410, 9206, 13453,
 })
 -- AutoBar: Misc.Explosives.Engineering, Misc.Explosives.Other, Muffin.Explosives
 DATA.explosives = ToSet({
     4358, 4360, 4365, 4370, 4374, 4378, 4380, 4384, 4390, 4394, 4403, 6714,
-    10507, 10514, 10562, 10586, 15993, 16005, 16040, 18588, 18641, 23736, 23737, 23826,
-    23827, 32413, 40536, 40771, 41119, 4598, 11566, 23841, 215127, 215168, 221325,
+    10507, 10514, 10562, 10586, 15993, 16005, 16040, 18588, 18641, 4598, 11566,
 })
 -- AutoBar: Muffin.Potion.Rage
 DATA.rage = ToSet({
-    5631, 5633, 13442, 54642, 116275, 118704, 144398,
+    5631, 5633, 13442,
 })
 -- AutoBar: Muffin.Food.Health.Buff, Muffin.Food.Mana.Buff, Muffin.Food.Combo.Buff
 DATA.food_buff = ToSet({
@@ -99,41 +81,30 @@ DATA.food_buff = ToSet({
     6290, 6316, 6887, 6888, 6890, 7806, 7807, 7808, 8364, 8957, 11584, 11950,
     12209, 12210, 12212, 12213, 12214, 12215, 12216, 12218, 12224, 13810, 13851, 13927,
     13928, 13929, 13930, 13931, 13932, 13933, 13934, 13935, 16971, 17197, 17198, 17222,
-    18045, 18254, 20074, 20452, 21023, 21072, 21217, 206177, 232436, 232438, 238637, 238638,
-    238639, 238641, 238642, 248613, 250065, 250066, 250067, 250068, 250069, 250070, 250071, 250072,
-    250073, 250074, 250075, 250076, 250077, 250078, 250079, 250080, 263509, 263512, 267341, 268912,
-    268913, 274971, 274976, 286152, 10841, 13813, 19318, 249865, 249867, 249868, 249869, 249870,
-    249871, 249873, 249874, 249875, 249876, 23176,
+    18045, 18254, 20074, 20452, 21023, 21072, 21217, 10841, 13813, 19318,
 })
 -- AutoBar: Muffin.Flask
 DATA.flask = ToSet({
-    13510, 13511, 13512, 13513, 274273, 274274, 274275, 274276,
+    13510, 13511, 13512, 13513,
 })
 -- AutoBar: Consumable.Weapon Buff (sharpening and weight stones, mana and wizard oils, misc)
 DATA.weapon_buff = ToSet({
-    2862, 2863, 2871, 7964, 12404, 18262, 23122, 23528, 23529, 171436, 171437, 172038,
-    3239, 3240, 3241, 7965, 12643, 28420, 28421, 171438, 171439,
+    2862, 2863, 2871, 7964, 12404, 18262, 23122,
+    3239, 3240, 3241, 7965, 12643,
     20745, 20747, 20748, 22521, 20744, 20746, 20749, 20750, 22522,
-    3824, 3829, 23123, 31535, 34538, 34539, 44065, 171286, 243733, 243734,
+    3824, 3829, 23123,
 })
 -- AutoBar: Misc.Hearth and Muffin.Misc.Hearth. Hearthstone, the engineering
--- teleporters (Everlook, Gadgetzan, ...) and the rings, cloaks and tabards that
--- teleport you; worn ones count too (see ScanBags).
+-- teleporters (Everlook, Gadgetzan) and Atiesh; worn ones count too (see ScanBags).
 DATA.travel = ToSet({
-    6948, 227925, 18984, 18986, 22589, 22630, 22631, 22632, 28585, 30542, 30544, 32757,
-    35230, 37118, 37863, 40585, 40586, 44314, 44315, 44934, 44935, 45688, 45689, 45690,
-    45691, 46874, 48933, 48954, 48955, 48956, 48957, 50287, 51557, 51558, 51559, 51560,
-    52251, 54452, 58487, 63206, 63207, 63352, 63353, 63378, 63379, 64457, 64488, 65274,
-    65360, 87215, 87548, 95050, 95051, 95567, 95568, 103678, 110560, 112059, 118662, 118663,
-    118907, 118908, 128353, 140192, 141016, 141605, 166559, 166560, 205255,
+    6948, 18984, 18986, 22589, 22630, 22631, 22632,
 })
 local HEARTHSTONE = 6948
 -- Spells on the Hearth/Teleport button, for whichever class knows them: Astral
--- Recall (Shaman), Teleport: Moonglade (Druid), Death Gate, Zen Pilgrimage and
--- the mage city teleports.
+-- Recall (Shaman), Teleport: Moonglade (Druid) and the mage city teleports.
 local TRAVEL_SPELLS = {
-    556, 18960, 50977, 126892,
-    3561, 3562, 3565, 32271, 3567, 3563, 3566, 32272, 33690, 35715,
+    556, 18960,
+    3561, 3562, 3565, 3567, 3563, 3566,
 }
 
 -- Healthstone ranks: 1 Minor, 2 Lesser, 3 Healthstone, 4 Greater, 5 Major.
@@ -204,7 +175,7 @@ end
 --   glow, noFlyout, stockTooltip, showNames, learnOff   on/off options
 -- ---------------------------------------------------------------------------
 local SCHEMA = 2
-local CLASSIFIER = 2   -- raise when the learning rules change, so items are checked again
+local CLASSIFIER = 3   -- raise when the learning rules change, so items are checked again
 
 local STYLE_DEFAULTS = {
     glowColor = { 1, 0.15, 0.15, 1 }, glowThickness = 3, glowTexture = "solid",
@@ -1995,7 +1966,7 @@ local function Classify(id)
     local lines = TooltipLines(id)
     if not lines or #lines < 2 or lines[1] == RETRIEVING_ITEM_INFO then return nil end
     local use = ITEM_SPELL_TRIGGER_ONUSE or "Use:"
-    local health, mana, rage, damage, weapon, travel, wellFed = false, false, false, false, false, false, false
+    local health, mana, rage, damage, weapon, travel, wellFed, cure = false, false, false, false, false, false, false, false
     local stats = {}
     for _, text in ipairs(lines) do
         local low = text:lower()
@@ -2009,6 +1980,7 @@ local function Classify(id)
         if text:find(use, 1, true) then
             if HasWord(low, "teleport", "returns you to") then travel = true end
             if HasWord(low, "weapon") then weapon = true end
+            if HasWord(low, "poison") and HasWord(low, "cure", "remove") then cure = true end
             if text:find("%d") then
                 if HasWord(low, "health", HEALTH) then health = true end
                 if HasWord(low, "mana", MANA) then mana = true end
@@ -2023,6 +1995,7 @@ local function Classify(id)
     end
     if travel then return { "travel" }, sig end
     if class ~= 0 then return {}, sig end     -- armour and misc items: only teleports count
+    if cure then return { "antivenom" }, sig end   -- "Use: Cures 1 poison effect ..."
     local sets = {}
     if sub == 5 then
         if wellFed then return { "food_buff" } end
@@ -4203,7 +4176,22 @@ end
 -- items at a time, as a tooltip needs the item's data (which can take a
 -- moment); items without data are tried again, up to 6 rounds. The result is
 -- saved in db.audit (client build; per list: right = count, miss = ids learning
--- would not put there, extra = other lists learning would add them to, nodata).
+-- would not put there, extra = other lists learning would add them to, nodata;
+-- why[id] = what the rules saw for each missed item, see UI.AuditWhy).
+-- "class.sub | name | Use: line(s)" for a missed item, so the rules can be
+-- fixed from what the client really says about it.
+function UI.AuditWhy(id)
+    local class, sub = ItemInstant(id)
+    local parts = { tostring(class) .. "." .. tostring(sub) }
+    local lines = TooltipLines(id) or {}
+    parts[#parts + 1] = lines[1] or "?"
+    local use = ITEM_SPELL_TRIGGER_ONUSE or "Use:"
+    for _, text in ipairs(lines) do
+        if text:find(use, 1, true) or text:lower():find("well fed", 1, true) then parts[#parts + 1] = text end
+    end
+    return table.concat(parts, " | ")
+end
+
 function UI.Audit()
     if UI.auditing then Print("the audit is already running") return end
     local todo, owner = {}, {}
@@ -4215,7 +4203,7 @@ function UI.Audit()
     end
     table.sort(todo)
     local version, build, _, iface = GetBuildInfo()
-    local res = { build = tostring(version) .. " " .. tostring(build), interface = iface, items = #todo, sets = {} }
+    local res = { build = tostring(version) .. " " .. tostring(build), interface = iface, items = #todo, sets = {}, why = {} }
     for _, s in ipairs(LEARNABLE) do res.sets[s] = { right = 0, miss = {}, extra = {}, nodata = {} } end
     local pos, round, retry = 1, 1, {}
     UI.auditing = true
@@ -4255,8 +4243,9 @@ function UI.Audit()
                 end
                 for s in pairs(owner[id]) do
                     local r = res.sets[s]
-                    if got[s] then r.right = r.right + 1 else r.miss[#r.miss + 1] = id end
+                    if got[s] then r.right = r.right + 1 else r.miss[#r.miss + 1] = id; res.why[id] = true end
                 end
+                if res.why[id] == true then res.why[id] = UI.AuditWhy(id) end
             end
         end
         local wait = 0.1
