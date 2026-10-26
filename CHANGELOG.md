@@ -4,7 +4,26 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
-## 0.91.0 - 2026-10-26 (pre-release)
+## 0.92.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Added
+- One button per buff, whatever gives it: **Agility, Intellect, Stamina, Strength and Spirit
+  Buff** take elixirs, scrolls, potions, Juju, E'ko and quest rewards like the Blasted Lands
+  R.O.I.D.S., Ground Scorpok Assay, Lung Juice Cocktail, Cerebral Cortex Compound and Gizzard
+  Gum. The popout lists them all, best first.
+- **Protection**: Scroll of Protection, Elixirs of Defense and the Fire, Frost, Nature, Shadow,
+  Arcane and Holy Protection Potions.
+- **Other Buffs**: anything else that raises something for a while (attack power, spell damage,
+  crit, speed, ...), e.g. Winterfall Firewater, Swiftness Potion, Juju Might.
+
+### Changed
+- The separate Scroll and Elixir buttons for each stat are replaced by the buff buttons. Your
+  choices carry over: a buff button is on if its scroll or elixir button was. The elixir
+  buttons' macros stay on your bars as the new buttons (renamed); the scroll buttons' macros
+  are removed.
+- Flask, Buff Food and Weapon Buff stay separate buttons.
+
+## 0.91.0 - 2026-10-26 (pre-release, tested in retail)
 
 ### Changed
 - The Popout page's Direction list shows only the buttons you have switched on. It updates

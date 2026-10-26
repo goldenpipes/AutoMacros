@@ -24,7 +24,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   not yet tested = `--prerelease`. Every iteration is still committed and pushed.
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.lua` / `AutoMacros.toc` are always the current version.
-- **Current version: 0.91.0.**
+- **Current version: 0.92.0.**
 - **Copy the current files into `previous/<version>/` BEFORE the first edit of a new iteration**
   (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version in the .toc and anywhere else it appears.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
@@ -62,6 +62,29 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.92.0 — buff buttons by buff, not by item type
+- Lewis: scrolls and buff potions etc. should share a button per buff type; Flask, Buff Food,
+  Weapon Buff stay separate; then also a button for armor (protection potions and scrolls).
+  He didn't pick the buff list; I used Agility, Intellect, Stamina, Strength, Spirit,
+  Protection, Other Buffs (sets `buff_<stat>`, `buff_protection`, `buff_other`).
+- CATALOG: keys agility/intellect/stamina/strength keep the old elixir buttons' saved names
+  (AM_ElxAgi, ...) with `oldNames` = the old elixir macro names, so FindMacro finds and Apply
+  renames the existing macro; `alias` = old elixir key. New: spirit (AM_Spirit), protection
+  (AM_Protection), otherbuff (AM_OtherBuff). BUTTON_GROUPS Buffs updated.
+- Classify (CLASSIFIER 6): STAT_KEYS + spirit (SPELL_STAT5_NAME). hpot/mpot need "restore"
+  (so "maximum health" elixirs aren't potions). `buff` = increase/improve/grant/raise, not
+  "permanent" (armor kits); `protect` = buff + Armor, or "absorb" + damage. Order after
+  food/rage/potions: stats (not sub 6) -> protection -> weapon -> explosives (sub 0, damage,
+  not buff) -> other buffs. **Class 12 (Quest) is now looked at**: Juju Power/Might are 12.0
+  on Forever (Wowhead); quest items count only as stat/protection/other buffs (sub set to -1).
+  Checked 17 Forever tooltips (Wowhead XML) against the rules by hand: all as intended.
+- Migration: `UI.MergeBuffButtons` (Init, once, `db.buffsMerged`): per character in enabledBy
+  new key = old scroll or elixir key on (false if one was off and neither on), old keys
+  removed; popDir moved; manual learned sets scroll_/elixir_ -> buff_. `UI.RemoveScrollMacros`
+  (the 3 s after PLAYER_ENTERING_WORLD step, once, `db.scrollMacrosGone`, not in combat, not
+  while GetNumMacros() is 0): deletes the macros named "<Stat> Scroll" / "No <Abbr> Scroll"
+  whose body has #showtooltip or /amac empty.
 
 ## 0.91.0
 - 0.90.0 **confirmed in retail**: bars at the top, bottom, left and right all open the right way.

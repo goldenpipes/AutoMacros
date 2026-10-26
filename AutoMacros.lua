@@ -1,4 +1,4 @@
--- AutoMacros 0.91.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.92.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one file for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -134,7 +134,7 @@ end
 --   glow, noFlyout, stockTooltip, showNames   on/off options
 -- ---------------------------------------------------------------------------
 local SCHEMA = 2
-local CLASSIFIER = 5   -- raise when the learning rules change, so items are checked again
+local CLASSIFIER = 6   -- raise when the learning rules change, so items are checked again
 
 local STYLE_DEFAULTS = {
     glowColor = { 1, 0.15, 0.15, 1 }, glowThickness = 3, glowTexture = "solid",
@@ -438,22 +438,32 @@ local CATALOG = {
       set = "bandage", placeholder = { item = 1251 } },
     { key = "antivenom", name = "AM_AntiVenom", title = "Anti-Venom", empty = "No Anti-Venom", label = "anti-venom",
       set = "antivenom", placeholder = { item = 2633 } },
-    { key = "agiscroll", name = "AM_ScrAgi", title = "Agility Scroll", empty = "No Agi Scroll", label = "agility scrolls",
-      set = "scroll_agility", placeholder = { item = 3012 } },
-    { key = "intscroll", name = "AM_ScrInt", title = "Intellect Scroll", empty = "No Int Scroll", label = "intellect scrolls",
-      set = "scroll_intellect", placeholder = { item = 955 } },
-    { key = "stascroll", name = "AM_ScrSta", title = "Stamina Scroll", empty = "No Sta Scroll", label = "stamina scrolls",
-      set = "scroll_stamina", placeholder = { item = 1180 } },
-    { key = "strscroll", name = "AM_ScrStr", title = "Strength Scroll", empty = "No Str Scroll", label = "strength scrolls",
-      set = "scroll_strength", placeholder = { item = 954 } },
-    { key = "agielixir", name = "AM_ElxAgi", title = "Agility Elixir", empty = "No Agi Elixir", label = "agility elixirs",
-      set = "elixir_agility", placeholder = { item = 2457 } },
-    { key = "intelixir", name = "AM_ElxInt", title = "Intellect Elixir", empty = "No Int Elixir", label = "intellect elixirs",
-      set = "elixir_intellect", placeholder = { item = 3383 } },
-    { key = "staelixir", name = "AM_ElxSta", title = "Stamina Elixir", empty = "No Sta Elixir", label = "stamina elixirs",
-      set = "elixir_stamina", placeholder = { item = 13453 } },
-    { key = "strelixir", name = "AM_ElxStr", title = "Strength Elixir", empty = "No Str Elixir", label = "strength elixirs",
-      set = "elixir_strength", placeholder = { item = 2454 } },
+    -- One button per buff, whatever the item is (elixir, scroll, potion, Juju,
+    -- E'ko, Blasted Lands quest rewards, ...). Until 0.92.0 scrolls and elixirs
+    -- had a button each; the elixir buttons' macros carry on as these (same
+    -- saved name, renamed: oldNames), the scroll buttons' are deleted (see
+    -- UI.MergeBuffButtons).
+    { key = "agility", alias = "agielixir", name = "AM_ElxAgi", title = "Agility Buff", empty = "No Agi Buff",
+      label = "agility buffs", set = "buff_agility", oldNames = { "Agility Elixir", "No Agi Elixir" },
+      placeholder = { item = 2457 } },
+    { key = "intellect", alias = "intelixir", name = "AM_ElxInt", title = "Intellect Buff", empty = "No Int Buff",
+      label = "intellect buffs", set = "buff_intellect", oldNames = { "Intellect Elixir", "No Int Elixir" },
+      placeholder = { item = 3383 } },
+    { key = "stamina", alias = "staelixir", name = "AM_ElxSta", title = "Stamina Buff", empty = "No Sta Buff",
+      label = "stamina buffs", set = "buff_stamina", oldNames = { "Stamina Elixir", "No Sta Elixir" },
+      placeholder = { item = 13453 } },
+    { key = "strength", alias = "strelixir", name = "AM_ElxStr", title = "Strength Buff", empty = "No Str Buff",
+      label = "strength buffs", set = "buff_strength", oldNames = { "Strength Elixir", "No Str Elixir" },
+      placeholder = { item = 2454 } },
+    { key = "spirit", name = "AM_Spirit", title = "Spirit Buff", empty = "No Spirit Buff", label = "spirit buffs",
+      set = "buff_spirit", placeholder = { item = 1181 } },   -- Scroll of Spirit
+    -- raises Armor (Scroll of Protection, Elixir of Defense) or absorbs damage
+    -- (the Fire, Frost, Nature, Shadow, Arcane and Holy Protection Potions)
+    { key = "protection", name = "AM_Protection", title = "Protection", empty = "No Protection",
+      label = "armor or protection", set = "buff_protection", placeholder = { item = 3013 } },   -- Scroll of Protection
+    -- anything else a "Use:" line raises: attack power, spell damage, crit, resistances, speed, ...
+    { key = "otherbuff", name = "AM_OtherBuff", title = "Other Buffs", empty = "No Other Buffs", label = "other buffs",
+      set = "buff_other", placeholder = { item = 12820 } },   -- Winterfall Firewater
     { key = "explosives", name = "AM_Explosive", title = "Explosive", empty = "No Explosives", label = "explosives",
       set = "explosives", placeholder = { item = 4358 } },
     { key = "ragepot", name = "AM_RagePot", title = "Rage Potion", empty = "No Rage Potion", label = "rage potions",
@@ -1958,20 +1968,26 @@ end
 --   Food & Drink, "Use:" restores health    -> food;  restores mana -> water
 --   Potion,       "Use:" gives rage         -> rage potion
 --   Potion,       "Use:" restores health    -> health potion; mana -> mana potion
---   Potion / Elixir, "Use:" raises Strength, Agility, Stamina or Intellect
---                                           -> that stat's elixir button
+--   any other consumable (elixir, scroll, potion, Juju, E'ko, quest rewards),
+--     "Use:" raises Strength, Agility, Stamina, Intellect or Spirit
+--                                           -> that stat's buff button
 --                    ("maximum health", Fortitude elixirs, counts as Stamina)
---   Scroll (or Other, on retail), "Use:" raises one of those -> that stat's scroll button
+--   any other consumable, "Use:" raises Armor or absorbs damage
+--                                           -> protection (Scroll of Protection,
+--                                              Elixir of Defense, protection potions)
 --   Item Enhancement / other consumable, "Use:" mentions your weapon
 --                                           -> weapon buff
 --   other consumable, "Use:" does damage    -> explosives (retail files them here)
+--   other consumable, "Use:" increases / improves / grants / raises anything
+--     else (armor, attack power, crit, resistance, speed, ...) -> other buffs
 --   Trade Goods, subclass Explosives        -> explosives (classic files them here)
 -- Items of other classes are only checked for teleporting: misc items and
 -- armour (rings, cloaks, trinkets); anything else is skipped.
 -- ---------------------------------------------------------------------------
--- item classes worth a look: consumable, armour, trade goods, miscellaneous
-local LOOKED_AT = { [0] = true, [4] = true, [7] = true, [15] = true }
-local STAT_KEYS = { "strength", "agility", "stamina", "intellect" }   -- SPELL_STAT1..4_NAME
+-- item classes worth a look: consumable, armour, trade goods, quest (Juju and
+-- E'ko are quest items), miscellaneous
+local LOOKED_AT = { [0] = true, [4] = true, [7] = true, [12] = true, [15] = true }
+local STAT_KEYS = { "strength", "agility", "stamina", "intellect", "spirit" }   -- SPELL_STAT1..5_NAME
 
 local scanTip
 local function TooltipLines(id)
@@ -2020,7 +2036,7 @@ local function Classify(id)
     if not lines or #lines < 2 or lines[1] == RETRIEVING_ITEM_INFO then return nil end
     local use = ITEM_SPELL_TRIGGER_ONUSE or "Use:"
     local health, mana, rage, damage, weapon, travel, wellFed, cure = false, false, false, false, false, false, false, false
-    local stats, hasUse = {}, false
+    local stats, hasUse, restore, buff, protect = {}, false, false, false, false
     for _, text in ipairs(lines) do
         local low = text:lower()
         if text:find(use, 1, true) then hasUse = true end
@@ -2040,6 +2056,12 @@ local function Classify(id)
                 if HasWord(low, "mana", MANA) then mana = true end
                 if low:find("%f[%a]rage%f[%A]") then rage = true end   -- the word, not "average"
                 if HasWord(low, "damage") then damage = true end
+                if HasWord(low, "restore") then restore = true end   -- a potion that heals, not one that raises health
+                -- raises something for a while (not "permanently", like an armor kit)
+                if HasWord(low, "increase", "improve", "grant", "raise")
+                    and not HasWord(low, "permanent") then buff = true end
+                -- raises Armor, or a protection potion: "Absorbs 1950 to 3250 fire damage"
+                if (buff and HasWord(low, "armor", ARMOR)) or (HasWord(low, "absorb") and damage) then protect = true end
                 for i, key in ipairs(STAT_KEYS) do
                     local name = _G["SPELL_STAT" .. i .. "_NAME"] or (key:sub(1, 1):upper() .. key:sub(2))
                     if text:find(name, 1, true) then stats[key] = true end
@@ -2060,30 +2082,33 @@ local function Classify(id)
         end
     end
     if travel then return { "travel" }, sig end
-    if class ~= 0 then return {}, sig end     -- armour and misc items: only teleports count
-    if cure then return { "antivenom" }, sig end   -- "Use: Cures 1 poison effect ..."
+    -- quest items only count as buffs; armour and misc items only as teleports
+    if class == 12 then sub = -1 elseif class ~= 0 then return {}, sig end
+    if cure and class == 0 then return { "antivenom" }, sig end   -- "Use: Cures 1 poison effect ..."
     local sets = {}
-    if sub == 5 then
+    if sub == -1 and not (next(stats) or protect or buff) then
+        -- a quest item that is no buff
+    elseif sub == 5 then
         if wellFed then return { "food_buff" }, sig end
         if health then sets[#sets + 1] = "food" end
         if mana then sets[#sets + 1] = "water" end
     elseif sub == 1 and rage then
         sets[#sets + 1] = "rage"
-    elseif sub == 1 and (health or mana) then
+    elseif sub == 1 and restore and (health or mana) then
         if health then sets[#sets + 1] = "hpot" end
         if mana then sets[#sets + 1] = "mpot" end
-    elseif sub == 4 or (sub == 8 and next(stats)) then   -- retail files the old scrolls under Other (8)
+    elseif sub ~= 6 and next(stats) then   -- (6: item enhancements, worn on gear)
         for _, key in ipairs(STAT_KEYS) do
-            if stats[key] then sets[#sets + 1] = "scroll_" .. key end
+            if stats[key] then sets[#sets + 1] = "buff_" .. key end
         end
-    elseif sub == 1 or sub == 2 then
-        for _, key in ipairs(STAT_KEYS) do
-            if stats[key] then sets[#sets + 1] = "elixir_" .. key end
-        end
-    elseif weapon then
+    elseif sub ~= 6 and protect then
+        sets[#sets + 1] = "buff_protection"
+    elseif weapon and sub ~= -1 then
         sets[#sets + 1] = "weapon_buff"
-    elseif sub == 0 and damage then
+    elseif sub == 0 and damage and not buff then
         sets[#sets + 1] = "explosives"
+    elseif sub ~= 6 and buff then
+        sets[#sets + 1] = "buff_other"
     end
     return sets, sig
 end
@@ -3243,8 +3268,8 @@ end
 UI.BUTTON_GROUPS = {
     { name = "Recovery", keys = { "healthstone", "healthpot", "manapot", "ragepot", "bandage", "antivenom" } },
     { name = "Food & Drink", keys = { "food", "water", "bufffood" } },
-    { name = "Buffs", keys = { "flask", "weaponbuff", "agielixir", "intelixir", "staelixir", "strelixir",
-        "agiscroll", "intscroll", "stascroll", "strscroll" } },
+    { name = "Buffs", keys = { "agility", "intellect", "stamina", "strength", "spirit", "protection",
+        "otherbuff", "flask", "weaponbuff" } },
     { name = "Utility", keys = { "travel", "explosives" } },
     { name = "Class", keys = { "portals", "comprehend" } },
 }
@@ -4317,6 +4342,75 @@ local function WatchBars(elapsed)
 end
 
 -- Runs once per login. The saved data is already loaded by now.
+-- 0.92.0 merged the Scroll and Elixir buttons of each stat into one buff
+-- button (see CATALOG). Once, at login: a character's new button is on if
+-- either old one was (off if one was switched off and neither on), and a popout
+-- direction and hand sorted items move over. The elixir buttons' macros are
+-- kept (the next update renames them); the scroll buttons' are deleted a
+-- moment after login, once the macros are loaded (UI.RemoveScrollMacros).
+UI.MERGED = {   -- old scroll key, old elixir key, new key, scroll macro names
+    { "agiscroll", "agielixir", "agility", "Agility Scroll", "No Agi Scroll" },
+    { "intscroll", "intelixir", "intellect", "Intellect Scroll", "No Int Scroll" },
+    { "stascroll", "staelixir", "stamina", "Stamina Scroll", "No Sta Scroll" },
+    { "strscroll", "strelixir", "strength", "Strength Scroll", "No Str Scroll" },
+}
+function UI.MergeBuffButtons()
+    local db = DB()
+    if db.buffsMerged then return end
+    OnOff()   -- (moves a pre-0.89.0 account-wide list into enabledBy first)
+    for _, t in pairs(type(db.enabledBy) == "table" and db.enabledBy or {}) do
+        if type(t) == "table" then
+            for _, m in ipairs(UI.MERGED) do
+                local a, b = t[m[1]], t[m[2]]
+                if t[m[3]] == nil and (a ~= nil or b ~= nil) then t[m[3]] = (a == true or b == true) end
+                t[m[1]], t[m[2]] = nil, nil
+            end
+        end
+    end
+    if type(db.popDir) == "table" then
+        for _, m in ipairs(UI.MERGED) do
+            db.popDir[m[3]] = db.popDir[m[3]] or db.popDir[m[2]] or db.popDir[m[1]]
+            db.popDir[m[1]], db.popDir[m[2]] = nil, nil
+        end
+    end
+    -- /amac assign results: scroll_<stat> and elixir_<stat> are now buff_<stat>
+    for _, rec in pairs(type(db.learned) == "table" and db.learned or {}) do
+        if type(rec) == "table" and type(rec.sets) == "table" then
+            local seen, sets = {}, {}
+            for _, s in ipairs(rec.sets) do
+                s = s:gsub("^scroll_", "buff_"):gsub("^elixir_", "buff_")
+                if not seen[s] then seen[s] = true; sets[#sets + 1] = s end
+            end
+            rec.sets = sets
+        end
+    end
+    db.buffsMerged = true
+end
+
+-- The merged scroll buttons' macros (general tab, shared): deleted once, out
+-- of combat, when the macros have loaded. Only ours: one that used an item or
+-- shows the empty-button message.
+function UI.RemoveScrollMacros()
+    local db = DB()
+    if db.scrollMacrosGone or InCombatLockdown() then return end
+    if (GetNumMacros() or 0) == 0 then return end   -- not loaded yet (or none at all): next time
+    local deleted = false
+    for _, m in ipairs(UI.MERGED) do
+        for _, name in ipairs({ m[4], m[5] }) do
+            local idx = GetMacroIndexByName(name)
+            local body = idx and idx > 0 and GetMacroBody(idx)
+            if type(body) == "string" and (body:find("#showtooltip", 1, true) or body:find("/amac empty", 1, true)) then
+                if pcall(DeleteMacro, idx) then deleted = true end
+            end
+        end
+    end
+    if deleted then
+        db.idx = {}   -- the macros after them moved (see DeleteManaged)
+        Print("the Scroll and Elixir buttons are now one buff button per stat; the scroll buttons' macros were removed")
+    end
+    db.scrollMacrosGone = true
+end
+
 local function Init()
     local db = DB()
     report.priorSessions = tonumber(db.sessions) or 0
@@ -4339,6 +4433,8 @@ local function Init()
         db.classifier = CLASSIFIER
     end
     db.audit, db.learnOff = nil, nil   -- gone in 0.87.0 (no built-in lists; learning is always on)
+    local okMerge, errMerge = pcall(UI.MergeBuffButtons)
+    if not okMerge then Fail("merging the buff buttons", errMerge) end
     pcall(RegisterEUI)   -- in case EllesmereUI loaded after this addon
     local okPanel, errPanel = pcall(UI.RegisterBlizzPanel)   -- Esc > Options > AddOns
     if not okPanel then Fail("options page", errPanel) end
@@ -4363,6 +4459,8 @@ frame:SetScript("OnEvent", function(_, event)
         if event == "PLAYER_ENTERING_WORLD" and C_Timer and C_Timer.After then
             -- bar addons build their buttons a moment after login
             C_Timer.After(3, function()
+                local okScrolls, errScrolls = pcall(UI.RemoveScrollMacros)   -- (once, 0.92.0)
+                if not okScrolls then Fail("removing the old scroll macros", errScrolls) end
                 SafeCollect()
                 local ok, err = pcall(RefreshGlow)
                 if not ok then Fail("highlight/popout", err) end
