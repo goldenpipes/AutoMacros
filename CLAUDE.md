@@ -24,7 +24,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   not yet tested = `--prerelease`. Every iteration is still committed and pushed.
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.lua` / `AutoMacros.toc` are always the current version.
-- **Current version: 0.89.0.**
+- **Current version: 0.89.1.**
 - **Copy the current files into `previous/<version>/` BEFORE the first edit of a new iteration**
   (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version in the .toc and anywhere else it appears.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
@@ -62,6 +62,14 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.89.1
+- 0.89.0 per-character on/off works in retail (enabledBy has both characters). Steinstien got
+  all buttons on: the old account-wide list was all-on when 0.89.0 migrated it.
+- Rule misses found in retail: Scroll of Stamina II (1711), Scroll of Intellect V (27499) are
+  class 0 **sub 8** (Other) on retail, sub 4 on Forever (Wowhead forever XML) -> scroll rule
+  also takes sub 8 when a stat matched. Elixir of Minor Fortitude (2458, sub 2): "maximum
+  health" on both clients -> counts as Stamina (elixir_stamina). CLASSIFIER 5.
 
 ## 0.89.0 — on/off per character, "in bags" indicator
 - Lewis: on/off per character. `OnOff()` (top-level, like Picks/MacroSlots) =

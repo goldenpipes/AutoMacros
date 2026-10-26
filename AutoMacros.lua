@@ -1,4 +1,4 @@
--- AutoMacros 0.89.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.89.1 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one file for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -134,7 +134,7 @@ end
 --   glow, noFlyout, stockTooltip, showNames   on/off options
 -- ---------------------------------------------------------------------------
 local SCHEMA = 2
-local CLASSIFIER = 4   -- raise when the learning rules change, so items are checked again
+local CLASSIFIER = 5   -- raise when the learning rules change, so items are checked again
 
 local STYLE_DEFAULTS = {
     glowColor = { 1, 0.15, 0.15, 1 }, glowThickness = 3, glowTexture = "solid",
@@ -1862,7 +1862,8 @@ end
 --   Potion,       "Use:" restores health    -> health potion; mana -> mana potion
 --   Potion / Elixir, "Use:" raises Strength, Agility, Stamina or Intellect
 --                                           -> that stat's elixir button
---   Scroll,       "Use:" raises one of those -> that stat's scroll button
+--                    ("maximum health", Fortitude elixirs, counts as Stamina)
+--   Scroll (or Other, on retail), "Use:" raises one of those -> that stat's scroll button
 --   Item Enhancement / other consumable, "Use:" mentions your weapon
 --                                           -> weapon buff
 --   other consumable, "Use:" does damage    -> explosives (retail files them here)
@@ -1945,6 +1946,8 @@ local function Classify(id)
                     local name = _G["SPELL_STAT" .. i .. "_NAME"] or (key:sub(1, 1):upper() .. key:sub(2))
                     if text:find(name, 1, true) then stats[key] = true end
                 end
+                -- Fortitude elixirs raise maximum health, not Stamina: the nearest button
+                if low:find("maximum health", 1, true) then stats.stamina = true end
             end
         end
     end
@@ -1971,7 +1974,7 @@ local function Classify(id)
     elseif sub == 1 and (health or mana) then
         if health then sets[#sets + 1] = "hpot" end
         if mana then sets[#sets + 1] = "mpot" end
-    elseif sub == 4 then
+    elseif sub == 4 or (sub == 8 and next(stats)) then   -- retail files the old scrolls under Other (8)
         for _, key in ipairs(STAT_KEYS) do
             if stats[key] then sets[#sets + 1] = "scroll_" .. key end
         end

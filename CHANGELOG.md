@@ -4,7 +4,13 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
-## 0.89.0 - 2026-10-26 (pre-release, not yet tested in game)
+## 0.89.1 - 2026-10-26 (pre-release)
+
+### Fixed
+- Stat scrolls (Scroll of Stamina, Intellect, ...) were not recognised on retail.
+- Fortitude elixirs (which raise maximum health) now go on the Stamina Elixir button.
+
+## 0.89.0 - 2026-10-26 (pre-release, tested in retail)
 
 ### Added
 - The Buttons settings page shows which switched-off buttons you could use: a green number on
