@@ -1,4 +1,4 @@
--- AutoMacros 0.93.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.94.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one file for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -2726,7 +2726,8 @@ RefreshArrows = function()
         local mine = MacroOnButton(b)
         ApplyLabel(b, mine)
         local m = enabled and mine or nil
-        if m then report.onBar[m.name] = (report.onBar[m.name] or 0) + 1 end
+        -- on a bar you can see (popouts on or off): the settings mark buttons that are on none
+        if mine and b:IsVisible() then report.onBar[mine.name] = (report.onBar[mine.name] or 0) + 1 end
         local list = m and flyoutItems[m.name]
         if list and #list >= 2 then
             local a = ArrowFor(b)
@@ -3253,6 +3254,53 @@ end
 
 UI.HAVE_COLOR = "|cff40ff40"   -- the "in bags" note
 
+-- true when you carry items for a button but it is on none of the action bars
+-- on screen (as the spellbook marks spells missing from your bars)
+function UI.NotOnBars(e)
+    if not report.have then return false end
+    local ok, n = pcall(Stocked, e, report.have)
+    if not ok or n == 0 then return false end
+    return ((report.onBar or {})[e.name] or 0) == 0
+end
+
+-- The spellbook's "not on your action bars" glow on settings icon b: its
+-- atlas, added on, a little past the button, pulsing between half and full
+-- (Blizzard_SpellBookItem.xml, ActionBarHighlight). Older clients without that
+-- art get the classic checked-button highlight.
+function UI.UnplacedGlow(b)
+    if b.unplaced then return b.unplaced end
+    local g = b:CreateTexture(nil, "OVERLAY", nil, 7)
+    local ok, found = pcall(g.SetAtlas, g, "spellbook-item-unassigned-glow")
+    if not ok or found == false then g:SetTexture("Interface\\Buttons\\CheckButtonHilight") end
+    g:SetBlendMode("ADD")
+    g:SetPoint("TOPLEFT", b, "TOPLEFT", -4, 3)
+    g:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", 3, -3)
+    -- bright even on a button that is off (drawn at half alpha)
+    if g.SetIgnoreParentAlpha then pcall(g.SetIgnoreParentAlpha, g, true) end
+    local anim = g:CreateAnimationGroup()
+    anim:SetLooping("REPEAT")
+    for i, step in ipairs({ { 0.5, 1, "OUT" }, { 1, 0.5, "IN" } }) do
+        local a = anim:CreateAnimation("Alpha")
+        pcall(a.SetFromAlpha, a, step[1])
+        pcall(a.SetToAlpha, a, step[2])
+        a:SetDuration(0.5)
+        a:SetOrder(i)
+        pcall(a.SetSmoothing, a, step[3])
+    end
+    g.anim = anim
+    g:Hide()
+    b.unplaced = g
+    return g
+end
+
+-- the tooltip line for it, in the spellbook's light blue
+function UI.AddNotOnBarsLine(tip)
+    local c = LIGHTBLUE_FONT_COLOR
+    local r, g, b = 0.53, 0.67, 1
+    if c and c.GetRGB then r, g, b = c:GetRGB() end
+    tip:AddLine("Not on your action bars - drag it onto one", r, g, b)
+end
+
 -- Puts a button's macro on the cursor, to drop on any action bar (Blizzard's,
 -- EllesmereUI's, ...). A button that is off is switched on first, which makes
 -- its macro straight away. Bars cannot be changed in combat, so not then.
@@ -3386,6 +3434,7 @@ UI.HEADERS.buttons = function(f, width)
                 if n > 0 then
                     GameTooltip:AddLine(string.format("You carry %d matching item%s", n, n == 1 and "" or "s"), 0.25, 1, 0.25)
                 end
+                if UI.NotOnBars(self.entry) then UI.AddNotOnBarsLine(GameTooltip) end
                 GameTooltip:AddLine("Drag onto an action bar to place it", 0.7, 0.7, 0.7)
                 GameTooltip:Show()
             end)
@@ -3412,10 +3461,15 @@ UI.HEADERS.buttons = function(f, width)
             if b.have.SetIgnoreParentAlpha then pcall(b.have.SetIgnoreParentAlpha, b.have, true) end
         end
         b.have:SetText(n > 0 and n or "")
+        -- you carry items for it but it is on none of your bars: the spellbook's glow
+        local g = UI.UnplacedGlow(b)
+        local loose = UI.NotOnBars(e)
+        g:SetShown(loose)
+        if loose and not g.anim:IsPlaying() then g.anim:Play() elseif not loose then g.anim:Stop() end
         b:Show()
     end
     for i = #list + 1, #f.icons do f.icons[i]:Hide() end
-    f.hint = f.hint or UI.SmallText(f, "Click an icon to turn its button on or off for this character. A green number: you carry that many matching items. Drag one onto an action bar.")
+    f.hint = f.hint or UI.SmallText(f, "Click an icon to turn it on or off for this character; drag it onto an action bar. Green number: matching items you carry. Glow: you carry some, but it is on none of your bars.")
     f.hint:ClearAllPoints()
     f.hint:SetWidth(width - 20)
     f.hint:SetPoint("TOP", f, "TOP", 0, -16 - rows * (size + gap) - 4)
@@ -4288,6 +4342,8 @@ local function ScheduleGlow()
     local function run()
         glowTimerSet = false
         RefreshGlow()
+        -- a button dragged onto a bar (or off one): the settings page's glow follows
+        if report.afterUpdate then pcall(report.afterUpdate) end
     end
     if C_Timer and C_Timer.After then C_Timer.After(0.3, run) else run() end
 end
@@ -4346,6 +4402,7 @@ local function WatchBars(elapsed)
     if ok and changed then
         local ok2, err = pcall(RefreshGlow)
         if not ok2 then Fail("highlight/popout", err) end
+        if report.afterUpdate then pcall(report.afterUpdate) end   -- the settings page's glow
     end
 end
 

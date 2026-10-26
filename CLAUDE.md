@@ -24,7 +24,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   not yet tested = `--prerelease`. Every iteration is still committed and pushed.
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.lua` / `AutoMacros.toc` are always the current version.
-- **Current version: 0.93.0.**
+- **Current version: 0.94.0.**
 - **Copy the current files into `previous/<version>/` BEFORE the first edit of a new iteration**
   (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version in the .toc and anywhere else it appears.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
@@ -62,6 +62,23 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.94.0 — "not on your bars" glow
+- Lewis: on the settings page, mark buttons that have items but are not on an action bar, as
+  the spellbook does (glow + tooltip). From Blizzard's source (gh api on Gethe/wow-ui-source,
+  Blizzard_PlayerSpells/SpellBook/Blizzard_SpellBookItem.xml/.lua): `Button.ActionBarHighlight`
+  = atlas `spellbook-item-unassigned-glow`, ADD, TOPLEFT -4,3 / BOTTOMRIGHT 3,-3, looping Alpha
+  0.5->1 (0.5 s, OUT) then 1->0.5 (IN); shown when status MissingFromAllBars; tooltip line
+  `SPELLBOOK_SPELL_NOT_ON_ACTION_BAR` in LIGHTBLUE_FONT_COLOR (spell wording, so ours is
+  "Not on your action bars - drag it onto one" in that color).
+- `UI.NotOnBars(e)` = Stocked > 0 and `report.onBar[name]` == 0; `UI.UnplacedGlow(b)` copies
+  the glow (fallback texture CheckButtonHilight, ignores parent alpha); icon strip only.
+  `report.onBar` now counts every visible bar button holding the macro (it used to count
+  nothing while popouts were off). After bar changes (ScheduleGlow's run, the bar watcher)
+  `report.afterUpdate` refreshes the open settings page.
+- `gh api repos/Gethe/wow-ui-source/contents/<path> -H "Accept: application/vnd.github.raw"`
+  works for reading Blizzard's UI code (raw.githubusercontent 404'd on that path guess;
+  `gh search code ... --repo Gethe/wow-ui-source` finds files).
 
 ## 0.93.0 — Armor Buff and Resistance
 - Lewis likes Other Buffs; attack power items stay there (vanilla has ~3: Winterfall

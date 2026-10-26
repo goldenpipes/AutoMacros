@@ -4,6 +4,13 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.94.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Added
+- The icons at the top of the AutoMacros settings page glow, like spells in the spellbook that
+  are missing from your action bars, when you carry items for that button but it is on none of
+  your bars. Its tooltip says so too. The glow goes away as soon as you drag it onto a bar.
+
 ## 0.93.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Added
