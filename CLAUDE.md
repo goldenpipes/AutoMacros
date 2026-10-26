@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.105.0.**
+- **Current version: 0.106.0.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -88,6 +88,22 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.106.0 — Custom page (drag and drop)
+- Lewis: make custom buttons in the settings by dragging items from bags / spells from the
+  spellbook onto a blank button. New file **Custom.lua** (after OptionsPages in the .toc):
+  db.custom[key] = { title, kind = items|spells, ids, oldNames }; `UI.CustomCreate(kind, id)`
+  (key from the name via `UI.CustomKey`, title = item/spell name, 16 chars), `CustomAdd`
+  (one kind per button), `CustomRemove` (last one out deletes the button), `CustomRename`
+  (old title + "No <old>" into oldNames; CustomEntries passes `oldNames`, so FindMacro finds
+  and Apply renames the macro), `CustomDelete` (as /amac custom delete: toDelete). After a
+  change `UI.CustomChanged` (RebuildMacros, Refresh, headers, Custom + Buttons pages, EUI).
+  `UI.CursorThing()`: GetCursorInfo "item", id / "spell", slot, book, spellID (fallback
+  GetSpellBookItemInfo(slot, book)); `UI.DropSlot` takes it on OnReceiveDrag or OnClick.
+- Pages may have `build = fn(parent, width) -> y` (UI.ShowPanel, EUI buildPage) besides
+  sections. PAGES: Custom is 2nd (tree: right under AutoMacros), stamp UI.CustomStamp; the
+  Buttons page now has stamp `UI.ButtonsStamp` (keys + titles) so new buttons appear.
+  `/amac custom` still works as before. Untested in game.
 
 ## 0.105.0
 - Lewis: a progress bar for the test. Learning.lua: `TestBar()` (frame AutoMacrosTestBar,

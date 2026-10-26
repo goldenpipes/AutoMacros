@@ -312,6 +312,14 @@ function UI.EnabledButtons()
     return list
 end
 
+-- which buttons the Buttons page lists (your own included, with their names):
+-- it is built again when this changes (see UI.ShowPanel)
+function UI.ButtonsStamp()
+    local keys = {}
+    for _, e in ipairs(UI.AvailableButtons()) do keys[#keys + 1] = e.key .. "=" .. tostring(e.title) end
+    return table.concat(keys, ",")
+end
+
 -- which buttons the Direction section lists: the page is built again when this
 -- changes (see UI.ShowPanel)
 function UI.DirectionStamp()

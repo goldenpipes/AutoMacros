@@ -62,7 +62,12 @@ end
 PAGES = {
     -- previewH: the preview strip's fixed height on Blizzard's pages (see UI.FitHeader);
     -- previewSide = "right": the preview in a column right of the settings instead
-    { name = "Buttons", header = "buttons", previewH = 140, sections = UI.ButtonSections },
+    -- (stamp: built again when the buttons change, e.g. a new one on the Custom page)
+    { name = "Buttons", header = "buttons", previewH = 140, sections = UI.ButtonSections,
+        stamp = function() return UI.ButtonsStamp() end },
+    -- build: a page that lays itself out (Custom.lua) instead of sections
+    { name = "Custom", sections = {}, build = function(parent, width) return UI.BuildCustomPage(parent, width) end,
+        stamp = function() return UI.CustomStamp() end },
     { name = "Highlight", header = "glow", previewH = 120, sections = {
         { name = "Highlight", items = {
             { type = "toggle", label = "Highlight empty buttons",
@@ -478,6 +483,10 @@ function UI.ShowPanel(i)
     if not pn.built then
         pn.built, pn.stamp = true, stamp
         local y = 0
+        if page.build then
+            local ok, h = pcall(page.build, pn.content, pn.width)
+            if ok then y = h else Fail(page.name .. " page", h) end
+        end
         for _, section in ipairs(UI.PageSections(page)) do
             y = BuildPage(pn.content, section, 0, y, false) - 10
         end

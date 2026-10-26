@@ -4,6 +4,16 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.106.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Added
+- A **Custom** settings page (under AutoMacros) to make your own buttons: drag an item from
+  your bags or a spell from your spellbook onto the + to start a new button, named after it.
+  Each button lists its items or spells: drag more onto its +, right-click one to take it
+  out, type a new name and press Enter to rename it (its macro stays on your bars), or
+  Delete it (its macro goes too). Your buttons also appear on the AutoMacros page straight
+  away.
+
 ## 0.105.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Added
