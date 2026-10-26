@@ -4,6 +4,14 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.98.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Changed
+- Anti-Venom, Disease Cure and Bleed Cure are one **Debuff Cure** button (Cure on the settings
+  page). It takes anything that cures or removes poison, disease, bleeding, curses, magic,
+  stuns or snares. It is on if any of the three was, and the Anti-Venom macro stays on your
+  bars (renamed).
+
 ## 0.97.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Added

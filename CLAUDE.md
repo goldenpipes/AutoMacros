@@ -24,7 +24,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   not yet tested = `--prerelease`. Every iteration is still committed and pushed.
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.lua` / `AutoMacros.toc` are always the current version.
-- **Current version: 0.97.0.**
+- **Current version: 0.98.0.**
 - **Copy the current files into `previous/<version>/` BEFORE the first edit of a new iteration**
   (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version in the .toc and anywhere else it appears.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
@@ -62,6 +62,14 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.98.0 — one Debuff Cure button
+- Lewis: anti-venom, disease and bleed removal in **one** button; more debuff removers will
+  turn up. 0.97.0's three buttons -> `cure` ("Debuff Cure", saved name AM_AntiVenom, alias
+  antivenom, oldNames = Anti-Venom / Disease Cure / Bleed Cure names, UI.SHORT "Cure",
+  placeholder Restorative Potion). Rule: cure/remove/neutralize/dispel + poison, disease,
+  bleed, curse, magic, stun, impair, snare, root or harmful -> `cure`. CLASSIFIER 10. Init
+  moves enabledBy/popDir/manual learned antivenom|antidisease|antibleed -> cure (on if any).
 
 ## 0.97.0 — cures; quest and misc items count
 - Lewis: get **every item that benefits the player** into the right category, incl. quest

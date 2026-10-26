@@ -1,4 +1,4 @@
--- AutoMacros 0.97.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.98.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one file for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -146,7 +146,7 @@ end
 --   glow, noFlyout, stockTooltip, showNames   on/off options
 -- ---------------------------------------------------------------------------
 local SCHEMA = 2
-local CLASSIFIER = 9   -- raise when the learning rules change, so items are checked again
+local CLASSIFIER = 10   -- raise when the learning rules change, so items are checked again
 
 local STYLE_DEFAULTS = {
     glowColor = { 1, 0.15, 0.15, 1 }, glowThickness = 3, glowTexture = "solid",
@@ -456,15 +456,15 @@ local CATALOG = {
     -- spells: after the bandages, for whoever knows them (Undead: Cannibalize)
     { key = "bandage", name = "AM_Bandage", title = "Bandage", empty = "No Bandage", label = "bandages",
       set = "bandage", spells = { 20577 }, placeholder = { item = 1251 } },
-    -- cures: anything whose "Use:" cures or removes that (an item that cures
-    -- several is on each of them): potions, First Aid's Anti-Venom, poultices
-    -- and tourniquets (Forever), quest rewards like Jungle Remedy
-    { key = "antivenom", name = "AM_AntiVenom", title = "Anti-Venom", empty = "No Anti-Venom", label = "anti-venom",
-      set = "antivenom", placeholder = { item = 2633 } },
-    { key = "antidisease", name = "AM_Disease", title = "Disease Cure", empty = "No Disease Cure",
-      label = "disease cures", set = "antidisease", placeholder = { item = 9030 } },   -- Restorative Potion
-    { key = "antibleed", name = "AM_Bleed", title = "Bleed Cure", empty = "No Bleed Cure",
-      label = "bleed cures", set = "antibleed", placeholder = { item = 3530 } },       -- Wool Bandage
+    -- Anything whose "Use:" cures or removes a debuff: poison, disease, bleeding,
+    -- curse, magic, stuns and snares. Potions, First Aid's Anti-Venom, poultices
+    -- and tourniquets (Forever), quest rewards like Jungle Remedy. Was the
+    -- Anti-Venom button (same macro, renamed; 0.97.0 briefly had separate
+    -- disease and bleed buttons too).
+    { key = "cure", alias = "antivenom", name = "AM_AntiVenom", title = "Debuff Cure", empty = "No Debuff Cure",
+      label = "debuff cures", set = "cure",
+      oldNames = { "Anti-Venom", "No Anti-Venom", "Disease Cure", "No Disease Cure", "Bleed Cure", "No Bleed Cure" },
+      placeholder = { item = 9030 } },   -- Restorative Potion
     -- One button per buff, whatever the item is (elixir, scroll, potion, Juju,
     -- E'ko, Blasted Lands quest rewards, ...). Until 0.92.0 scrolls and elixirs
     -- had a button each; the elixir buttons' macros carry on as these (same
@@ -1978,10 +1978,10 @@ end
 -- is only examined once. Anything the rules get wrong can be corrected by hand
 -- with /amac assign and /amac unassign, and hand-made entries always win.
 --   any item,     "Use:" teleports you / returns you home -> hearth/teleport
---   any item but gear, "Use:" cures or removes poison / disease / bleeding
---                                           -> anti-venom / disease cure / bleed cure
---                    (each that fits: Jungle Remedy, Restorative Potion; First
---                     Aid's poultices and tourniquets are trade goods)
+--   any item but gear, "Use:" cures or removes poison, disease, bleeding,
+--     curse, magic, stuns or snares       -> debuff cure (Jungle Remedy,
+--                    Restorative Potion; First Aid's poultices and tourniquets
+--                    are trade goods)
 --   consumable, subclass Bandage            -> bandage
 --   consumable, subclass Flask              -> flask
 --   Food & Drink, tooltip says "well fed"   -> buff food
@@ -2061,7 +2061,7 @@ local function Classify(id)
     local use = ITEM_SPELL_TRIGGER_ONUSE or "Use:"
     local health, mana, rage, damage, weapon, travel, wellFed = false, false, false, false, false, false, false
     local stats, hasUse, restore, buff, armor, resist, seated = {}, false, false, false, false, false, false
-    local cures = {}   -- what it cures, as the buttons for it: antivenom, antidisease, antibleed
+    local cure = false   -- removes a debuff
     for _, text in ipairs(lines) do
         local low = text:lower()
         if text:find(use, 1, true) then hasUse = true end
@@ -2076,11 +2076,12 @@ local function Classify(id)
             if HasWord(low, "teleport", "returns you to") then travel = true end
             if HasWord(low, "weapon") then weapon = true end
             -- "Cures 1 poison effect", "Target is cured of diseases", "Removes 1 magic,
-            -- curse, poison or disease effect", "cured of bleeds" (Forever's tourniquets)
-            if HasWord(low, "cure", "remove", "neutralize") then
-                if HasWord(low, "poison") then cures.antivenom = true end
-                if HasWord(low, "disease") then cures.antidisease = true end
-                if HasWord(low, "bleed") then cures.antibleed = true end
+            -- curse, poison or disease effect", "cured of bleeds" (Forever's tourniquets),
+            -- stuns and snares ("removes existing stun and movement impairing effects")
+            if HasWord(low, "cure", "remove", "neutralize", "dispel")
+                and HasWord(low, "poison", "disease", "bleed", "curse", "magic", "stun", "impair", "snare",
+                    "root", "harmful") then
+                cure = true
             end
             -- real food and drink: "Must remain seated while eating"
             if HasWord(low, "seated", "while eating", "while drinking") then seated = true end
@@ -2119,12 +2120,9 @@ local function Classify(id)
     if travel then return { "travel" }, sig end
     if class == 4 then return {}, sig end   -- gear (rings, cloaks, trinkets): only teleports count
     -- a cure, from anything you carry: potions, First Aid's poultices and
-    -- tourniquets (trade goods), quest rewards; on every button it fits
+    -- tourniquets (trade goods), quest rewards
+    if cure then return { "cure" }, sig end
     local sets = {}
-    for _, key in ipairs({ "antivenom", "antidisease", "antibleed" }) do
-        if cures[key] then sets[#sets + 1] = key end
-    end
-    if #sets > 0 then return sets, sig end
     local restoring = restore and (health or mana) and not weapon   -- (not mana oils)
     if class == 7 then   -- other trade goods: only runes and the like, "Restores 900 to 1500 mana"
         if not restoring then return {}, sig end
@@ -3396,7 +3394,7 @@ end
 UI.SHORT = {
     healthpot = "Health", manapot = "Mana", ragepot = "Rage",
     agility = "Agility", intellect = "Intellect", stamina = "Stamina", strength = "Strength",
-    spirit = "Spirit", armor = "Armor", otherbuff = "Other", weaponbuff = "Weapon",
+    spirit = "Spirit", armor = "Armor", otherbuff = "Other", weaponbuff = "Weapon", cure = "Cure",
 }
 function UI.Name(e)
     return UI.SHORT[e.key] or e.title
@@ -3404,8 +3402,7 @@ end
 
 -- How the Buttons tab sorts them. Anything not listed goes under Other.
 UI.BUTTON_GROUPS = {
-    { name = "Recovery", keys = { "healthpot", "manapot", "ragepot", "bandage", "antivenom", "antidisease",
-        "antibleed" } },
+    { name = "Recovery", keys = { "healthpot", "manapot", "ragepot", "bandage", "cure" } },
     { name = "Food & Drink", keys = { "food", "water", "bufffood" } },
     { name = "Buffs", keys = { "agility", "intellect", "stamina", "strength", "spirit", "armor",
         "resistance", "otherbuff", "flask", "weaponbuff" } },
@@ -4635,6 +4632,35 @@ local function Init()
     if type(db.popDir) == "table" and db.popDir.protection then
         db.popDir.armor = db.popDir.armor or db.popDir.protection
         db.popDir.protection = nil
+    end
+    -- 0.98.0: Anti-Venom (and 0.97.0's Disease / Bleed Cure) are one Debuff Cure button:
+    -- on if any of them was on
+    local oldCures = { "antivenom", "antidisease", "antibleed" }
+    for _, t in pairs(type(db.enabledBy) == "table" and db.enabledBy or {}) do
+        if type(t) == "table" then
+            for _, k in ipairs(oldCures) do
+                if t[k] ~= nil then
+                    if t.cure == nil or t[k] == true then t.cure = t[k] end
+                    t[k] = nil
+                end
+            end
+        end
+    end
+    if type(db.popDir) == "table" then
+        for _, k in ipairs(oldCures) do
+            db.popDir.cure = db.popDir.cure or db.popDir[k]
+            db.popDir[k] = nil
+        end
+    end
+    for _, rec in pairs(type(db.learned) == "table" and db.learned or {}) do   -- /amac assign
+        if type(rec) == "table" and type(rec.sets) == "table" then
+            local seen, sets = {}, {}
+            for _, s in ipairs(rec.sets) do
+                if s == "antivenom" or s == "antidisease" or s == "antibleed" then s = "cure" end
+                if not seen[s] then seen[s] = true; sets[#sets + 1] = s end
+            end
+            rec.sets = sets
+        end
     end
     pcall(RegisterEUI)   -- in case EllesmereUI loaded after this addon
     local okPanel, errPanel = pcall(UI.RegisterBlizzPanel)   -- Esc > Options > AddOns
