@@ -14,8 +14,14 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   on buttons holding its own macros itself (`/amac names` toggles this).
 
 ## Versioning — always follow
-- Every iteration is saved as its own version. Format is three parts: `0.24.0`, `0.25.0`, ...
-  (bump the middle number by 1 per iteration: 0.24.0 -> 0.25.0 -> 0.26.0).
+- Every iteration is saved as its own version, **semver MAJOR.MINOR.PATCH** (since 0.85.0):
+  - new features or changed behaviour: bump the middle number, patch back to 0 (0.85.0 -> 0.86.0)
+  - only fixing a bug/glitch in the previous version: bump the last number (0.85.0 -> 0.85.1)
+  - `1.0.0` = first stable release (works on Forever, Lewis happy to recommend it). Stay on 0.x until then.
+- **CHANGELOG.md**: every version gets an entry at the top (date, Added / Changed / Fixed /
+  Removed), written for players, not code notes (those stay in this file).
+- **GitHub Releases** are only for builds worth downloading: tested in game = normal release;
+  not yet tested = `--prerelease`. Every iteration is still committed and pushed.
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.lua` / `AutoMacros.toc` are always the current version.
 - **Current version: 0.85.0.**
@@ -30,7 +36,8 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   the GitHub CLI `C:\Program Files\GitHub CLI\gh.exe` (logged in as goldenpipes; set up as
   git's credential helper for github.com in the global gitconfig). When a version is
   committed: `git push origin master`; for a release, also build the zip and
-  `gh release create v<version> releases/AutoMacros-<version>.zip --title "AutoMacros <version>" --notes "<summary>"`.
+  `gh release create v<version> releases/AutoMacros-<version>.zip --title "AutoMacros <version>" --notes-file <that version's CHANGELOG section>`
+  (add `--prerelease` if untested).
 - Lewis edits the Lua himself. Before building a new version, diff against the last one you
   produced and **merge his edits** — never overwrite them.
 
