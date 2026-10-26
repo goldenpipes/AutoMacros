@@ -4,6 +4,13 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.105.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Added
+- `/amac test` shows a progress window: a bar, what it is doing (finding items, asking the
+  server, sorting) with a count, and a Stop button that turns into Close with a summary when
+  it is done. Drag it anywhere.
+
 ## 0.104.2 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Fixed

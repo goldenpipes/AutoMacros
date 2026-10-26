@@ -320,13 +320,95 @@ function TestLine(id, sets)
     return table.concat(parts, " | ")
 end
 
+-- The test's progress window: a bar over the whole run (finding 10%, asking
+-- the server 30%, sorting 60%), what it is doing with a count, and Stop (Close
+-- once it is done). Draggable.
+function TestBar()
+    if testBar then return testBar end
+    local f = CreateFrame("Frame", "AutoMacrosTestBar", UIParent)
+    f:SetSize(340, 52)
+    f:SetPoint("TOP", UIParent, "TOP", 0, -120)
+    f:SetFrameStrata("DIALOG")
+    f:EnableMouse(true)
+    f:SetMovable(true)
+    f:RegisterForDrag("LeftButton")
+    f:SetScript("OnDragStart", f.StartMoving)
+    f:SetScript("OnDragStop", f.StopMovingOrSizing)
+    local bg = f:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(0, 0, 0, 0.8)
+    f.title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    f.title:SetPoint("TOPLEFT", f, "TOPLEFT", 10, -8)
+    f.title:SetText("AutoMacros rules test")
+    f.bar = CreateFrame("StatusBar", nil, f)
+    f.bar:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 10, 8)
+    f.bar:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -10, 8)
+    f.bar:SetHeight(16)
+    f.bar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+    f.bar:SetStatusBarColor(0.2, 0.6, 1)
+    f.bar:SetMinMaxValues(0, 1)
+    local back = f.bar:CreateTexture(nil, "BACKGROUND")
+    back:SetAllPoints()
+    back:SetColorTexture(0.15, 0.15, 0.15, 1)
+    f.text = f.bar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    f.text:SetPoint("CENTER")
+    local ok, b = pcall(CreateFrame, "Button", nil, f, "UIPanelButtonTemplate")
+    if not ok or not b then
+        b = CreateFrame("Button", nil, f)
+        b:SetNormalFontObject("GameFontNormalSmall")
+    end
+    b:SetSize(64, 20)
+    b:SetPoint("TOPRIGHT", f, "TOPRIGHT", -6, -4)
+    b:SetText("Stop")
+    b:SetScript("OnClick", function()
+        if testRun then testRun.stop = true else f:Hide() end
+    end)
+    f.button = b
+    testBar = f
+    return f
+end
+
+-- the bar and its text for where test run is now
+function TestBarUpdate(run)
+    local f = TestBar()
+    local span, found = run.last - run.first + 1, #run.found
+    local frac, text
+    if run.next <= run.last then
+        frac = 0.1 * (run.next - run.first) / span
+        text = string.format("Finding items: %d / %d", run.next - run.first, span)
+    elseif run.asked < found then
+        frac = 0.1 + 0.3 * run.asked / math.max(1, found)
+        text = string.format("Asking the server: %d / %d", run.asked, found)
+    elseif run.round == 1 then
+        frac = 0.4 + 0.6 * (run.sorting - 1) / math.max(1, found)
+        text = string.format("Sorting: %d / %d", run.sorting - 1, found)
+    else
+        frac = 0.99
+        text = string.format("Items without data, try %d of 6: %d / %d", run.round, run.sorting - 1, #run.list)
+    end
+    f.bar:SetValue(math.min(1, frac))
+    f.text:SetText(text)
+    f.button:SetText("Stop")
+    f:Show()
+end
+
+-- the end: a full bar with the summary, and Close
+function TestBarDone(text)
+    local f = TestBar()
+    f.bar:SetValue(1)
+    f.text:SetText(text)
+    f.button:SetText("Close")
+    f:Show()
+end
+
 function RulesTest(first, last)
     if testRun then Print("the rules test is already running (/amac test stop)") return end
     first, last = first or 1, last or 25000
     local version, build, _, iface = GetBuildInfo()
     local res = { build = tostring(version) .. " " .. tostring(build), interface = iface, first = first, last = last,
         counts = {}, items = {}, unsorted = {}, nodata = {} }
-    local run = { res = res, next = first, found = {}, asked = 0, sorting = 1, retry = {}, round = 1 }
+    local run = { res = res, first = first, last = last, next = first, found = {}, asked = 0, sorting = 1,
+        retry = {}, round = 1 }
     testRun = run
     local request = (C_Item and C_Item.RequestLoadItemDataByID) or GetItemInfo
     Print(string.format("rules test: items %d-%d on %s. Stay logged in; it takes a few minutes (/amac test stop)",
@@ -340,6 +422,8 @@ function RulesTest(first, last)
         for _ in pairs(res.unsorted) do unsorted = unsorted + 1 end
         Print(string.format("rules test %s: %d items looked at, %d sorted onto buttons, %d with a Use: line on none,"
             .. " %d without data. /reload to save it to disk.", note, #run.found, sorted, unsorted, #res.nodata))
+        TestBarDone(string.format("%s: %d sorted, %d on none - /reload to save", note == "done" and "Done" or "Stopped",
+            sorted, unsorted))
     end
     local function step()
         if run.stop then return finish("stopped") end
@@ -402,7 +486,9 @@ function RulesTest(first, last)
         if not ok then
             testRun = nil
             Fail("rules test", wait)
+            TestBarDone("Stopped by an error (see chat)")
         elseif wait and testRun == run then
+            pcall(TestBarUpdate, run)
             C_Timer.After(wait, tick)
         end
     end
