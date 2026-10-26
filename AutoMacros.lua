@@ -1,4 +1,5 @@
--- AutoMacros 0.87.0 for WoW Forever (interface 16001; also loads in retail for testing)
+-- AutoMacros 0.88.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- retail (Midnight); one file for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
 -- out of combat. There are no built-in item lists: items are sorted by what the
@@ -14,24 +15,42 @@ local function ToSet(list)
 end
 
 local HEARTHSTONE = 6948
--- Spells on the Hearth/Teleport button, for whichever class knows them: Astral
--- Recall (Shaman), Teleport: Moonglade (Druid) and the mage city teleports.
+-- Spells on the Hearth/Teleport button, for whichever class knows them, on any
+-- game version (spells you don't know are left out): Astral Recall (Shaman),
+-- Teleport: Moonglade and Dreamwalk (Druid), Death Gate, Zen Pilgrimage, then
+-- the mage teleports: vanilla cities, TBC, Wrath, Cata, MoP, Legion, WoD, BfA,
+-- Shadowlands, Dragonflight, The War Within.
 local TRAVEL_SPELLS = {
-    556, 18960,
+    556, 18960, 193753, 50977, 126892,
     3561, 3562, 3565, 3567, 3563, 3566,
+    32271, 32272, 33690, 35715, 49359, 49358,
+    53140, 88342, 88344, 132621, 132627, 120145,
+    224869, 176248, 176242, 281403, 281404,
+    344587, 395277, 446540,
+}
+-- Mage portals, in the same order (the first one is the button's icon).
+local PORTAL_SPELLS = {
+    10059, 11417, 11416, 11418, 11419, 11420,
+    32266, 32267, 33691, 35717, 49360, 49361,
+    53142, 88345, 88346, 132620, 132626, 120146,
+    224871, 176246, 176244, 281400, 281402,
+    344597, 395289, 446534,
 }
 
--- Healthstone ranks: 1 Minor, 2 Lesser, 3 Healthstone, 4 Greater, 5 Major.
--- Talent variants share the rank; the higher ID is the talented one.
+-- Healthstone ranks: 1 Minor, 2 Lesser, 3 Healthstone, 4 Greater, 5 Major,
+-- 6 Master (TBC). Talent variants share the rank; the higher ID is the
+-- talented one. Since Wrath there is one Healthstone (5512, rank 1 here) and on
+-- retail the Demonic Healthstone (224464, talent).
 local HS_RANK = {
-    [5512] = 1, [19004] = 1, [19005] = 1,
+    [5512] = 1, [19004] = 1, [19005] = 1, [224464] = 1,
     [5511] = 2, [19006] = 2, [19007] = 2,
     [5509] = 3, [19008] = 3, [19009] = 3,
     [5510] = 4, [19010] = 4, [19011] = 4,
     [9421] = 5, [19012] = 5, [19013] = 5,
+    [22103] = 6, [22104] = 6, [22105] = 6,
 }
--- Create Healthstone spells, best rank first.
-local CREATE_HS = { 11730, 11729, 5699, 6202, 6201 }
+-- Create Healthstone spells, best rank first (6201 is also the only one since Wrath).
+local CREATE_HS = { 27230, 11730, 11729, 5699, 6202, 6201 }
 
 
 local QUESTION_MARK = 134400
@@ -426,7 +445,7 @@ local CATALOG = {
       label = "hearthstone or teleport", kind = "travel", set = "travel", spells = TRAVEL_SPELLS,
       oldNames = { "Teleports" }, placeholder = { item = HEARTHSTONE }, default = true },
     { key = "portals", name = "AM_Portal", title = "Portals", empty = "Portals", label = "portals",
-      kind = "spells", spells = { 10059, 11417, 11416, 11418, 11419, 11420 }, class = "MAGE", scope = "character" },
+      kind = "spells", spells = PORTAL_SPELLS, class = "MAGE", scope = "character" },
 }
 
 local MACROS = {}            -- the categories in use for this character (rebuilt by RebuildMacros)

@@ -4,6 +4,16 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.88.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Added
+- Loads on Classic Era (including Hardcore and Season of Discovery), TBC Anniversary, Mists
+  of Pandaria Classic and retail (Midnight), as well as WoW Forever.
+- Hearth/Teleport button: Dreamwalk, Death Gate, Zen Pilgrimage and the mage teleports of
+  every expansion. Portals button: the mage portals of every expansion. Only spells your
+  character knows are shown.
+- Healthstone button: Master Healthstones (TBC) and the Demonic Healthstone (retail).
+
 ## 0.87.0 - 2026-10-25 (pre-release, not yet tested in game)
 
 ### Changed
