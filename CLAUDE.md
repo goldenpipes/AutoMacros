@@ -24,7 +24,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   not yet tested = `--prerelease`. Every iteration is still committed and pushed.
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.lua` / `AutoMacros.toc` are always the current version.
-- **Current version: 0.99.0.**
+- **Current version: 0.100.0.**
 - **Copy the current files into `previous/<version>/` BEFORE the first edit of a new iteration**
   (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version in the .toc and anywhere else it appears.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
@@ -62,6 +62,14 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.100.0
+- 0.99.0 works in retail (Lewis). The tooltip's "(carried, or you can make them)" was vague:
+  teleports are cast, not made. `UI.Available` now returns `n, parts` (bags / spells / create
+  / craft; travel splits TravelOptions by `spell`, set buttons count KnownSpells, e.g.
+  Cannibalize); `UI.AvailableText(n, parts)`: one source -> "N available in bags / as spells
+  / to create / to craft", several -> "N available: 1 in bags, 3 spells". Wording: create =
+  conjured (healthstone, mana gem), craft = professions, spells = cast.
 
 ## 0.99.0 — "N available" (carried, made, craftable)
 - Lewis: disabled buttons should count what the character can make: healthstone / mana gem if

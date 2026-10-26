@@ -1,4 +1,4 @@
--- AutoMacros 0.99.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.100.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one file for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -3332,20 +3332,51 @@ function UI.CouldUse(e)
     return ok and n or 0
 end
 
--- The things counted: items you carry, a healthstone or mana gem you can make
--- (and carry none of), and what your known recipes make when you carry every
--- reagent (First Aid's bandages and potions, Alchemy, Cooking, ...).
+-- The things counted, and where they come from (the second result): bags =
+-- items you carry; spells = spells of the button you know (teleports,
+-- Cannibalize); create = a healthstone or mana gem you can conjure and carry
+-- none of; craft = what your known recipes make when you carry every reagent
+-- (First Aid's bandages and potions, Alchemy, Cooking, ...).
 function UI.Available(e, have)
-    local n, counted = Stocked(e, have), {}
-    if not e.set then return n end
-    for _, c in ipairs(Candidates(have, e.set)) do counted[c.id] = true end
-    local create, carried = MadeCreate(e.set, have)
-    if create and not carried then n = n + 1 end
-    local recipes = type(DB().recipes) == "table" and DB().recipes[CharKey()]
-    for id, need in pairs(type(recipes) == "table" and recipes or {}) do
-        if not counted[id] and InSet(e.set, id) and UI.CanCraft(need) then n = n + 1 end
+    local parts = { bags = 0, spells = 0, create = 0, craft = 0 }
+    if e.kind == "travel" then
+        for _, o in ipairs(TravelOptions(e, have)) do
+            if o.spell then parts.spells = parts.spells + 1 else parts.bags = parts.bags + 1 end
+        end
+    elseif e.set then
+        local counted = {}
+        for _, c in ipairs(Candidates(have, e.set)) do
+            counted[c.id] = true
+            parts.bags = parts.bags + 1
+        end
+        parts.spells = #KnownSpells(e)
+        local create, carried = MadeCreate(e.set, have)
+        if create and not carried then parts.create = 1 end
+        local recipes = type(DB().recipes) == "table" and DB().recipes[CharKey()]
+        for id, need in pairs(type(recipes) == "table" and recipes or {}) do
+            if not counted[id] and InSet(e.set, id) and UI.CanCraft(need) then parts.craft = parts.craft + 1 end
+        end
     end
-    return n
+    return parts.bags + parts.spells + parts.create + parts.craft, parts
+end
+
+-- "1 available in bags", "3 available as spells", "4 available: 1 in bags, 3 spells"
+function UI.AvailableText(n, parts)
+    local list = {}
+    if parts.bags > 0 then list[#list + 1] = { parts.bags, "in bags", parts.bags .. " in bags" } end
+    if parts.spells > 0 then
+        list[#list + 1] = { parts.spells, "as spells", parts.spells .. (parts.spells == 1 and " spell" or " spells") }
+    end
+    if parts.create > 0 then list[#list + 1] = { parts.create, "to create", parts.create .. " to create" } end
+    if parts.craft > 0 then list[#list + 1] = { parts.craft, "to craft", parts.craft .. " to craft" } end
+    if #list == 1 then
+        local kind = list[1][2]
+        if kind == "as spells" and n == 1 then kind = "as a spell" end
+        return n .. " available " .. kind
+    end
+    local shown = {}
+    for _, p in ipairs(list) do shown[#shown + 1] = p[3] end
+    return n .. " available: " .. table.concat(shown, ", ")
 end
 
 -- true when your bags hold every reagent a recipe needs (need: see UI.ScanRecipes)
@@ -3612,9 +3643,9 @@ UI.HEADERS.buttons = function(f, width)
                 GameTooltip:SetOwner(self, "ANCHOR_TOP")
                 GameTooltip:AddLine(self.entry.title)
                 GameTooltip:AddLine(Enabled(self.entry) and "On - click to turn off" or "Off - click to turn on", 1, 0.82, 0)
-                local n = UI.CouldUse(self.entry)
-                if n > 0 then
-                    GameTooltip:AddLine(n .. " available (carried, or you can make them)", 0.25, 1, 0.25)
+                if UI.CouldUse(self.entry) > 0 then   -- (off, with something available)
+                    local ok, n, parts = pcall(UI.Available, self.entry, report.have)
+                    if ok then GameTooltip:AddLine(UI.AvailableText(n, parts), 0.25, 1, 0.25) end
                 end
                 if UI.NotOnBars(self.entry) then UI.AddNotOnBarsLine(GameTooltip) end
                 GameTooltip:AddLine("Drag onto an action bar to place it", 0.7, 0.7, 0.7)
@@ -3651,7 +3682,7 @@ UI.HEADERS.buttons = function(f, width)
         b:Show()
     end
     for i = #list + 1, #f.icons do f.icons[i]:Hide() end
-    f.hint = f.hint or UI.SmallText(f, "Click an icon to turn it on or off for this character; drag it onto an action bar. Green number: how many are available (carried, or you can make them). Glow: you carry some, but it is on none of your bars.")
+    f.hint = f.hint or UI.SmallText(f, "Click an icon to turn it on or off for this character; drag it onto an action bar. Green number: how many are available (in bags, spells, or yours to create or craft). Glow: you carry some, but it is on none of your bars.")
     f.hint:ClearAllPoints()
     f.hint:SetWidth(width - 20)
     f.hint:SetPoint("TOP", f, "TOP", 0, -16 - rows * (size + gap) - 4)

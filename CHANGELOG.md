@@ -4,7 +4,15 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
-## 0.99.0 - 2026-10-26 (pre-release, not yet tested in game)
+## 0.100.0 - 2026-10-26 (pre-release)
+
+### Changed
+- The icon tooltip says where the available ones come from: "1 available in bags",
+  "3 available as spells", "4 available: 1 in bags, 3 spells", "3 available: 1 in bags,
+  1 to create, 1 to craft".
+- Cannibalize counts as available on the Bandage button for Undead characters.
+
+## 0.99.0 - 2026-10-26 (pre-release, tested in retail)
 
 ### Changed
 - On the settings page, a switched-off button now shows how many are **available**, not just
