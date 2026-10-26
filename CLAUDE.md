@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.104.1.**
+- **Current version: 0.104.2.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -68,6 +68,11 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Names resolve when code runs, so a function may use names another file defines later;
   only code that runs while the files load needs things from earlier files (order matters
   for e.g. CATALOG using TRAVEL_SPELLS).
+- **Game functions that return an object look its mixin up in the caller's environment
+  without the _G fallback** (C_ClassColor.GetClassColor -> "unable to find mixin or metatable
+  (ColorMixin)", 0.104.2). Core.lua copies every `*Mixin` table from _G into ns at load
+  (rawset). A mixin from a load-on-demand Blizzard addon loaded later would not be copied:
+  if a new error names one, copy it too.
 
 ## Next up (left off 2026-10-26)
 - 0.88.0 built and checked, not tested in game. Lewis decided to **wait for Forever's release**
@@ -83,6 +88,12 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.104.2
+- Lewis (Classic Era, BugSack-style error): Class color mode -> "unable to find mixin or
+  metatable (ColorMixin)" in StyleColor. Regression from 0.102.0's setfenv (see Code layout).
+  Fix: copy `*Mixin` into ns (Core.lua); StyleColor pcalls C_ClassColor.GetClassColor and
+  falls back to RAID_CLASS_COLORS. 0.104.1's soft glow confirmed fixed on Classic Era.
 
 ## 0.104.1 — soft glow
 - Lewis (Classic Era screenshot, Highlight page, Soft glow, thickness 5): a hard red box inset

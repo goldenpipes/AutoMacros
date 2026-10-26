@@ -1,4 +1,4 @@
--- AutoMacros 0.104.1 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.104.2 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -17,6 +17,14 @@ local ADDON, ns = ...
 -- other files, anything else (the game's API) comes from _G
 if not getmetatable(ns) then setmetatable(ns, { __index = _G }) end
 setfenv(1, ns)
+
+-- The game's functions that hand back an object (C_ClassColor.GetClassColor
+-- gives a color) look up its mixin by name in the calling code's environment
+-- without falling back to _G: "unable to find mixin or metatable (ColorMixin)"
+-- (0.104.1, Class color mode). So the game's mixins are copied in, once.
+for name, value in pairs(_G) do
+    if type(name) == "string" and type(value) == "table" and name:sub(-5) == "Mixin" then rawset(ns, name, value) end
+end
 
 DATA = {}   -- item lists of your own categories (/amac custom), set name -> { [id] = true }
 
@@ -252,8 +260,12 @@ function StyleColor(key)
         if r then return { r, g, b, c[4] or 1 } end
     elseif mode == "class" then
         local _, class = UnitClass("player")
-        local cc = class and ((C_ClassColor and C_ClassColor.GetClassColor and C_ClassColor.GetClassColor(class))
-            or (RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]))
+        local cc
+        if class and C_ClassColor and C_ClassColor.GetClassColor then
+            local ok, r = pcall(C_ClassColor.GetClassColor, class)
+            if ok then cc = r end
+        end
+        cc = cc or (class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class])
         if cc then return { cc.r, cc.g, cc.b, c[4] or 1 } end
     end
     if mode ~= "custom" then

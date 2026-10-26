@@ -4,7 +4,13 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
-## 0.104.1 - 2026-10-26 (pre-release, not yet tested in game)
+## 0.104.2 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Fixed
+- Choosing the **Class** color mode caused an error ("unable to find mixin or metatable
+  (ColorMixin)") since 0.102.0.
+
+## 0.104.1 - 2026-10-26 (pre-release, tested in Classic Era)
 
 ### Fixed
 - Soft glow highlight: at higher thickness it shrank into a hard-edged box inside the button
