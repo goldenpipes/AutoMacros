@@ -1,4 +1,4 @@
--- AutoMacros 0.96.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.97.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one file for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -146,7 +146,7 @@ end
 --   glow, noFlyout, stockTooltip, showNames   on/off options
 -- ---------------------------------------------------------------------------
 local SCHEMA = 2
-local CLASSIFIER = 8   -- raise when the learning rules change, so items are checked again
+local CLASSIFIER = 9   -- raise when the learning rules change, so items are checked again
 
 local STYLE_DEFAULTS = {
     glowColor = { 1, 0.15, 0.15, 1 }, glowThickness = 3, glowTexture = "solid",
@@ -456,8 +456,15 @@ local CATALOG = {
     -- spells: after the bandages, for whoever knows them (Undead: Cannibalize)
     { key = "bandage", name = "AM_Bandage", title = "Bandage", empty = "No Bandage", label = "bandages",
       set = "bandage", spells = { 20577 }, placeholder = { item = 1251 } },
+    -- cures: anything whose "Use:" cures or removes that (an item that cures
+    -- several is on each of them): potions, First Aid's Anti-Venom, poultices
+    -- and tourniquets (Forever), quest rewards like Jungle Remedy
     { key = "antivenom", name = "AM_AntiVenom", title = "Anti-Venom", empty = "No Anti-Venom", label = "anti-venom",
       set = "antivenom", placeholder = { item = 2633 } },
+    { key = "antidisease", name = "AM_Disease", title = "Disease Cure", empty = "No Disease Cure",
+      label = "disease cures", set = "antidisease", placeholder = { item = 9030 } },   -- Restorative Potion
+    { key = "antibleed", name = "AM_Bleed", title = "Bleed Cure", empty = "No Bleed Cure",
+      label = "bleed cures", set = "antibleed", placeholder = { item = 3530 } },       -- Wool Bandage
     -- One button per buff, whatever the item is (elixir, scroll, potion, Juju,
     -- E'ko, Blasted Lands quest rewards, ...). Until 0.92.0 scrolls and elixirs
     -- had a button each; the elixir buttons' macros carry on as these (same
@@ -1971,6 +1978,10 @@ end
 -- is only examined once. Anything the rules get wrong can be corrected by hand
 -- with /amac assign and /amac unassign, and hand-made entries always win.
 --   any item,     "Use:" teleports you / returns you home -> hearth/teleport
+--   any item but gear, "Use:" cures or removes poison / disease / bleeding
+--                                           -> anti-venom / disease cure / bleed cure
+--                    (each that fits: Jungle Remedy, Restorative Potion; First
+--                     Aid's poultices and tourniquets are trade goods)
 --   consumable, subclass Bandage            -> bandage
 --   consumable, subclass Flask              -> flask
 --   Food & Drink, tooltip says "well fed"   -> buff food
@@ -1992,8 +2003,10 @@ end
 --   other consumable, "Use:" increases / improves / grants / raises anything
 --     else (armor, attack power, crit, resistance, speed, ...) -> other buffs
 --   Trade Goods, subclass Explosives        -> explosives (classic files them here)
--- Items of other classes are only checked for teleporting: misc items and
--- armour (rings, cloaks, trinkets); anything else is skipped.
+--   other trade goods, "Use:" restores health / mana -> restore health / mana (runes)
+--   quest and misc items (often quest rewards): restoring and buffs, as above
+-- Gear (rings, cloaks, trinkets) only counts for teleporting; other item
+-- classes are skipped.
 -- ---------------------------------------------------------------------------
 -- item classes worth a look: consumable, armour, trade goods, quest (Juju and
 -- E'ko are quest items), miscellaneous
@@ -2046,8 +2059,9 @@ local function Classify(id)
     local lines = TooltipLines(id)
     if not lines or #lines < 2 or lines[1] == RETRIEVING_ITEM_INFO then return nil end
     local use = ITEM_SPELL_TRIGGER_ONUSE or "Use:"
-    local health, mana, rage, damage, weapon, travel, wellFed, cure = false, false, false, false, false, false, false, false
+    local health, mana, rage, damage, weapon, travel, wellFed = false, false, false, false, false, false, false
     local stats, hasUse, restore, buff, armor, resist, seated = {}, false, false, false, false, false, false
+    local cures = {}   -- what it cures, as the buttons for it: antivenom, antidisease, antibleed
     for _, text in ipairs(lines) do
         local low = text:lower()
         if text:find(use, 1, true) then hasUse = true end
@@ -2061,7 +2075,13 @@ local function Classify(id)
         if text:find(use, 1, true) then
             if HasWord(low, "teleport", "returns you to") then travel = true end
             if HasWord(low, "weapon") then weapon = true end
-            if HasWord(low, "poison") and HasWord(low, "cure", "remove") then cure = true end
+            -- "Cures 1 poison effect", "Target is cured of diseases", "Removes 1 magic,
+            -- curse, poison or disease effect", "cured of bleeds" (Forever's tourniquets)
+            if HasWord(low, "cure", "remove", "neutralize") then
+                if HasWord(low, "poison") then cures.antivenom = true end
+                if HasWord(low, "disease") then cures.antidisease = true end
+                if HasWord(low, "bleed") then cures.antibleed = true end
+            end
             -- real food and drink: "Must remain seated while eating"
             if HasWord(low, "seated", "while eating", "while drinking") then seated = true end
             if text:find("%d") then
@@ -2071,8 +2091,9 @@ local function Classify(id)
                 if HasWord(low, "damage") then damage = true end
                 if HasWord(low, "restore") then restore = true end   -- a potion that heals, not one that raises health
                 -- raises something for a while (not "permanently", like an armor kit)
+                -- (and not a fishing lure: "increases fishing by 25")
                 if HasWord(low, "increase", "improve", "grant", "raise")
-                    and not HasWord(low, "permanent") then buff = true end
+                    and not HasWord(low, "permanent", "fishing") then buff = true end
                 if buff and HasWord(low, "armor", ARMOR, "defense") then armor = true end
                 -- raises a resistance, or a protection potion: "Absorbs 1950 to 3250 fire damage"
                 if (buff and HasWord(low, "resist")) or (HasWord(low, "absorb") and damage) then resist = true end
@@ -2096,17 +2117,24 @@ local function Classify(id)
         end
     end
     if travel then return { "travel" }, sig end
+    if class == 4 then return {}, sig end   -- gear (rings, cloaks, trinkets): only teleports count
+    -- a cure, from anything you carry: potions, First Aid's poultices and
+    -- tourniquets (trade goods), quest rewards; on every button it fits
+    local sets = {}
+    for _, key in ipairs({ "antivenom", "antidisease", "antibleed" }) do
+        if cures[key] then sets[#sets + 1] = key end
+    end
+    if #sets > 0 then return sets, sig end
     local restoring = restore and (health or mana) and not weapon   -- (not mana oils)
-    if class == 7 then   -- trade goods: only runes and the like, "Restores 900 to 1500 mana"
+    if class == 7 then   -- other trade goods: only runes and the like, "Restores 900 to 1500 mana"
         if not restoring then return {}, sig end
         return (health and mana) and { "hpot", "mpot" } or { health and "hpot" or "mpot" }, sig
     end
-    -- quest items only count as buffs; armour and misc items only as teleports
-    if class == 12 then sub = -1 elseif class ~= 0 then return {}, sig end
-    if cure and class == 0 then return { "antivenom" }, sig end   -- "Use: Cures 1 poison effect ..."
-    local sets = {}
-    if sub == -1 and not (next(stats) or armor or resist or buff) then
-        -- a quest item that is no buff
+    -- quest and misc items (quest rewards are often one or the other) count
+    -- for what helps you: restoring health or mana, and buffs
+    if class == 12 or class == 15 then sub = -1 end
+    if sub == -1 and not (restoring or next(stats) or armor or resist or buff) then
+        -- a quest or misc item that does none of that
     elseif sub == 5 and restoring and not seated and not wellFed then
         -- in Food & Drink but works at once, like a potion: Whipper Root Tuber
         if health then sets[#sets + 1] = "hpot" end
@@ -2117,7 +2145,7 @@ local function Classify(id)
         if mana then sets[#sets + 1] = "water" end
     elseif sub == 1 and rage then
         sets[#sets + 1] = "rage"
-    elseif sub ~= 6 and sub ~= -1 and restoring then
+    elseif sub ~= 6 and restoring then
         -- potions, healthstones, mana gems, runes, ... (food, flasks and
         -- bandages were sorted above; Rejuvenation Potions go on both)
         if health then sets[#sets + 1] = "hpot" end
@@ -3376,7 +3404,8 @@ end
 
 -- How the Buttons tab sorts them. Anything not listed goes under Other.
 UI.BUTTON_GROUPS = {
-    { name = "Recovery", keys = { "healthpot", "manapot", "ragepot", "bandage", "antivenom" } },
+    { name = "Recovery", keys = { "healthpot", "manapot", "ragepot", "bandage", "antivenom", "antidisease",
+        "antibleed" } },
     { name = "Food & Drink", keys = { "food", "water", "bufffood" } },
     { name = "Buffs", keys = { "agility", "intellect", "stamina", "strength", "spirit", "armor",
         "resistance", "otherbuff", "flask", "weaponbuff" } },

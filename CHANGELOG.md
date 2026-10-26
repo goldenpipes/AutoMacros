@@ -4,6 +4,19 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.97.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Added
+- **Disease Cure** and **Bleed Cure** buttons (Recovery), next to Anti-Venom. Anything that
+  cures or removes poison, disease or bleeding goes on each button it fits: Jungle Remedy,
+  Purification and Restorative Potions on both Anti-Venom and Disease Cure, and on WoW Forever
+  First Aid's Simple Poultice (disease) and Woolen Tourniquet (bleeds).
+- Quest rewards and miscellaneous items now count for every helpful button they fit: health
+  and mana, cures, stat buffs, Armor, Resistance and Other Buffs.
+
+### Changed
+- Fishing lures no longer count as Other Buffs.
+
 ## 0.96.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Added
