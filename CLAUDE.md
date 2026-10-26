@@ -24,7 +24,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   not yet tested = `--prerelease`. Every iteration is still committed and pushed.
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.lua` / `AutoMacros.toc` are always the current version.
-- **Current version: 0.94.0.**
+- **Current version: 0.95.0.**
 - **Copy the current files into `previous/<version>/` BEFORE the first edit of a new iteration**
   (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version in the .toc and anywhere else it appears.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
@@ -62,6 +62,32 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.95.0 — Restore Health / Restore Mana
+- Lewis: combine health potions + healthstones and mana potions + mana stones; if the
+  character can make one and carries none, make it; otherwise use what's carried; include any
+  restorative item; Rejuvenation on both.
+- `MADE` (top-level) = { hpot = { rank = HS_RANK, spells = CREATE_HS }, mpot = { rank = mana
+  gems 5514/5513/8007/8008/22044/36799, spells = 42985/27101/10054/10053/3552/759 } } (post-
+  vanilla IDs unverified). InSet also accepts MADE ranks (Major Healthstone says "restores
+  1440 **life**", which the rules don't read as health). `MadeCreate(set, have)` = known
+  create spell name + whether one is carried. UpdateCore's set branch: MADE items sorted
+  first by rank; create known and none carried -> `#showtooltip <create>` / `/cast [nomod]` /
+  `/use [mod:shift] item:<chosen>`, not "empty" (`making`). BodyMatches: MADE set + /cast.
+  AutoEnable switches these on when a create spell is known.
+- Removed: the healthstone CATALOG entry (special "healthstone", character scope),
+  HealthstoneBody, BestHealthstone, CreateSpellName. healthpot/manapot keep their saved names
+  (AM_HealthPot/AM_ManaPot), titles "Restore Health"/"Restore Mana", empties "No Health
+  Items"/"No Mana Items", oldNames = the potion names; healthpot alias "healthstone".
+  `UI.MergeHealthstone` (Init, once, db.healthMerged): healthpot on if healthstone was;
+  popDir moved. `UI.RemoveHealthstoneMacro` (3 s step, every login, per character): deletes
+  "Healthstone"/"No Healthstone" macros that make/use a healthstone or have the empty text.
+- Rules (CLASSIFIER 8): `restoring` = restore + health/mana, not weapon (mana oils). Any
+  consumable (not sub 6, not quest) -> hpot/mpot; Food & Drink that restores without
+  "seated"/"while eating/drinking" (Whipper Root Tuber) too; class 7 trade goods are now read
+  and count only when restoring (Demonic Rune is 7.11). Checked on Forever (Wowhead XML):
+  9421, 8008, 18253 (both), 12662, 11951, 11952 (both), 20748 (excluded), food 4540/159/8932,
+  buff food 2682.
 
 ## 0.94.0 — "not on your bars" glow
 - Lewis: on the settings page, mark buttons that have items but are not on an action bar, as

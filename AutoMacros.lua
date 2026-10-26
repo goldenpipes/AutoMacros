@@ -1,4 +1,4 @@
--- AutoMacros 0.94.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.95.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one file for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -51,6 +51,18 @@ local HS_RANK = {
 }
 -- Create Healthstone spells, best rank first (6201 is also the only one since Wrath).
 local CREATE_HS = { 27230, 11730, 11729, 5699, 6202, 6201 }
+
+-- What the Restore Health and Restore Mana buttons can make for you, and so
+-- make when you carry none: healthstones (Warlock) and mana gems (Mage). Mana
+-- gem ranks: 1 Agate, 2 Jade, 3 Citrine, 4 Ruby, 5 Emerald (TBC), 6 Mana Gem
+-- (Wrath on); spells best first: Conjure Mana Gem (Wrath), Emerald, Ruby,
+-- Citrine, Jade, Agate (759, also retail's Conjure Mana Gem). IDs after
+-- vanilla are from memory, unverified (a wrong one is never found or known).
+local MADE = {
+    hpot = { rank = HS_RANK, spells = CREATE_HS },
+    mpot = { rank = { [5514] = 1, [5513] = 2, [8007] = 3, [8008] = 4, [22044] = 5, [36799] = 6 },
+        spells = { 42985, 27101, 10054, 10053, 3552, 759 } },
+}
 
 
 local QUESTION_MARK = 134400
@@ -134,7 +146,7 @@ end
 --   glow, noFlyout, stockTooltip, showNames   on/off options
 -- ---------------------------------------------------------------------------
 local SCHEMA = 2
-local CLASSIFIER = 7   -- raise when the learning rules change, so items are checked again
+local CLASSIFIER = 8   -- raise when the learning rules change, so items are checked again
 
 local STYLE_DEFAULTS = {
     glowColor = { 1, 0.15, 0.15, 1 }, glowThickness = 3, glowTexture = "solid",
@@ -393,6 +405,8 @@ local learnedIdx = {}   -- set name -> { [itemID] = true }
 local function InSet(setName, id)
     local set = DATA[setName]
     if set and set[id] then return true end
+    local made = MADE[setName]   -- healthstones and mana gems, whatever learning made of them
+    if made and made.rank[id] then return true end
     local l = learnedIdx[setName]
     return l ~= nil and l[id] == true
 end
@@ -422,12 +436,17 @@ end
 --   placeholder: the icon shown when nothing is in your bags, { item = <itemID> }
 --           for an item's icon or { icon = <iconFileID> } (1339440 is a red X)
 local CATALOG = {
-    { key = "healthstone", name = "AM_Healthstone", title = "Healthstone", empty = "No Healthstone", label = "Healthstones",
-      special = "healthstone", scope = "character", default = true, placeholder = { item = 5509 } },
-    { key = "healthpot", name = "AM_HealthPot", title = "Health Potion", empty = "No Health Potion", label = "health potions",
-      set = "hpot", default = true, placeholder = { item = 3371 } },   -- Empty Vial
-    { key = "manapot", name = "AM_ManaPot", title = "Mana Potion", empty = "No Mana Potion", label = "mana potions",
-      set = "mpot", default = true, placeholder = { item = 3371 } },
+    -- Anything that restores health / mana: potions, healthstones, mana gems,
+    -- runes, Whipper Root Tuber, ... (Rejuvenation Potions are on both). A
+    -- Warlock / Mage who carries no healthstone / mana gem makes one (see MADE).
+    -- Were Health Potion + Healthstone and Mana Potion until 0.95.0: the potion
+    -- macros carry on (renamed), the Healthstone one is deleted.
+    { key = "healthpot", alias = "healthstone", name = "AM_HealthPot", title = "Restore Health", empty = "No Health Items",
+      label = "health potions or stones", set = "hpot", oldNames = { "Health Potion", "No Health Potion" },
+      default = true, placeholder = { item = 3371 } },   -- Empty Vial
+    { key = "manapot", name = "AM_ManaPot", title = "Restore Mana", empty = "No Mana Items",
+      label = "mana potions or gems", set = "mpot", oldNames = { "Mana Potion", "No Mana Potion" },
+      default = true, placeholder = { item = 3371 } },
     { key = "food", name = "AM_Food", title = "Food", empty = "No Food", label = "food", set = "food", default = true,
       placeholder = { item = 4540 } },   -- Tough Hunk of Bread
     { key = "water", name = "AM_Water", title = "Water", empty = "No Water", label = "water", set = "water", default = true,
@@ -671,18 +690,6 @@ local function Chosen(m, list)
     return list[1].id, list[1]
 end
 
-local function BestHealthstone(have)
-    local bestID, bestScore
-    for id in pairs(have) do
-        local rank = HS_RANK[id]
-        if rank then
-            local score = rank * 1000000 + id
-            if not bestScore or score > bestScore then bestID, bestScore = id, score end
-        end
-    end
-    return bestID
-end
-
 -- a spell's name (or nil), on clients with either spell API
 local function SpellName(id)
     local name
@@ -704,11 +711,21 @@ local function KnowsSpell(id)
     return ok and k and true or false
 end
 
-local function CreateSpellName()
-    for _, spellID in ipairs(CREATE_HS) do
-        local name = KnowsSpell(spellID) and SpellName(spellID)
-        if name then return name end
+-- For the Restore Health / Restore Mana buttons (set hpot / mpot): the name of
+-- the Create Healthstone / Conjure Mana Gem spell this character knows (best
+-- rank), or nil; and whether you carry one already.
+local function MadeCreate(set, have)
+    local made = MADE[set]
+    if not made then return nil, false end
+    local carried = false
+    for id in pairs(have or {}) do
+        if made.rank[id] then carried = true end
     end
+    for _, spellID in ipairs(made.spells) do
+        local name = KnowsSpell(spellID) and SpellName(spellID)
+        if name then return name, carried end
+    end
+    return nil, carried
 end
 
 local function UseBody(id)
@@ -743,21 +760,6 @@ end
 -- message comes from the tooltip code below, not from the macro.
 local function EmptyBody(label)
     return "/amac empty No " .. label .. " in inventory."
-end
-
-local function HealthstoneBody(have)
-    local id = BestHealthstone(have)
-    local create = CreateSpellName()
-    if id and create then
-        return "#showtooltip [mod:shift] " .. create .. "; " .. ItemRef(id)
-            .. "\n/cast [mod:shift] " .. create
-            .. "\n/use [nomod] item:" .. id, id
-    elseif id then
-        return UseBody(id), id
-    elseif create then
-        return "#showtooltip " .. create .. "\n/cast " .. create, nil
-    end
-    return nil, nil
 end
 
 -- Comprehend Scroll (Mage). With untranslated scrolls in your bags the button
@@ -883,9 +885,10 @@ local function BodyMatches(m, body)
     -- empty-state text, in any of the forms used by different versions
     local stem = m.label:gsub("s$", "")
     if body:find("No " .. stem, 1, true) then return true end
+    -- Restore Health / Mana making a healthstone or mana gem
+    if MADE[m.set] and body:find("/cast", 1, true) then return true end
     local id = tonumber(body:match("item:(%d+)"))
-    if m.set then return id ~= nil and InSet(m.set, id) end
-    return (id ~= nil and HS_RANK[id] ~= nil) or body:find("Create Healthstone", 1, true) ~= nil
+    return m.set ~= nil and id ~= nil and InSet(m.set, id)
 end
 
 -- The slot of m's macro, or nil. checked: a macro found by name must also look
@@ -1972,7 +1975,8 @@ end
 --   Food & Drink, tooltip says "well fed"   -> buff food
 --   Food & Drink, "Use:" restores health    -> food;  restores mana -> water
 --   Potion,       "Use:" gives rage         -> rage potion
---   Potion,       "Use:" restores health    -> health potion; mana -> mana potion
+--   any other consumable, "Use:" restores health -> restore health; mana -> restore mana
+--                    (potions, healthstones, mana gems, runes; Rejuvenation: both)
 --   any other consumable (elixir, scroll, potion, Juju, E'ko, quest rewards),
 --     "Use:" raises Strength, Agility, Stamina, Intellect or Spirit
 --                                           -> that stat's buff button
@@ -2037,12 +2041,12 @@ local function Classify(id)
     if class == 0 and sub == 7 then return { "bandage" }, sig end
     if class == 0 and sub == 3 then return { "flask" }, sig end
     if class == 7 and sub == 2 then return { "explosives" }, sig end
-    if class == 7 then return {}, sig end
+    -- (other trade goods only count when they restore health or mana: Demonic and Dark Runes)
     local lines = TooltipLines(id)
     if not lines or #lines < 2 or lines[1] == RETRIEVING_ITEM_INFO then return nil end
     local use = ITEM_SPELL_TRIGGER_ONUSE or "Use:"
     local health, mana, rage, damage, weapon, travel, wellFed, cure = false, false, false, false, false, false, false, false
-    local stats, hasUse, restore, buff, armor, resist = {}, false, false, false, false, false
+    local stats, hasUse, restore, buff, armor, resist, seated = {}, false, false, false, false, false, false
     for _, text in ipairs(lines) do
         local low = text:lower()
         if text:find(use, 1, true) then hasUse = true end
@@ -2057,6 +2061,8 @@ local function Classify(id)
             if HasWord(low, "teleport", "returns you to") then travel = true end
             if HasWord(low, "weapon") then weapon = true end
             if HasWord(low, "poison") and HasWord(low, "cure", "remove") then cure = true end
+            -- real food and drink: "Must remain seated while eating"
+            if HasWord(low, "seated", "while eating", "while drinking") then seated = true end
             if text:find("%d") then
                 if HasWord(low, "health", HEALTH) then health = true end
                 if HasWord(low, "mana", MANA) then mana = true end
@@ -2089,19 +2095,30 @@ local function Classify(id)
         end
     end
     if travel then return { "travel" }, sig end
+    local restoring = restore and (health or mana) and not weapon   -- (not mana oils)
+    if class == 7 then   -- trade goods: only runes and the like, "Restores 900 to 1500 mana"
+        if not restoring then return {}, sig end
+        return (health and mana) and { "hpot", "mpot" } or { health and "hpot" or "mpot" }, sig
+    end
     -- quest items only count as buffs; armour and misc items only as teleports
     if class == 12 then sub = -1 elseif class ~= 0 then return {}, sig end
     if cure and class == 0 then return { "antivenom" }, sig end   -- "Use: Cures 1 poison effect ..."
     local sets = {}
     if sub == -1 and not (next(stats) or armor or resist or buff) then
         -- a quest item that is no buff
+    elseif sub == 5 and restoring and not seated and not wellFed then
+        -- in Food & Drink but works at once, like a potion: Whipper Root Tuber
+        if health then sets[#sets + 1] = "hpot" end
+        if mana then sets[#sets + 1] = "mpot" end
     elseif sub == 5 then
         if wellFed then return { "food_buff" }, sig end
         if health then sets[#sets + 1] = "food" end
         if mana then sets[#sets + 1] = "water" end
     elseif sub == 1 and rage then
         sets[#sets + 1] = "rage"
-    elseif sub == 1 and restore and (health or mana) then
+    elseif sub ~= 6 and sub ~= -1 and restoring then
+        -- potions, healthstones, mana gems, runes, ... (food, flasks and
+        -- bandages were sorted above; Rejuvenation Potions go on both)
         if health then sets[#sets + 1] = "hpot" end
         if mana then sets[#sets + 1] = "mpot" end
     elseif sub ~= 6 and next(stats) then   -- (6: item enhancements, worn on gear)
@@ -2201,7 +2218,6 @@ local pending, timerSet, glowTimerSet = false, false, false
 -- How many different items you carry for a button (travel: also the teleport
 -- spells you know); 0 = none.
 local function Stocked(e, have)
-    if e.special == "healthstone" then return BestHealthstone(have) and 1 or 0 end
     if e.kind == "travel" then return #TravelOptions(e, have) end
     if e.set then return #Candidates(have, e.set) end
     return 0
@@ -2218,7 +2234,8 @@ local function AutoEnable(have)
     for _, e in ipairs(ALL) do
         if on[e.key] == nil and not e.custom and e.special ~= "scroll" and e.kind ~= "spells"
             and (not e.class or e.class == class) then
-            local stocked = Stocked(e, have) > 0 or (e.special == "healthstone" and class == "WARLOCK")
+            -- (or it can make something for it: a Warlock's healthstones, a Mage's mana gems)
+            local stocked = Stocked(e, have) > 0 or MadeCreate(e.set, have) ~= nil
             local made = e.scope == "character" and FindMacro(e, true) ~= nil
             if stocked or made then
                 on[e.key] = true
@@ -2271,12 +2288,10 @@ local function UpdateCore()
     end
     local emptyState = {}
     for _, m in ipairs(MACROS) do
-        local body, id, spellUsed
+        local body, id, spellUsed, making
         if m.special == "scroll" then
             flyoutItems[m.name] = scrolls
             body, id = ScrollBody(m, scrolls)
-        elseif m.special == "healthstone" then
-            body, id = HealthstoneBody(have)
         elseif m.kind == "spells" then
             local list = KnownSpells(m)
             flyoutItems[m.name] = list
@@ -2297,9 +2312,25 @@ local function UpdateCore()
             end
         else
             local list = Candidates(have, m.set)
+            local made = MADE[m.set]
+            local create, carried = MadeCreate(m.set, have)
+            if made then
+                -- a healthstone / mana gem first (best rank first), then the rest best first
+                table.sort(list, function(x, y)
+                    local rx, ry = made.rank[x.id] or 0, made.rank[y.id] or 0
+                    if rx ~= ry then return rx > ry end
+                    return x.score > y.score
+                end)
+            end
             flyoutItems[m.name] = list
             id = Chosen(m, list)
-            if not id then
+            if create and not carried then
+                -- you can make one and carry none: the button makes one, Shift+click
+                -- uses the item chosen from what you do carry
+                making = true
+                body = "#showtooltip " .. create .. "\n/cast [nomod] " .. create
+                if id then body = body .. "\n/use [mod:shift] item:" .. id end
+            elseif not id then
                 body = EmptyBody(m.label)
             elseif m.weapon then
                 body = WeaponBody(id)
@@ -2308,7 +2339,8 @@ local function UpdateCore()
             end
         end
         -- spell and scroll buttons show the spell when there is nothing to use, so they are never "empty"
-        emptyState[m.name] = (id == nil) and m.kind ~= "spells" and m.special ~= "scroll"
+        -- (nor is one that makes a healthstone or mana gem)
+        emptyState[m.name] = (id == nil) and not making and m.kind ~= "spells" and m.special ~= "scroll"
         if not inCombat then
             -- "?" and the real name while #showtooltip drives the icon; the
             -- placeholder icon and "No ..." name when it is not used.
@@ -3322,7 +3354,7 @@ end
 
 -- How the Buttons tab sorts them. Anything not listed goes under Other.
 UI.BUTTON_GROUPS = {
-    { name = "Recovery", keys = { "healthstone", "healthpot", "manapot", "ragepot", "bandage", "antivenom" } },
+    { name = "Recovery", keys = { "healthpot", "manapot", "ragepot", "bandage", "antivenom" } },
     { name = "Food & Drink", keys = { "food", "water", "bufffood" } },
     { name = "Buffs", keys = { "agility", "intellect", "stamina", "strength", "spirit", "armor",
         "resistance", "otherbuff", "flask", "weaponbuff" } },
@@ -4476,6 +4508,46 @@ function UI.RemoveScrollMacros()
     db.scrollMacrosGone = true
 end
 
+-- 0.95.0 merged the Healthstone button into Restore Health (was Health
+-- Potion): on a character Restore Health is on if either was. Once, at login.
+function UI.MergeHealthstone()
+    local db = DB()
+    if db.healthMerged then return end
+    OnOff()
+    for _, t in pairs(type(db.enabledBy) == "table" and db.enabledBy or {}) do
+        if type(t) == "table" and t.healthstone ~= nil then
+            if t.healthstone == true or t.healthpot == nil then t.healthpot = t.healthstone end
+            t.healthstone = nil
+        end
+    end
+    if type(db.popDir) == "table" then
+        db.popDir.healthpot = db.popDir.healthpot or db.popDir.healthstone
+        db.popDir.healthstone = nil
+    end
+    db.healthMerged = true
+end
+
+-- The old Healthstone button's macro (in each character's own macro tab):
+-- deleted when found, out of combat, a moment after login. Only ours: it makes
+-- or uses a healthstone, or shows the empty-button message.
+function UI.RemoveHealthstoneMacro()
+    if InCombatLockdown() then return end
+    for _, name in ipairs({ "Healthstone", "No Healthstone" }) do
+        local idx = GetMacroIndexByName(name)
+        local body = idx and idx > 0 and GetMacroBody(idx)
+        if type(body) == "string" then
+            local id = tonumber(body:match("item:(%d+)"))
+            if body:find("Create Healthstone", 1, true) or (id and HS_RANK[id])
+                or body:find("/amac empty No Healthstone", 1, true) then
+                if pcall(DeleteMacro, idx) then
+                    DB().idx = {}   -- the macros after it moved (see DeleteManaged)
+                    Print("Healthstone is now part of Restore Health; the old Healthstone macro was removed")
+                end
+            end
+        end
+    end
+end
+
 local function Init()
     local db = DB()
     report.priorSessions = tonumber(db.sessions) or 0
@@ -4500,6 +4572,8 @@ local function Init()
     db.audit, db.learnOff = nil, nil   -- gone in 0.87.0 (no built-in lists; learning is always on)
     local okMerge, errMerge = pcall(UI.MergeBuffButtons)
     if not okMerge then Fail("merging the buff buttons", errMerge) end
+    local okHealth, errHealth = pcall(UI.MergeHealthstone)
+    if not okHealth then Fail("merging the healthstone button", errHealth) end
     -- 0.93.0: 0.92.0's Protection button is Armor Buff now (resistance items got their own)
     for _, t in pairs(type(db.enabledBy) == "table" and db.enabledBy or {}) do
         if type(t) == "table" and t.protection ~= nil then
@@ -4537,6 +4611,8 @@ frame:SetScript("OnEvent", function(_, event)
             C_Timer.After(3, function()
                 local okScrolls, errScrolls = pcall(UI.RemoveScrollMacros)   -- (once, 0.92.0)
                 if not okScrolls then Fail("removing the old scroll macros", errScrolls) end
+                local okHs, errHs = pcall(UI.RemoveHealthstoneMacro)   -- (0.95.0, per character)
+                if not okHs then Fail("removing the old healthstone macro", errHs) end
                 SafeCollect()
                 local ok, err = pcall(RefreshGlow)
                 if not ok then Fail("highlight/popout", err) end

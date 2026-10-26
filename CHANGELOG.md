@@ -4,6 +4,19 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.95.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Changed
+- **Restore Health** (was Health Potion) and **Restore Mana** (was Mana Potion) take anything
+  that restores health or mana: potions, healthstones, mana gems, Demonic and Dark Runes,
+  Whipper Root Tuber, Night Dragon's Breath. Rejuvenation Potions are on both.
+- Healthstones and mana gems come first. A Warlock or Mage who can make one but carries none
+  makes one with a click (Create Healthstone / Conjure Mana gem); Shift+click then uses the
+  best of what you do carry.
+- The separate Healthstone button is gone: Restore Health is on for a character if either
+  button was. Your Health Potion and Mana Potion macros stay on your bars (renamed); the old
+  Healthstone macro is removed.
+
 ## 0.94.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Added
