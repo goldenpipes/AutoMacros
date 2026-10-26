@@ -4,6 +4,14 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.101.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Added
+- General > **Chat**: "Show info messages" (what the addon tells you by itself: items learned,
+  buttons turned on, macros removed) and "Show the empty-button message" (the "No water in
+  inventory." line when you click an empty button). Both on by default. Replies to /amac
+  commands and problems you need to fix (macro slots full, ...) always show.
+
 ## 0.100.0 - 2026-10-26 (pre-release)
 
 ### Changed

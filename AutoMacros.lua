@@ -1,4 +1,4 @@
--- AutoMacros 0.100.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.101.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one file for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -144,7 +144,7 @@ end
 --   learned           items sorted into categories, by the addon or by hand
 --   recipes           per character: what its known recipes make and need (UI.ScanRecipes)
 --   ignored           consumables checked and found to belong nowhere (see LearnNew)
---   glow, noFlyout, stockTooltip, showNames   on/off options
+--   glow, noFlyout, stockTooltip, showNames, quiet, noEmptyMsg   on/off options
 -- ---------------------------------------------------------------------------
 local SCHEMA = 2
 local CLASSIFIER = 10   -- raise when the learning rules change, so items are checked again
@@ -581,6 +581,13 @@ local function Print(msg)
     print("|cff66ccffAutoMacros:|r " .. Loc(tostring(msg)))
 end
 
+-- What the addon tells you by itself (items learned, buttons turned on, macros
+-- removed): hidden with General > Chat > "Show info messages" off (db.quiet).
+-- Replies to /amac commands and problems you need to act on always use Print.
+local function Note(msg)
+    if not DB().quiet then Print(msg) end
+end
+
 -- A failure in one part (button scan, highlight, flyout) is reported once and
 -- never stops the rest of the addon.
 local lastErrorText
@@ -977,7 +984,7 @@ local function DeleteManaged(m)
     local idx = FindMacro(m)
     if not idx then return end
     if not BodyMatches(m, GetMacroBody(idx)) then
-        Print(m.title .. ": macro " .. tostring(GetMacroInfo(idx)) .. " left alone - it does not look like one of ours")
+        Note(m.title .. ": macro " .. tostring(GetMacroInfo(idx)) .. " left alone - it does not look like one of ours")
         return
     end
     local ok, err = pcall(DeleteMacro, idx)
@@ -988,7 +995,7 @@ local function DeleteManaged(m)
     -- the macros after it have moved up one place, so every remembered slot is
     -- dropped and found again by name on the next update
     DB().idx = {}
-    Print(m.title .. ": macro deleted")
+    Note(m.title .. ": macro deleted")
 end
 
 -- ---- action button art, shared by the popup items and the settings demos ----
@@ -2230,9 +2237,9 @@ local function LearnNew(have, loud)
                             local titles = {}
                             for _, s in ipairs(sets) do titles[#titles + 1] = (SetTitle(s)) end
                             if #sets == 0 then
-                                Print(ItemRef(id) .. " has changed and no longer fits any button")
+                                Note(ItemRef(id) .. " has changed and no longer fits any button")
                             else
-                                Print((old and old.sets and "relearned " or "learned ") .. ItemRef(id) .. " as " .. table.concat(titles, " + ")
+                                Note((old and old.sets and "relearned " or "learned ") .. ItemRef(id) .. " as " .. table.concat(titles, " + ")
                                     .. " (/amac unassign " .. id .. " if that is wrong)")
                             end
                         end
@@ -2272,7 +2279,7 @@ local function AutoEnable(have)
             if stocked or made then
                 on[e.key] = true
                 changed = true
-                if stocked and not made then Print(e.title .. ": turned on (you are carrying some)") end
+                if stocked and not made then Note(e.title .. ": turned on (you are carrying some)") end
             end
         end
     end
@@ -2320,7 +2327,7 @@ local function UpdateCore()
                 end
             end
             if elsewhere and not Enabled(e) then
-                Print(e.title .. ": off on this character (its macro stays: another character uses it)")
+                Note(e.title .. ": off on this character (its macro stays: another character uses it)")
             elseif not Enabled(e) or e.removed then
                 DeleteManaged(e)
             end
@@ -2440,7 +2447,7 @@ end
 local function ChooseItem(m, id)
     Picks()[m.name] = id          -- nil goes back to automatic
     if InCombatLockdown() then
-        Print(m.title .. ": will change when combat ends")
+        Note(m.title .. ": will change when combat ends")
     end
     Update()                      -- in combat this only queues the macro rewrite
 end
@@ -3317,7 +3324,7 @@ function UI.SetEnabled(e, on)
     OnOff()[e.key] = on and true or false
     if not on then
         toDelete[e.key] = e   -- its macro goes on the next update
-        if InCombatLockdown() then Print(e.title .. ": macro will be deleted when combat ends") end
+        if InCombatLockdown() then Note(e.title .. ": macro will be deleted when combat ends") end
     end
     Refresh()
     RefreshHeaders()
@@ -3946,6 +3953,16 @@ local PAGES = {
                 get = function() return not DB().showNames end,
                 set = function(v) DB().showNames = not v; Refresh() end },
             { type = "color", label = "Tooltip text color", key = "tooltipColor" },
+        } },
+        { name = "Chat", items = {
+            -- what the addon says by itself: items learned, buttons turned on, macros removed
+            { type = "toggle", label = "Show info messages",
+                get = function() return not DB().quiet end,
+                set = function(v) DB().quiet = (not v) or nil end },
+            -- the "No water in inventory." line when you click an empty button
+            { type = "toggle", label = "Show the empty-button message",
+                get = function() return not DB().noEmptyMsg end,
+                set = function(v) DB().noEmptyMsg = (not v) or nil end },
         } },
         { name = "Item learning", items = {
             { type = "text", text = UI.LearnedSummary },
@@ -4684,7 +4701,7 @@ function UI.RemoveScrollMacros()
     end
     if deleted then
         db.idx = {}   -- the macros after them moved (see DeleteManaged)
-        Print("the Scroll and Elixir buttons are now one buff button per stat; the scroll buttons' macros were removed")
+        Note("the Scroll and Elixir buttons are now one buff button per stat; the scroll buttons' macros were removed")
     end
     db.scrollMacrosGone = true
 end
@@ -4722,7 +4739,7 @@ function UI.RemoveHealthstoneMacro()
                 or body:find("/amac empty No Healthstone", 1, true) then
                 if pcall(DeleteMacro, idx) then
                     DB().idx = {}   -- the macros after it moved (see DeleteManaged)
-                    Print("Healthstone is now part of Restore Health; the old Healthstone macro was removed")
+                    Note("Healthstone is now part of Restore Health; the old Healthstone macro was removed")
                 end
             end
         end
@@ -4853,6 +4870,7 @@ SlashCmdList["AUTOMACROS"] = function(msg)
     -- an empty button was clicked (see EmptyBody): its message, for you only
     local message = msg and msg:match("^%s*[Ee][Mm][Pp][Tt][Yy]%s+(.+)$")
     if message then
+        if DB().noEmptyMsg then return end   -- General > Chat > "Show the empty-button message" off
         local c = StyleColor("tooltipColor")
         local function hex(v) return math.floor(math.max(0, math.min(1, v)) * 255 + 0.5) end
         print(string.format("|cff%02x%02x%02x%s|r", hex(c[1]), hex(c[2]), hex(c[3]), Loc(message)))
