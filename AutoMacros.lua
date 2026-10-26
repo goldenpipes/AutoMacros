@@ -1,4 +1,4 @@
--- AutoMacros 0.89.3 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.90.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one file for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -1107,27 +1107,41 @@ function BLIZZ_ART.CutBorder(g, cut, size, c)
     for i = used + 1, #g.cells do g.cells[i]:Hide() end
 end
 
--- the flyout indicator's height in screen pixels: 1 to 5 (more looks clunky)
+-- the popout indicator's thickness in screen pixels: 1 to 5 (more looks clunky)
 function BLIZZ_ART.TabHeight()
     return math.max(1, math.min(5, tonumber(Style("tabHeight")) or 3))
 end
 
--- The small tab on a button that has a flyout. Width is UI units (like the
--- button), height screen pixels; never wider than the button's straight top
--- edge (between rounded corners), and placed on whole pixels so its edges stay sharp.
+-- The small tab on a button that has a popout, on the side it opens from
+-- (a.dir: up, down, left, right; see POPOUT). Width is UI units (like the
+-- button), height screen pixels; never longer than the button's straight edge
+-- (between rounded corners), and placed on whole pixels so its edges stay sharp.
 local function StyleArrow(a)
     local px = PixelSize(a)
     local b = a.button
-    local bw = b and b:GetWidth() or 0
+    local dir = a.dir or "up"
+    local across = dir == "left" or dir == "right"   -- on a side edge: standing upright
+    local bw = b and (across and b:GetHeight() or b:GetWidth()) or 0
     if type(bw) ~= "number" or bw <= 0 then bw = 36 end
     local bwPx = math.floor(bw / px + 0.5)
     local maxPx = bwPx
     if BLIZZ_ART.Rounded() then maxPx = math.floor(bwPx * (1 - 2 * BLIZZ_ART.CORNER)) end
     local wPx = math.min(math.floor(BarUnits(a, Style("tabWidth")) / px + 0.5), maxPx)
-    a:SetSize(math.max(wPx, 0.01) * px, BLIZZ_ART.TabHeight() * px)   -- 0: nothing to see
+    local long, thick = math.max(wPx, 0.01) * px, BLIZZ_ART.TabHeight() * px   -- 0: nothing to see
+    if across then a:SetSize(thick, long) else a:SetSize(long, thick) end
     if b then
+        -- centred along the edge, overlapping the button by 3 pixels
+        local off, inset = math.floor((bwPx - wPx) / 2) * px, 3 * px
         a:ClearAllPoints()
-        a:SetPoint("BOTTOMLEFT", b, "TOPLEFT", math.floor((bwPx - wPx) / 2) * px, -3 * px)
+        if dir == "down" then
+            a:SetPoint("TOPLEFT", b, "BOTTOMLEFT", off, inset)
+        elseif dir == "right" then
+            a:SetPoint("BOTTOMLEFT", b, "BOTTOMRIGHT", -inset, off)
+        elseif dir == "left" then
+            a:SetPoint("BOTTOMRIGHT", b, "BOTTOMLEFT", inset, off)
+        else
+            a:SetPoint("BOTTOMLEFT", b, "TOPLEFT", off, -inset)
+        end
     end
     Paint(a.tex, Style("tabTexture"), StyleColor("tabColor"))
 end
@@ -1507,10 +1521,12 @@ end
 
 -- A divider the main bar uses between buttons stacked one above the other (a
 -- vertical bar in Edit Mode): a frame from its VerticalDividersPool, one in use
--- if the bar is vertical now, otherwise a spare one. nil when there is none.
-function BLIZZ_ART.DividerSource()
+-- if the bar is vertical now, otherwise a spare one. across: one it uses
+-- between buttons side by side instead (HorizontalDividersPool; unverified
+-- which pool that is). nil when there is none.
+function BLIZZ_ART.DividerSource(across)
     local bar = _G.MainActionBar or _G.MainMenuBar
-    local pool = bar and bar.VerticalDividersPool
+    local pool = bar and (across and bar.HorizontalDividersPool or bar.VerticalDividersPool)
     if not pool then return nil end
     local function pick(a, b)   -- pools hand out (object, true) or (index, object)
         if type(a) == "table" and a.GetRegions then return a end
@@ -1560,12 +1576,18 @@ function BLIZZ_ART.Clone(src, dst)
     return #list > 0
 end
 
--- Draws the main bar's divider between the n items stacked in popup f (size
--- tall, gap apart, the first pad up from the bottom): copies of one of its
--- dividers, at its scale. Hidden when on is false or there is none to copy.
-function BLIZZ_ART.Dividers(f, on, n, size, gap, pad)
-    f.dividers = f.dividers or {}
-    local src = on and BLIZZ_ART.DividerSource()
+-- Draws the main bar's divider between the n items in popup f (size each, gap
+-- apart, the first pad in from the edge): copies of one of its dividers, at its
+-- scale. Items stacked, or side by side when across. Hidden when on is false
+-- or there is none to copy.
+function BLIZZ_ART.Dividers(f, on, n, size, gap, pad, across)
+    -- each way has its own copies (different art); the other way's are hidden
+    local key = across and "dividersAcross" or "dividers"
+    local other = f[across and "dividers" or "dividersAcross"]
+    if other then for _, d in ipairs(other) do d:Hide() end end
+    f[key] = f[key] or {}
+    local list = f[key]
+    local src = on and BLIZZ_ART.DividerSource(across)
     if src and not f.dividerLayer then   -- above the items, as on the bar
         f.dividerLayer = CreateFrame("Frame", nil, f)
         f.dividerLayer:SetAllPoints()
@@ -1576,23 +1598,33 @@ function BLIZZ_ART.Dividers(f, on, n, size, gap, pad)
         -- the bar's scale, times how much the items differ from its buttons
         k = src:GetEffectiveScale() / f:GetEffectiveScale() * BLIZZ_ART.ArtScale(f)
         w, h = src:GetWidth() or 0, src:GetHeight() or 0
-        if w <= 0 or h <= 0 then   -- a spare one is not laid out: item wide, as tall as its art
-            w = size / k
-            for _, r in ipairs({ src:GetRegions() }) do h = math.max(h, r:GetHeight() or 0) end
+        if w <= 0 or h <= 0 then   -- a spare one is not laid out: as long as an item, as thick as its art
+            if across then
+                h, w = size / k, 0
+                for _, r in ipairs({ src:GetRegions() }) do w = math.max(w, r:GetWidth() or 0) end
+            else
+                w, h = size / k, 0
+                for _, r in ipairs({ src:GetRegions() }) do h = math.max(h, r:GetHeight() or 0) end
+            end
         end
     end
-    for i = 1, math.max(#f.dividers, n - 1) do
-        local d = f.dividers[i]
+    for i = 1, math.max(#list, n - 1) do
+        local d = list[i]
         if src and i <= n - 1 then
             if not d then
                 d = CreateFrame("Frame", nil, f.dividerLayer)
                 if not pcall(BLIZZ_ART.Clone, src, d) then d.broken = true end
-                f.dividers[i] = d
+                list[i] = d
             end
             d:SetScale(k)
             d:SetSize(w, h)
             d:ClearAllPoints()
-            d:SetPoint("CENTER", f, "BOTTOM", 0, (pad + i * (size + gap) - gap / 2) / k)
+            local at = (pad + i * (size + gap) - gap / 2) / k
+            if across then
+                d:SetPoint("CENTER", f, "LEFT", at, 0)
+            else
+                d:SetPoint("CENTER", f, "BOTTOM", 0, at)
+            end
             d:SetShown(not d.broken)
         elseif d then
             d:Hide()
@@ -1643,6 +1675,62 @@ function BLIZZ_ART.BarButtonSize()
     if type(h) ~= "number" or h <= 0 then h = w end
     local k = b:GetEffectiveScale() / UIParent:GetEffectiveScale()
     return math.max(8, math.floor(w * k + 0.5)), math.max(8, math.floor(h * k + 0.5))
+end
+
+-- ---- popout direction ----
+-- Which way a button's popout opens: up, down, left or right. Chosen per
+-- button in the settings (db.popDir[key]), or on Automatic worked out from
+-- where the button is on screen.
+local POPOUT = {
+    DIRS = { { key = "auto", label = "Automatic" }, { key = "up", label = "Up" },
+        { key = "down", label = "Down" }, { key = "left", label = "Left" }, { key = "right", label = "Right" } },
+    AWAY = { left = "right", right = "left", bottom = "up", top = "down" },   -- from the nearest edge
+}
+
+-- a button's centre and size in screen pixels (nil when it is not laid out)
+function POPOUT.Rect(b)
+    local l, bottom, w, h = b:GetRect()
+    if not l then return nil end
+    local s = b:GetEffectiveScale()
+    return (l + w / 2) * s, (bottom + h / 2) * s, w * s, h * s
+end
+
+-- Automatic: a button in a column (another action button straight above or
+-- below it, none beside it), as on a bar at the side of the screen, opens
+-- away from the nearer side: right on the left half, left on the right half.
+-- One in a row opens up in the lower half of the screen, down in the upper
+-- half. Anything else (a grid, a lone button) opens away from the nearest edge.
+function POPOUT.Auto(b)
+    local x, y, w, h = POPOUT.Rect(b)
+    if not x then return "up" end
+    local s = UIParent:GetEffectiveScale()
+    local sw, sh = UIParent:GetWidth() * s, UIParent:GetHeight() * s
+    local column, row = false, false
+    for _, o in ipairs(buttons) do
+        if o ~= b and o:IsVisible() then
+            local ox, oy = POPOUT.Rect(o)
+            if ox then
+                local dx, dy = math.abs(ox - x), math.abs(oy - y)
+                if dx < w * 0.5 and dy > h * 0.5 and dy < h * 1.8 then column = true end
+                if dy < h * 0.5 and dx > w * 0.5 and dx < w * 1.8 then row = true end
+            end
+        end
+    end
+    if column and not row then return x < sw / 2 and "right" or "left" end
+    if row and not column then return y < sh / 2 and "up" or "down" end
+    local near, best
+    for edge, d in pairs({ left = x, right = sw - x, bottom = y, top = sh - y }) do
+        if not best or d < best then near, best = edge, d end
+    end
+    return POPOUT.AWAY[near]
+end
+
+-- The direction for our button m's popout on action button b.
+function POPOUT.Direction(b, m)
+    local set = m and type(DB().popDir) == "table" and DB().popDir[m.key]
+    if set == "up" or set == "down" or set == "left" or set == "right" then return set end
+    local ok, dir = pcall(POPOUT.Auto, b)
+    return ok and dir or "up"
 end
 
 -- The popup items' size in frame f's units: Item size, a percentage like Edit
@@ -2201,7 +2289,7 @@ local function UpdateCore()
         end
     end
     local ok, err = pcall(SetEmpty, emptyState)
-    if not ok then Fail("highlight/flyout", err) end
+    if not ok then Fail("highlight/popout", err) end
 end
 
 local function Update()
@@ -2388,45 +2476,72 @@ local function Entry(i)
     return e
 end
 
--- Sizes and places the item buttons in popup f (default: the real one) from the
--- saved style, all on whole screen pixels so spacing and borders come out even:
--- item spacing and the popup border are pixels, the first (best) item is nearest
--- the button. With button, the popup is also put centred over it, just above its
--- flyout indicator (arrow). The settings demo uses this too.
-local function LayoutFlyout(f, list, n, button, arrow)
+-- Sizes and places the item buttons in popout f (default: the real one) from
+-- the saved style, all on whole screen pixels so spacing and borders come out
+-- even: item spacing and the popout border are pixels, the first (best) item is
+-- nearest the button. dir (up, down, left, right; default the real popout's
+-- f.dir, else up) is the way it opens: a column for up and down, a row for
+-- left and right. With button, the popout is also put centred on that side of
+-- it, just past its indicator (arrow). The settings demo uses this too.
+local function LayoutFlyout(f, list, n, button, arrow, dir)
     f = f or flyout
     if not f then return end
     list = list or entries
     n = n or f.count or 0
+    dir = dir or f.dir or "up"
+    local across = dir == "left" or dir == "right"
+    local reverse = dir == "down" or dir == "left"   -- counted from the far end, so item 1 is nearest
     local px = PixelSize(f)
     local size = BLIZZ_ART.ItemSize(f)
     -- With the background on, the items sit as on the main bar: its gap between
-    -- buttons, touching the popup's edge with the art reaching out past them
+    -- buttons, touching the popout's edge with the art reaching out past them
     -- (StyleFlyout). Without, Item spacing between and around them.
     local art = BLIZZ_ART.PopupArt()
     local gap = art and Snap(f, BLIZZ_ART.BarGap(f) * BLIZZ_ART.ArtScale(f)) or Style("entrySpacing") * px
     local pad = art and 0 or gap
     for i = 1, n do   -- (StyleEntry has sized them)
         local e = list[i]
-        if e then BLIZZ_ART.Point(e, "BOTTOMLEFT", f, "BOTTOMLEFT", pad, pad + (i - 1) * (size + gap)) end
+        if e then
+            local at = pad + (reverse and (n - i) or (i - 1)) * (size + gap)
+            if across then
+                BLIZZ_ART.Point(e, "BOTTOMLEFT", f, "BOTTOMLEFT", at, pad)
+            else
+                BLIZZ_ART.Point(e, "BOTTOMLEFT", f, "BOTTOMLEFT", pad, at)
+            end
+        end
     end
-    f:SetSize(size + 2 * pad, 2 * pad + n * (size + gap) - gap)
-    BLIZZ_ART.Dividers(f, art, n, size, gap, pad)
+    local long, short = 2 * pad + n * (size + gap) - gap, size + 2 * pad
+    if across then f:SetSize(long, short) else f:SetSize(short, long) end
+    BLIZZ_ART.Dividers(f, art, n, size, gap, pad, across)
     button = button or (f == flyout and f.button)
     if not button then return end
     arrow = arrow or arrows[button]
     local ratio = button:GetEffectiveScale() / f:GetEffectiveScale()
-    local x = Snap(f, (button:GetWidth() * ratio - f:GetWidth()) / 2)
-    local y = 0
+    local away = 0   -- how far from the button
     if arrow and arrow:IsShown() then   -- the indicator overlaps the button by 3px (StyleArrow)
-        y = math.max(0, BLIZZ_ART.TabHeight() - 3) * px
+        away = math.max(0, BLIZZ_ART.TabHeight() - 3) * px
     end
-    if art then   -- clear of the art below the items too
-        local _, _, _, below = BLIZZ_ART.BarInsets(f)
-        y = y + Snap(f, below * BLIZZ_ART.ArtScale(f))
+    if art then   -- clear of the art on the side facing the button too
+        local l, t, r, b = BLIZZ_ART.BarInsets(f)
+        local facing = ({ up = b, down = t, right = l, left = r })[dir]
+        away = away + Snap(f, facing * BLIZZ_ART.ArtScale(f))
     end
     f:ClearAllPoints()
-    f:SetPoint("BOTTOMLEFT", button, "TOPLEFT", x, y)
+    if across then
+        local y = Snap(f, (button:GetHeight() * ratio - f:GetHeight()) / 2)
+        if dir == "right" then
+            f:SetPoint("BOTTOMLEFT", button, "BOTTOMRIGHT", away, y)
+        else
+            f:SetPoint("BOTTOMRIGHT", button, "BOTTOMLEFT", -away, y)
+        end
+    else
+        local x = Snap(f, (button:GetWidth() * ratio - f:GetWidth()) / 2)
+        if dir == "down" then
+            f:SetPoint("TOPLEFT", button, "BOTTOMLEFT", x, -away)
+        else
+            f:SetPoint("BOTTOMLEFT", button, "TOPLEFT", x, away)
+        end
+    end
 end
 
 -- button is the action button to open over. source is the frame the mouse is
@@ -2440,6 +2555,7 @@ local function OpenFlyout(button, m, source, toggle)
         return
     end
     flyout.macro, flyout.button = m, button
+    flyout.dir = POPOUT.Direction(button, m)
     flyout.over = {}
     SetOver(source, true)
     local _, chosenEntry = Chosen(m, list)
@@ -2470,7 +2586,7 @@ end
 
 local function SafeOpen(...)
     local ok, err = pcall(OpenFlyout, ...)
-    if not ok then Print("flyout error: " .. tostring(err)) end
+    if not ok then Print("popout error: " .. tostring(err)) end
 end
 
 -- The macro on an action button, if it is one of ours: found by the macro's
@@ -2583,6 +2699,11 @@ RefreshArrows = function()
             local a = ArrowFor(b)
             if a then
                 a.macro = m
+                local dir = POPOUT.Direction(b, m)
+                if dir ~= a.dir then
+                    a.dir = dir
+                    StyleArrow(a)   -- onto the side it opens from
+                end
                 a:Show()
                 tabs = tabs + 1
             end
@@ -3128,6 +3249,29 @@ UI.BUTTON_GROUPS = {
     { name = "Class", keys = { "portals", "comprehend" } },
 }
 
+-- The Popout page's Direction section: a note, then a dropdown per button
+-- (Automatic, Up, Down, Left, Right), saved in db.popDir (Automatic = not saved).
+function UI.DirectionItems()
+    local items = { { type = "text", height = 50, text = function()
+        return "Automatic opens away from the screen edge: to the right on a bar down the left side,"
+            .. " to the left on the right side, up from a bar at the bottom, down from one at the top."
+    end } }
+    for _, e in ipairs(UI.AvailableButtons()) do
+        items[#items + 1] = { type = "choice", label = e.title, list = function() return POPOUT.DIRS end,
+            get = function()
+                local d = DB().popDir
+                return type(d) == "table" and d[e.key] or "auto"
+            end,
+            set = function(v)
+                local db = DB()
+                if type(db.popDir) ~= "table" then db.popDir = {} end
+                db.popDir[e.key] = (v ~= "auto") and v or nil
+                Refresh()   -- the indicators move to their new side
+            end }
+    end
+    return items
+end
+
 -- The Buttons tab: one section per group, each a grid of checkboxes.
 function UI.ButtonSections()
     local byKey, placed = {}, {}
@@ -3429,17 +3573,19 @@ local PAGES = {
             { type = "choice", label = "Texture", key = "glowTexture", list = function() return TextureChoices(true) end },
         } },
     } },
-    { name = "Flyout", header = "flyout", previewSide = "right", sections = {
+    { name = "Popout", header = "flyout", previewSide = "right", sections = {
         { name = "Behaviour", items = {
-            -- one row: "Flyout on hover [x]   Close delay <slider>"
+            -- one row: "Popout on hover [x]   Close delay <slider>"
             { type = "row", items = {
-                { type = "toggle", label = "Flyout on hover",
+                { type = "toggle", label = "Popout on hover",
                     get = function() return not DB().noFlyout end,
                     set = function(v) DB().noFlyout = not v; Refresh() end },
                 { type = "range", label = "Close delay", key = "closeDelay", min = 0.1, max = 1.5, step = 0.1 },
             } },
         } },
-        { name = "Flyout indicator", items = {
+        -- which way each button's popout opens (POPOUT.Direction)
+        { name = "Direction", items = function() return UI.DirectionItems() end },
+        { name = "Popout indicator", items = {
             { type = "color", label = "Color", key = "tabColor", alpha = true },
             { type = "range", label = "Width", key = "tabWidth", min = 0, max = UI.TabMaxWidth, step = 1 },
             { type = "range", label = "Height (pixels)", key = "tabHeight", min = 1, max = 5, step = 1 },
@@ -3517,7 +3663,9 @@ function UI.LocItems(items)
 end
 for _, page in ipairs(PAGES) do
     if type(page.sections) == "table" then
-        for _, section in ipairs(page.sections) do UI.LocItems(section.items) end
+        for _, section in ipairs(page.sections) do
+            if type(section.items) == "table" then UI.LocItems(section.items) end
+        end
     end
 end
 
@@ -3588,8 +3736,9 @@ function UI.NativeCfg(item)
     if item.type == "toggle" then
         return { type = "toggle", text = item.label, getValue = item.get, setValue = item.set }
     end
-    local get = function() return Style(item.key) end
-    local set = function(v) SetStyle(item.key, v) end
+    -- a style value, unless the item brings its own get / set
+    local get = item.get or function() return Style(item.key) end
+    local set = item.set or function(v) SetStyle(item.key, v) end
     if item.type == "range" then
         return { type = "slider", text = item.label, min = item.min, max = UI.Num(item.max), step = item.step,
             getValue = get, setValue = set }
@@ -3624,7 +3773,9 @@ local function BuildPage(parent, group, x0, y0, native)
         y = y - 40
     end
     local items = {}
-    for _, item in ipairs(group.items) do
+    -- (items may be a function: a list made when the page is built)
+    local groupItems = type(group.items) == "function" and group.items() or group.items
+    for _, item in ipairs(groupItems) do
         if item.when and not item.when() then
             -- not shown with the current look
         elseif item.type == "eui" or (item.type == "row" and W) then
@@ -3992,7 +4143,7 @@ local function RegisterEUI()
             modules = { {
                 key = "options",
                 title = "AutoMacros",
-                description = "Consumable and teleport macros: buttons, highlight, flyout and item learning",
+                description = "Consumable and teleport macros: buttons, highlight, popout and item learning",
                 pages = names,
                 buildPage = function(pageName, parent, yOffset)
                     local y = yOffset or 0
@@ -4128,7 +4279,7 @@ local function WatchBars(elapsed)
     local ok, changed = pcall(BarChanged)
     if ok and changed then
         local ok2, err = pcall(RefreshGlow)
-        if not ok2 then Fail("highlight/flyout", err) end
+        if not ok2 then Fail("highlight/popout", err) end
     end
 end
 
@@ -4181,7 +4332,7 @@ frame:SetScript("OnEvent", function(_, event)
             C_Timer.After(3, function()
                 SafeCollect()
                 local ok, err = pcall(RefreshGlow)
-                if not ok then Fail("highlight/flyout", err) end
+                if not ok then Fail("highlight/popout", err) end
             end)
         end
         Schedule()
@@ -4332,7 +4483,7 @@ SlashCmdList["AUTOMACROS"] = function(msg)
         Print(string.format("saved data: schema %s, loaded %s time(s) (%s)", tostring(db.schema), tostring(db.sessions),
             (report.priorSessions or 0) > 0 and "restored from the last session" or "new, or not restored from the last session"))
         Print(string.format("style settings changed: %d, learned items: %d, EllesmereUI: %s", styled, n,
-            skin and "styling the popup" or (EllesmereUI and "found, not skinning (turn it on in EllesmereUI)" or "not installed")))
+            skin and "styling the popout" or (EllesmereUI and "found, not skinning (turn it on in EllesmereUI)" or "not installed")))
         return
     elseif msg:match("^%s*next") then
         local name = NextScroll()
@@ -4432,10 +4583,10 @@ SlashCmdList["AUTOMACROS"] = function(msg)
             tostring(DB().sessions), (report.priorSessions or 0) > 0 and "yes" or "no"))
         Print("  last error: " .. tostring(report.lastError))
         return
-    elseif msg:match("^%s*flyout") then
+    elseif msg:match("^%s*popout") or msg:match("^%s*flyout") then   -- (its name before 0.90.0)
         local db = DB()
         db.noFlyout = not db.noFlyout
-        Print("item flyout tabs: " .. (db.noFlyout and "off" or "on"))
+        Print("item popouts: " .. (db.noFlyout and "off" or "on"))
     elseif msg:match("^%s*names") then
         local db = DB()
         db.showNames = not db.showNames
@@ -4465,7 +4616,7 @@ SlashCmdList["AUTOMACROS"] = function(msg)
             Print(m.name .. ": " .. what .. " - " .. r.result .. " (" .. r.size .. "/255 bytes)")
         end
     end
-    Print("action buttons found: " .. #buttons .. ", highlighted: " .. (report.glowing or 0) .. ", flyout tabs: " .. (report.tabs or 0))
+    Print("action buttons found: " .. #buttons .. ", highlighted: " .. (report.glowing or 0) .. ", popout indicators: " .. (report.tabs or 0))
     local general, perChar = GetNumMacros()
     Print(string.format("macros: %s general, %s character; made new this session: %s", tostring(general),
         tostring(perChar), report.created and table.concat(report.created, ", ") or "none (all found from last time)"))
@@ -4477,5 +4628,5 @@ SlashCmdList["AUTOMACROS"] = function(msg)
                 .. ", on a bar " .. ((report.onBar and report.onBar[m.name]) or 0) .. "x"
         end
     end
-    Print("flyout - " .. table.concat(parts, "; "))
+    Print("popouts - " .. table.concat(parts, "; "))
 end

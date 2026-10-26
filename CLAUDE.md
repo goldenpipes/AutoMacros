@@ -24,7 +24,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   not yet tested = `--prerelease`. Every iteration is still committed and pushed.
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.lua` / `AutoMacros.toc` are always the current version.
-- **Current version: 0.89.3.**
+- **Current version: 0.90.0.**
 - **Copy the current files into `previous/<version>/` BEFORE the first edit of a new iteration**
   (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version in the .toc and anywhere else it appears.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
@@ -62,6 +62,30 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.90.0 — popout directions; "flyout" is now "popout"
+- Lewis: **call it "popout", not "flyout"** in everything players see (page "Popout",
+  "Popout on hover", "Popout indicator", `/amac popout` + old `/amac flyout`, messages). Code
+  names (flyout, LayoutFlyout, StyleFlyout, noFlyout, flyoutArt, HEADERS.flyout,
+  AutoMacrosFlyout) and saved keys are unchanged.
+- Lewis: each button configurable, and smart by default. `POPOUT` table (top-level, 191/200),
+  after `buttons`: `DIRS` (auto/up/down/left/right), `Rect(b)` (centre/size in screen px),
+  `Auto(b)`: visible action buttons straight above/below within 1.8 heights and none beside =
+  column -> right on the left half, left on the right half; row (beside, none above/below) ->
+  up in the lower half, down in the upper; otherwise (grid, lone) away from the nearest screen
+  edge (`AWAY`). `Direction(b, m)` = `db.popDir[m.key]` (account-wide; nil = auto) or Auto.
+- OpenFlyout sets `flyout.dir`; LayoutFlyout(f, list, n, button, arrow, dir): column for
+  up/down, row for left/right; reversed (down/left) so item 1 is nearest the button; anchored
+  on that side, centred, `away` = tab overhang + the art inset on the facing side.
+- StyleArrow uses `a.dir` (RefreshArrows sets it, restyles on change): tab on that edge,
+  upright for left/right, length capped by the button's height there.
+- Dividers(…, across): row popouts copy from `HorizontalDividersPool` (**unverified** that this
+  pool holds the side-by-side dividers; none = no dividers), kept in `f.dividersAcross`; the
+  other orientation's copies are hidden.
+- Settings: Popout page section "Direction" (`UI.DirectionItems`: note + a choice per
+  available button). Section `items` may now be a function (BuildPage; LocItems skips it);
+  choice items may bring their own get/set (UI.NativeCfg). The settings demo stays "up".
+- Roadmap item "Flyout direction" done (untested).
 
 ## 0.89.3 — GetActionInfo's macro number is not the macro index
 - 0.89.2 did not fix Lewis's bug. `/amac debug` in retail showed the real cause: action slot 7
@@ -809,11 +833,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Titles use readable names: "Health Potion", "Mana Potion"; labels are plural where Lewis set them.
 
 ## Roadmap / ideas
-- **Flyout direction** (Lewis, 2026-10-25): the popup always opens upward now (LayoutFlyout
-  stacks items above the button and its indicator). It needs to open up/down/left/right
-  depending on where the button is (e.g. a bar at the top of the screen or a vertical bar at
-  the side), probably automatic from the button's screen position, maybe with a setting. The
-  indicator, the bar-art dividers (vertical vs horizontal) and the settings demo must follow.
+- ~~Popout direction~~: done in 0.90.0 (see there). The settings demo always shows "up".
 - A config page for options and customization.
 - Possibly derive categories from client item class data instead of hardcoded lists.
 - Disease-removal items category (requested alongside bandages/anti-venom).

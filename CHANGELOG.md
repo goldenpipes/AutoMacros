@@ -4,6 +4,19 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.90.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Added
+- Popouts open in any direction. On Automatic (the default) each button works it out from
+  where it is: to the right on a bar down the left side of the screen, to the left on the right
+  side, up from a bar at the bottom and down from one at the top. The indicator moves to the
+  side the popout opens from.
+- Popout settings page: a Direction for each button (Automatic, Up, Down, Left, Right).
+
+### Changed
+- "Flyout" is now called **popout** everywhere: the settings page, its options and
+  `/amac popout` (`/amac flyout` still works).
+
 ## 0.89.3 - 2026-10-26 (pre-release, tested in retail)
 
 ### Fixed
