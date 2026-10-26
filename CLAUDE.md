@@ -58,7 +58,9 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   finding action buttons, highlight, empty tooltip), Learning (Classify, LearnNew), Update
   (AutoEnable, UpdateCore, Update), Popout (the popout, indicators, labels), Widgets, Options
   (UI: Buttons page, availability, recipes, previews), OptionsPages (PAGES, BuildPage, the
-  AddOns panel), EllesmereUI, Events (Schedule, bar watcher, migrations, Init, events, /amac).
+  AddOns panel), Custom (your own buttons + the Custom page, since 0.106.0), EllesmereUI,
+  Events (Schedule, bar watcher, migrations, Init, events, /amac).
+- When searching code, keep to the top-level `*.lua`: `previous/` holds every old build.
 - **Every file starts with** `local ADDON, ns = ...` / `setmetatable(ns, { __index = _G })` /
   `setfenv(1, ns)`: the addon's table is each file's environment. A name assigned at a
   file's top level (`function Update()`, `MACROS = {}`) is shared with all files; anything
