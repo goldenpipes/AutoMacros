@@ -4,6 +4,16 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.99.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Changed
+- On the settings page, a switched-off button now shows how many are **available**, not just
+  carried: "(3 available)" and the green number on its icon. It also counts a healthstone or
+  mana gem your class can make, and anything your professions can make right now (you know the
+  recipe and carry every reagent), such as First Aid's bandages and healing potions.
+- The addon learns your recipes when you open a profession window, so open each profession
+  once for its recipes to count.
+
 ## 0.98.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Changed

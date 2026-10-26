@@ -24,7 +24,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   not yet tested = `--prerelease`. Every iteration is still committed and pushed.
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.lua` / `AutoMacros.toc` are always the current version.
-- **Current version: 0.98.0.**
+- **Current version: 0.99.0.**
 - **Copy the current files into `previous/<version>/` BEFORE the first edit of a new iteration**
   (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version in the .toc and anywhere else it appears.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
@@ -62,6 +62,25 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.99.0 — "N available" (carried, made, craftable)
+- Lewis: disabled buttons should count what the character can make: healthstone / mana gem if
+  the spell is known; crafted items only when the recipe is known **and** every reagent is in
+  the bags (e.g. First Aid health potions). Wording "N available", not "in bags".
+- `UI.CouldUse` -> `UI.Available(e, have)` = Stocked + 1 if MadeCreate known and none carried
+  + each recipe product in the button's set (InSet) not carried with `UI.CanCraft(need)`
+  (CountOf per reagent, any of a slot's ids). Only the settings indicator; buttons/macros
+  still use bags only. Tooltip "N available (carried, or you can make them)", grid
+  "(N available)", strip hint updated.
+- Recipes can only be read with a profession window open: events TRADE_SKILL_SHOW / _UPDATE /
+  _LIST_UPDATE -> `UI.QueueScan` (one read 1 s after, then Update) -> `UI.ScanRecipes`: retail
+  C_TradeSkillUI.GetAllRecipeIDs + GetRecipeInfo(.learned) + GetRecipeSchematic(outputItemID,
+  reagentSlotSchematics: required ~= false, reagents[].itemID, quantityRequired); older
+  clients GetNumTradeSkills / GetTradeSkillInfo (skip header/subheader) / ItemLink /
+  NumReagents / ReagentInfo (count) / ReagentItemLink. Saved `db.recipes[char][itemID] =
+  { { ids = {...}, n = k }, ... }`, merged per scan. **Untested on every client**; Enchanting's
+  Craft API (classic) not read. Products are learned quietly: UpdateCore passes have +
+  recipe products to LearnNew(look, loud = have), which only prints for loud items.
 
 ## 0.98.0 — one Debuff Cure button
 - Lewis: anti-venom, disease and bleed removal in **one** button; more debuff removers will

@@ -1,4 +1,4 @@
--- AutoMacros 0.98.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.99.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one file for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -142,6 +142,7 @@ end
 --   enabledBy         which categories are on, per character (was enabled, account-wide)
 --   custom            your own categories
 --   learned           items sorted into categories, by the addon or by hand
+--   recipes           per character: what its known recipes make and need (UI.ScanRecipes)
 --   ignored           consumables checked and found to belong nowhere (see LearnNew)
 --   glow, noFlyout, stockTooltip, showNames   on/off options
 -- ---------------------------------------------------------------------------
@@ -2186,7 +2187,9 @@ local attempts = {}      -- item ID -> tries while the game had no data for it
 -- (Before 0.85.0 both kinds of ignored were a number; those count as automatic
 -- and are checked once more.)
 -- Returns true while items are left to look at (no data yet, or over budget).
-local function LearnNew(have)
+-- loud: the items to tell you about (those in your bags; things your recipes
+-- make are sorted quietly); nil = all.
+local function LearnNew(have, loud)
     local db = DB()
     local budget, changed, waiting = 40, false, false
     for id in pairs(have) do
@@ -2222,6 +2225,8 @@ local function LearnNew(have)
                         end
                         if table.concat(sets, "+") ~= before then
                             changed = true
+                        end
+                        if table.concat(sets, "+") ~= before and (not loud or loud[id]) then
                             local titles = {}
                             for _, s in ipairs(sets) do titles[#titles + 1] = (SetTitle(s)) end
                             if #sets == 0 then
@@ -2286,7 +2291,15 @@ local function UpdateCore()
     lastLocs = locs or {}
     report.have = have   -- for the settings page (UI.CouldUse)
     RebuildLearned()
-    local okLearn, errLearn = pcall(LearnNew, have)
+    -- what is in your bags, and quietly what your known recipes make (see UI.ScanRecipes)
+    local look = have
+    local recipes = type(DB().recipes) == "table" and DB().recipes[CharKey()]
+    if type(recipes) == "table" and next(recipes) then
+        look = {}
+        for id in pairs(have) do look[id] = true end
+        for id in pairs(recipes) do look[id] = true end
+    end
+    local okLearn, errLearn = pcall(LearnNew, look, have)
     if not okLearn then Fail("learning", errLearn) end
     report.learnWaiting = okLearn and errLearn or nil
     local okAuto, autoChanged = pcall(AutoEnable, have)
@@ -3311,12 +3324,101 @@ function UI.SetEnabled(e, on)
     RefreshOptions()
 end
 
--- How many different items you carry for a button that is off (0 when it is
--- on or you carry none): the settings show it, so you know it could be used.
+-- How many different things a button that is off could use (0 when it is on):
+-- the settings show it as "N available", so you know it is worth turning on.
 function UI.CouldUse(e)
     if Enabled(e) or not report.have then return 0 end
-    local ok, n = pcall(Stocked, e, report.have)
+    local ok, n = pcall(UI.Available, e, report.have)
     return ok and n or 0
+end
+
+-- The things counted: items you carry, a healthstone or mana gem you can make
+-- (and carry none of), and what your known recipes make when you carry every
+-- reagent (First Aid's bandages and potions, Alchemy, Cooking, ...).
+function UI.Available(e, have)
+    local n, counted = Stocked(e, have), {}
+    if not e.set then return n end
+    for _, c in ipairs(Candidates(have, e.set)) do counted[c.id] = true end
+    local create, carried = MadeCreate(e.set, have)
+    if create and not carried then n = n + 1 end
+    local recipes = type(DB().recipes) == "table" and DB().recipes[CharKey()]
+    for id, need in pairs(type(recipes) == "table" and recipes or {}) do
+        if not counted[id] and InSet(e.set, id) and UI.CanCraft(need) then n = n + 1 end
+    end
+    return n
+end
+
+-- true when your bags hold every reagent a recipe needs (need: see UI.ScanRecipes)
+function UI.CanCraft(need)
+    if type(need) ~= "table" then return false end
+    for _, r in ipairs(need) do
+        local got = 0
+        for _, id in ipairs(r.ids or {}) do got = got + (CountOf(id) or 0) end
+        if got < (r.n or 1) then return false end
+    end
+    return true
+end
+
+-- Your recipes, read while a profession window is open (the game shows them
+-- nowhere else), kept per character: db.recipes[char][made item ID] = list of
+-- { ids = { reagent item IDs, any of them }, n = how many }. Updated each time
+-- a window is open; recipes you know only (retail lists the rest too).
+-- A profession window's events (retail sends many while one is open, the
+-- first before its list is filled in): one read a second after the last.
+function UI.QueueScan()
+    if UI.scanQueued then return end
+    UI.scanQueued = true
+    local function run()
+        UI.scanQueued = nil
+        local ok, err = pcall(UI.ScanRecipes)
+        if not ok then Fail("reading your recipes", err) end
+        Update()   -- the settings' "available" counts
+    end
+    if C_Timer and C_Timer.After then C_Timer.After(1, run) else run() end
+end
+
+function UI.ScanRecipes()
+    local db = DB()
+    if type(db.recipes) ~= "table" then db.recipes = {} end
+    local mine = type(db.recipes[CharKey()]) == "table" and db.recipes[CharKey()] or {}
+    db.recipes[CharKey()] = mine
+    local function ItemOf(link) return type(link) == "string" and tonumber(link:match("item:(%d+)")) or nil end
+    local T = C_TradeSkillUI
+    if T and T.GetAllRecipeIDs and T.GetRecipeSchematic and T.GetRecipeInfo then
+        -- retail: recipe IDs, each with its made item and reagent slots
+        for _, recipeID in ipairs(T.GetAllRecipeIDs() or {}) do
+            local info = T.GetRecipeInfo(recipeID)
+            local s = info and info.learned and T.GetRecipeSchematic(recipeID, false)
+            if s and s.outputItemID then
+                local need = {}
+                for _, slot in ipairs(s.reagentSlotSchematics or {}) do
+                    if slot.required ~= false then   -- (not optional or finishing reagents)
+                        local ids = {}
+                        for _, r in ipairs(slot.reagents or {}) do
+                            if r.itemID then ids[#ids + 1] = r.itemID end
+                        end
+                        if #ids > 0 then need[#need + 1] = { ids = ids, n = slot.quantityRequired or 1 } end
+                    end
+                end
+                mine[s.outputItemID] = need
+            end
+        end
+    elseif GetNumTradeSkills and GetTradeSkillInfo then
+        -- the older clients: the window's list, headers skipped
+        for i = 1, GetNumTradeSkills() or 0 do
+            local _, kind = GetTradeSkillInfo(i)
+            local made = kind and kind ~= "header" and kind ~= "subheader" and ItemOf(GetTradeSkillItemLink(i))
+            if made then
+                local need = {}
+                for r = 1, GetTradeSkillNumReagents(i) or 0 do
+                    local _, _, count = GetTradeSkillReagentInfo(i, r)
+                    local reagent = ItemOf(GetTradeSkillReagentItemLink(i, r))
+                    if reagent and count then need[#need + 1] = { ids = { reagent }, n = count } end
+                end
+                mine[made] = need
+            end
+        end
+    end
 end
 
 UI.HAVE_COLOR = "|cff40ff40"   -- the "in bags" note
@@ -3512,7 +3614,7 @@ UI.HEADERS.buttons = function(f, width)
                 GameTooltip:AddLine(Enabled(self.entry) and "On - click to turn off" or "Off - click to turn on", 1, 0.82, 0)
                 local n = UI.CouldUse(self.entry)
                 if n > 0 then
-                    GameTooltip:AddLine(string.format("You carry %d matching item%s", n, n == 1 and "" or "s"), 0.25, 1, 0.25)
+                    GameTooltip:AddLine(n .. " available (carried, or you can make them)", 0.25, 1, 0.25)
                 end
                 if UI.NotOnBars(self.entry) then UI.AddNotOnBarsLine(GameTooltip) end
                 GameTooltip:AddLine("Drag onto an action bar to place it", 0.7, 0.7, 0.7)
@@ -3549,7 +3651,7 @@ UI.HEADERS.buttons = function(f, width)
         b:Show()
     end
     for i = #list + 1, #f.icons do f.icons[i]:Hide() end
-    f.hint = f.hint or UI.SmallText(f, "Click an icon to turn it on or off for this character; drag it onto an action bar. Green number: matching items you carry. Glow: you carry some, but it is on none of your bars.")
+    f.hint = f.hint or UI.SmallText(f, "Click an icon to turn it on or off for this character; drag it onto an action bar. Green number: how many are available (carried, or you can make them). Glow: you carry some, but it is on none of your bars.")
     f.hint:ClearAllPoints()
     f.hint:SetWidth(width - 20)
     f.hint:SetPoint("TOP", f, "TOP", 0, -16 - rows * (size + gap) - 4)
@@ -4081,11 +4183,11 @@ local function BuildPage(parent, group, x0, y0, native)
                             refreshers[#refreshers + 1] = MakeToggle(parent, x, y - h,
                                 function() return Enabled(e) end, function(v) UI.SetEnabled(e, v) end).refresh
                             local fs = MakeLabel(parent, "", x + 26, y - h - 2, 138)
-                            -- "(3 in bags)" while it is off and you carry matching items
+                            -- "(3 available)" while it is off and you carry or can make some
                             local function label()
                                 local n = UI.CouldUse(e)
                                 fs:SetText(Loc(UI.Name(e) .. (e.custom and " (custom)" or ""))
-                                    .. (n > 0 and (" " .. UI.HAVE_COLOR .. "(" .. n .. " in bags)|r") or ""))
+                                    .. (n > 0 and (" " .. UI.HAVE_COLOR .. "(" .. n .. " available)|r") or ""))
                             end
                             label()
                             refreshers[#refreshers + 1] = label
@@ -4678,6 +4780,10 @@ frame:SetScript("OnEvent", function(_, event)
         local ok, err = pcall(Init)
         if not ok then Fail("startup", err) end
     end
+    if event:find("^TRADE_SKILL") then
+        UI.QueueScan()   -- your recipes, while a profession window is open
+        return
+    end
     if event == "PLAYER_REGEN_ENABLED" then
         if pending then Schedule() end
     elseif BAR_EVENTS[event] then
@@ -4705,6 +4811,7 @@ for _, event in ipairs({
     "GET_ITEM_INFO_RECEIVED", "PLAYER_EQUIPMENT_CHANGED",
     "ACTIONBAR_SLOT_CHANGED", "ACTIONBAR_PAGE_CHANGED",
     "UPDATE_BONUS_ACTIONBAR", "UPDATE_SHAPESHIFT_FORM",
+    "TRADE_SKILL_SHOW", "TRADE_SKILL_UPDATE", "TRADE_SKILL_LIST_UPDATE",   -- a profession window (recipes)
 }) do
     pcall(frame.RegisterEvent, frame, event)   -- skip events this client lacks
 end
