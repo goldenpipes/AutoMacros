@@ -24,7 +24,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   not yet tested = `--prerelease`. Every iteration is still committed and pushed.
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.lua` / `AutoMacros.toc` are always the current version.
-- **Current version: 0.95.0.**
+- **Current version: 0.96.0.**
 - **Copy the current files into `previous/<version>/` BEFORE the first edit of a new iteration**
   (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version in the .toc and anywhere else it appears.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
@@ -62,6 +62,17 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.96.0
+- Lewis (screenshot of the Buttons page): drop "Buff" under Buffs and "Restore" under
+  Recovery. `UI.SHORT` (key -> settings name) + `UI.Name(e)`, used only by the Buttons page's
+  checkbox grid (both paths). Macro names (`title`) stay full on purpose (a bare "Health" could
+  clash with a user's macro); icon tooltips and the Direction list keep full titles (no
+  section heading there).
+- Lewis: Undead racial on the Bandage button. CATALOG entries with `set` may have `spells`:
+  UpdateCore's set branch appends KnownSpells after the items (`spell = true`, pick = -id,
+  as on Hearth/Teleport) and casts via SpellBody when one is chosen; BodyMatches accepts /cast
+  for them. Bandage: spells = { 20577 } (Cannibalize). Stocked still counts items only.
 
 ## 0.95.0 — Restore Health / Restore Mana
 - Lewis: combine health potions + healthstones and mana potions + mana stones; if the

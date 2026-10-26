@@ -4,6 +4,16 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.96.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Added
+- Undead: Cannibalize is on the Bandage button, after your bandages (used when you have none).
+
+### Changed
+- Shorter names on the settings page, where the section already says what they are: Health,
+  Mana and Rage under Recovery; Agility, Intellect, Stamina, Strength, Spirit, Armor, Other
+  and Weapon under Buffs. The macros on your bars keep their full names.
+
 ## 0.95.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Changed

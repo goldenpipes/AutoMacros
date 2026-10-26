@@ -1,4 +1,4 @@
--- AutoMacros 0.95.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.96.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one file for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -453,8 +453,9 @@ local CATALOG = {
       placeholder = { item = 159 } },    -- Refreshing Spring Water
     { key = "comprehend", name = "AM_Scroll", title = "Comprehend", empty = "Comprehend", label = "scrolls",
       special = "scroll", class = "MAGE", scope = "character", default = true },
+    -- spells: after the bandages, for whoever knows them (Undead: Cannibalize)
     { key = "bandage", name = "AM_Bandage", title = "Bandage", empty = "No Bandage", label = "bandages",
-      set = "bandage", placeholder = { item = 1251 } },
+      set = "bandage", spells = { 20577 }, placeholder = { item = 1251 } },
     { key = "antivenom", name = "AM_AntiVenom", title = "Anti-Venom", empty = "No Anti-Venom", label = "anti-venom",
       set = "antivenom", placeholder = { item = 2633 } },
     -- One button per buff, whatever the item is (elixir, scroll, potion, Juju,
@@ -885,8 +886,8 @@ local function BodyMatches(m, body)
     -- empty-state text, in any of the forms used by different versions
     local stem = m.label:gsub("s$", "")
     if body:find("No " .. stem, 1, true) then return true end
-    -- Restore Health / Mana making a healthstone or mana gem
-    if MADE[m.set] and body:find("/cast", 1, true) then return true end
+    -- Restore Health / Mana making a healthstone or mana gem; Bandage casting Cannibalize
+    if (MADE[m.set] or m.spells) and body:find("/cast", 1, true) then return true end
     local id = tonumber(body:match("item:(%d+)"))
     return m.set ~= nil and id ~= nil and InSet(m.set, id)
 end
@@ -2322,16 +2323,24 @@ local function UpdateCore()
                     return x.score > y.score
                 end)
             end
+            -- the button's spells you know, after the items (saved as negative picks)
+            for _, s in ipairs(KnownSpells(m)) do
+                list[#list + 1] = { id = s.id, spell = true, pick = -s.id }
+            end
             flyoutItems[m.name] = list
-            id = Chosen(m, list)
+            local entry
+            id, entry = Chosen(m, list)
+            spellUsed = entry ~= nil and entry.spell == true
             if create and not carried then
                 -- you can make one and carry none: the button makes one, Shift+click
                 -- uses the item chosen from what you do carry
                 making = true
                 body = "#showtooltip " .. create .. "\n/cast [nomod] " .. create
-                if id then body = body .. "\n/use [mod:shift] item:" .. id end
+                if id and not spellUsed then body = body .. "\n/use [mod:shift] item:" .. id end
             elseif not id then
                 body = EmptyBody(m.label)
+            elseif spellUsed then
+                body = SpellBody(id)
             elseif m.weapon then
                 body = WeaponBody(id)
             else
@@ -3352,6 +3361,19 @@ function UI.PickUp(e)
     if not ok then Fail("picking up " .. e.title, err) end
 end
 
+-- Names on the settings pages, where the section already says what kind of
+-- button it is (Recovery, Buffs): "Agility", not "Agility Buff". The macros
+-- keep their full names (title): a bare "Agility" or "Health" could clash with
+-- a macro of your own.
+UI.SHORT = {
+    healthpot = "Health", manapot = "Mana", ragepot = "Rage",
+    agility = "Agility", intellect = "Intellect", stamina = "Stamina", strength = "Strength",
+    spirit = "Spirit", armor = "Armor", otherbuff = "Other", weaponbuff = "Weapon",
+}
+function UI.Name(e)
+    return UI.SHORT[e.key] or e.title
+end
+
 -- How the Buttons tab sorts them. Anything not listed goes under Other.
 UI.BUTTON_GROUPS = {
     { name = "Recovery", keys = { "healthpot", "manapot", "ragepot", "bandage", "antivenom" } },
@@ -4019,7 +4041,7 @@ local function BuildPage(parent, group, x0, y0, native)
                 for j = 0, 2 do
                     local e = item.entries[i + j]
                     if e then
-                        cfgs[j + 1] = { type = "toggle", text = e.title .. (e.custom and " (custom)" or ""),
+                        cfgs[j + 1] = { type = "toggle", text = UI.Name(e) .. (e.custom and " (custom)" or ""),
                             getValue = function() return Enabled(e) end,
                             setValue = function(v) UI.SetEnabled(e, v) end }
                     end
@@ -4036,7 +4058,7 @@ local function BuildPage(parent, group, x0, y0, native)
                             -- "(3 in bags)" while it is off and you carry matching items
                             local function label()
                                 local n = UI.CouldUse(e)
-                                fs:SetText(Loc(e.title .. (e.custom and " (custom)" or ""))
+                                fs:SetText(Loc(UI.Name(e) .. (e.custom and " (custom)" or ""))
                                     .. (n > 0 and (" " .. UI.HAVE_COLOR .. "(" .. n .. " in bags)|r") or ""))
                             end
                             label()
