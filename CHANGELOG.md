@@ -4,7 +4,14 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
-## 0.89.1 - 2026-10-26 (pre-release)
+## 0.89.2 - 2026-10-26 (pre-release)
+
+### Fixed
+- A button could open another button's flyout (e.g. hovering Bandage showed your water) after
+  a macro was created, renamed or deleted, because the game keeps macros in name order and the
+  others moved. Macros are now matched by name every time.
+
+## 0.89.1 - 2026-10-26 (pre-release, tested in retail)
 
 ### Fixed
 - Stat scrolls (Scroll of Stamina, Intellect, ...) were not recognised on retail.

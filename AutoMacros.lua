@@ -1,4 +1,4 @@
--- AutoMacros 0.89.1 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.89.2 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one file for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -875,16 +875,24 @@ end
 
 -- The slot of m's macro, or nil. checked: a macro found by name must also look
 -- like this category's (a remembered slot always has to).
+-- The game keeps macros in name order, so creating or renaming one ("Water" <->
+-- "No Water") moves others to new slots: a remembered slot only counts while
+-- the macro there still has one of this category's names.
 local function FindMacro(m, checked)
+    -- its names (the macros are named after their category, or were once)
+    local names = { m.title, m.empty, m.name }
+    for _, n in ipairs(m.oldNames or {}) do names[#names + 1] = n end
     -- 1. the slot remembered last time, if it still holds this macro
     local saved = MacroSlots()[m.name]
     if saved then
         local name, _, body = GetMacroInfo(saved)
-        if name and BodyMatches(m, body) then return saved end
+        if name and BodyMatches(m, body) then
+            for _, n in ipairs(names) do
+                if name == n then return saved end
+            end
+        end
     end
-    -- 2. its name (the macros are named after their category, or were once)
-    local names = { m.title, m.empty, m.name }
-    for _, n in ipairs(m.oldNames or {}) do names[#names + 1] = n end
+    -- 2. by name
     for _, n in ipairs(names) do
         local idx = GetMacroIndexByName(n)
         if idx and idx > 0 and (not checked or BodyMatches(m, GetMacroBody(idx))) then return idx end
@@ -1781,10 +1789,12 @@ end
 local function SetEmpty(emptyState)
     emptyName = {}
     macroAt = {}
-    local saved = MacroSlots()
+    -- found again rather than read from the remembered slots: renaming a macro
+    -- earlier in this update may have moved the others (see FindMacro)
     for _, m in ipairs(MACROS) do
-        local idx = saved[m.name]
+        local idx = FindMacro(m)
         if idx then
+            Remember(m, idx)
             macroAt[idx] = m
             if emptyState[m.name] then emptyName[m.name] = true end
         end

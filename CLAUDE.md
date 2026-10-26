@@ -24,7 +24,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   not yet tested = `--prerelease`. Every iteration is still committed and pushed.
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.lua` / `AutoMacros.toc` are always the current version.
-- **Current version: 0.89.1.**
+- **Current version: 0.89.2.**
 - **Copy the current files into `previous/<version>/` BEFORE the first edit of a new iteration**
   (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version in the .toc and anywhere else it appears.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
@@ -62,6 +62,18 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.89.2 — macro slots move
+- 0.89.1 confirmed in retail: 1711 -> scroll_stamina, 27499 -> scroll_intellect,
+  2458 -> elixir_stamina. Hearth/drinks/food on Steinstien right.
+- Bug (Lewis's screenshot): hovering Bandage opened Water's flyout, Bandage had Water's tab.
+  **Retail keeps macros sorted by name**, so CreateMacro / EditMacro renames ("Water" <->
+  "No Water") / DeleteMacro move *other* macros' indexes. Apply only re-remembered the macro it
+  touched; SetEmpty built `macroAt` (index -> category, used by MacroOnButton) from the stale
+  saved slots, so a stale Water index pointed at the Bandage macro.
+- Fix: FindMacro's remembered slot also needs the macro's name to be one of the category's
+  (title/empty/name/oldNames), not just BodyMatches; SetEmpty uses FindMacro + Remember for
+  every macro at the end of each update. Never trust a saved macro index without the name.
 
 ## 0.89.1
 - 0.89.0 per-character on/off works in retail (enabledBy has both characters). Steinstien got
