@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.127.0.**
+- **Current version: 0.127.1.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   iteration** (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -119,6 +119,14 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   EllesmereUI bars, the Professions / Tracking spell IDs, ActiveTracking on Classic Era,
   0.117.1's settings-after-combat, the welcome window's look.
 
+## 0.127.1
+- 0.127.0 in retail: fill still **flat white, opacity ignored**, so 0.126.1's mask theory
+  was wrong. Remaining difference from g.edges (which fade fine): those are Show()n before
+  FadeEdge; the fill pieces were still hidden when FadeEdge ran. Now StyleGlow only stores
+  g.amFillColor; amFollow applies FadeEdge to each piece right after showing it (every
+  time it shows). **Theory, unverified.** Plan B if still white: draw the fade as stacked
+  solid bands of falling alpha (no SetGradient at all).
+
 ## 0.127.0 — retail soft glow = our fill only, behind the frame
 - Lewis: drop Blizzard's glow texture, use our own, behind the border like Blizzard's icon so
   the border always shows. BLIZZ_ART.GlowRing / amRings gone; retail rounded buttons (no
@@ -133,7 +141,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   snapped) on all sides: from the frame art measurements (ring 3/88 wide from 1/88 in,
   corners cut 9/88, art 46 wide), the square corner (k,k) lies under the ring's cut
   corner and the straight edges meet the ring's inner edge. Depth = (bw - 2k) x (t-1)/4.
-  **Rule: no SetGradient on masked textures (retail).**
+  (The mask theory was wrong, see 0.127.1.)
 
 ## 0.126.0 — retail soft glow: Blizzard's glow + a fill under the frame
 - Lewis: users should still be able to fill the whole button, "just fill inward". The fill

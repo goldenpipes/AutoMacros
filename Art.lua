@@ -275,10 +275,14 @@ function BLIZZ_ART.GlowFill(g, button)
         fill[i] = tex
     end
     g.amFill = fill
+    local sides = { "top", "bottom", "left", "right" }
     local function follow(self)
         local on = self:IsShown() and self.amFillOn
-        for _, tex in ipairs(fill) do
+        for i, tex in ipairs(fill) do
             tex:SetShown(on and true or false)
+            -- the fade goes on once the piece is showing, every time it shows:
+            -- set while hidden, retail drew it as plain white (0.126.0-0.127.0)
+            if on and self.amFillColor then FadeEdge(tex, sides[i], self.amFillColor) end
             if tex.amPulse then
                 if on and Style("glowPulse") then
                     if not tex.amPulse:IsPlaying() then tex.amPulse:Play() end
@@ -334,7 +338,7 @@ function StyleGlow(g, button)
             fill[2]:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", k, k); fill[2]:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -k, k); fill[2]:SetHeight(d)
             fill[3]:SetPoint("TOPLEFT", button, "TOPLEFT", k, -k); fill[3]:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", k, k); fill[3]:SetWidth(d)
             fill[4]:SetPoint("TOPRIGHT", button, "TOPRIGHT", -k, -k); fill[4]:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -k, k); fill[4]:SetWidth(d)
-            for i, side in ipairs({ "top", "bottom", "left", "right" }) do FadeEdge(fill[i], side, c) end
+            g.amFillColor = c   -- (the fade itself goes on in amFollow, once they show)
         end
     end
     if g.amFollow then g.amFollow(g) end

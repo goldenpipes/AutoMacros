@@ -4,7 +4,12 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
-## 0.127.0 - 2026-10-27 (not yet tested in game)
+## 0.127.1 - 2026-10-27 (not yet tested in game)
+
+### Fixed
+- Retail, Soft glow: the fill was still white and ignored the opacity setting.
+
+## 0.127.0 - 2026-10-27 (fill still white on retail)
 
 ### Changed
 - Retail, Soft glow: our own glow only, drawn behind the button's frame so the frame always
