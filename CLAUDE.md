@@ -106,7 +106,15 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
 
-## Where things stand (2026-10-26, end of session)
+## Where things stand (2026-10-27, end of session)
+- **0.128.0 released as a pre-release** (v0.128.0, zip in releases/, notes = every changelog
+  section since 0.120.0). Lewis: "looks great, done for now" after checking the learned
+  list and the EllesmereUI Popout page. This session: Games\ folders, retail test fixes,
+  the retail soft glow (settled in 0.127.2), learned list, EUI demo column.
+- Retail UI still to look at: solid border highlight on rounded buttons, popout items'
+  hover / pressed / selected look, "Show background" art and dividers.
+
+## Where things stood (2026-10-26, end of session)
 - **0.120.0 released as a pre-release** (v0.120.0, zip in releases/); Lewis is handing it
   out to Classic Era testers. Other clients (retail, TBC Anniversary, MoP, Forever) come
   later. He'll come back with more ideas and tester feedback.
