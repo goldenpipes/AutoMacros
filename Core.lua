@@ -1,4 +1,4 @@
--- AutoMacros 0.120.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.121.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -35,83 +35,17 @@ function ToSet(list)
 end
 
 HEARTHSTONE = 6948
--- Spells on the Hearth/Teleport button, for whichever class knows them, on any
--- game version (spells you don't know are left out): Astral Recall (Shaman),
--- Teleport: Moonglade and Dreamwalk (Druid), Death Gate, Zen Pilgrimage, then
--- the mage teleports: vanilla cities, TBC, Wrath, Cata, MoP, Legion, WoD, BfA,
--- Shadowlands, Dragonflight, The War Within.
-TRAVEL_SPELLS = {
-    556, 18960, 193753, 50977, 126892,
-    3561, 3562, 3565, 3567, 3563, 3566,
-    32271, 32272, 33690, 35715, 49359, 49358,
-    53140, 88342, 88344, 132621, 132627, 120145,
-    224869, 176248, 176242, 281403, 281404,
-    344587, 395277, 446540,
-}
--- Spells that open a profession's window, every rank of each (Apprentice,
--- Journeyman, Expert, Artisan, Master, Grand Master): the Professions button
--- shows the highest one you know of each (KnownSpells, byName). First Aid,
--- Cooking, Alchemy, Blacksmithing, Enchanting, Engineering, Leatherworking,
--- Tailoring, Jewelcrafting (TBC), Inscription (Wrath), then Smelting (Mining's
--- window) and Poisons (Rogue). IDs from memory, unverified: a wrong one never shows.
-PROFESSION_SPELLS = {
-    3273, 3274, 7924, 10846, 27028, 45542,
-    2550, 3102, 3413, 18260, 33359, 51296,
-    2259, 3101, 3464, 11611, 28596, 51304,
-    2018, 3100, 3538, 9785, 29844, 51300,
-    7411, 7412, 7413, 13920, 28029, 51313,
-    4036, 4037, 4038, 12656, 30350, 51306,
-    2108, 3104, 3811, 10662, 32549, 51302,
-    3908, 3909, 3910, 12180, 26790, 51309,
-    25229, 25230, 28894, 28895, 28897, 51311,
-    45357, 45358, 45359, 45360, 45361, 45363,
-    2656, 2842,
-}
--- Tracking: gathering (Find Herbs, Find Minerals; Find Fish from TBC), Find
--- Treasure (Dwarf), Sense Undead (Paladin), Sense Demons (Warlock), Track
--- Humanoids (Druid, in Cat Form), and the Hunter's: Beasts, Humanoids, Undead,
--- Hidden, Elementals, Demons, Giants, Dragonkin. The button shows the ones you
--- know. IDs from memory, unverified: a wrong one never shows.
-TRACKING_SPELLS = {
-    2383, 2580, 43308, 2481, 5502, 5500, 5225,
-    1494, 19883, 19884, 19885, 19880, 19878, 19882, 19879,
-}
--- Mage portals, in the same order (the first one is the button's icon).
-PORTAL_SPELLS = {
-    10059, 11417, 11416, 11418, 11419, 11420,
-    32266, 32267, 33691, 35717, 49360, 49361,
-    53142, 88345, 88346, 132620, 132626, 120146,
-    224871, 176246, 176244, 281400, 281402,
-    344597, 395289, 446534,
-}
-
--- Healthstone ranks: 1 Minor, 2 Lesser, 3 Healthstone, 4 Greater, 5 Major,
--- 6 Master (TBC). Talent variants share the rank; the higher ID is the
--- talented one. Since Wrath there is one Healthstone (5512, rank 1 here) and on
--- retail the Demonic Healthstone (224464, talent).
-HS_RANK = {
-    [5512] = 1, [19004] = 1, [19005] = 1, [224464] = 1,
-    [5511] = 2, [19006] = 2, [19007] = 2,
-    [5509] = 3, [19008] = 3, [19009] = 3,
-    [5510] = 4, [19010] = 4, [19011] = 4,
-    [9421] = 5, [19012] = 5, [19013] = 5,
-    [22103] = 6, [22104] = 6, [22105] = 6,
-}
--- Create Healthstone spells, best rank first (6201 is also the only one since Wrath).
-CREATE_HS = { 27230, 11730, 11729, 5699, 6202, 6201 }
+-- The spell and item ID lists that differ between games (TRAVEL_SPELLS,
+-- PROFESSION_SPELLS, TRACKING_SPELLS, PORTAL_SPELLS, HS_RANK, CREATE_HS,
+-- MANA_GEM_RANK, CONJURE_GEM) are in Games\<game>\Lists.lua; only the running
+-- game's file sets them (Game.lua).
 
 -- What the Restore Health and Restore Mana buttons can make for you, and so
--- make when you carry none: healthstones (Warlock) and mana gems (Mage). Mana
--- gem ranks: 1 Agate, 2 Jade, 3 Citrine, 4 Ruby, 5 Emerald (TBC), 6 Mana Gem
--- (Wrath on); spells best first: Conjure Mana Gem (Wrath), Emerald, Ruby,
--- Citrine, Jade, Agate (759, also retail's Conjure Mana Gem). IDs after
--- vanilla are from memory, unverified (a wrong one is never found or known).
+-- make when you carry none: healthstones (Warlock) and mana gems (Mage).
 MADE = {
     hpot = { rank = HS_RANK, spells = CREATE_HS },
-    mpot = { rank = { [5514] = 1, [5513] = 2, [8007] = 3, [8008] = 4, [22044] = 5, [36799] = 6 },
-        spells = { 42985, 27101, 10054, 10053, 3552, 759 } },
+    mpot = { rank = MANA_GEM_RANK, spells = CONJURE_GEM },
 }
-
 
 QUESTION_MARK = 134400
 

@@ -4,6 +4,13 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.121.0 - 2026-10-27 (not yet tested in game)
+
+### Changed
+- Each game version (Forever, Classic Era, TBC Anniversary, MoP Classic, retail) now has
+  its own folder for what is specific to it, such as which teleports, portals, profession
+  and tracking spells exist there. Nothing should look or work differently.
+
 ## 0.120.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Changed

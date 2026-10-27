@@ -56,9 +56,11 @@ def strip(src):
     return "".join(out)
 
 
-def check(path, shared):
-    """True when the file is fine. shared: it must have the namespace header."""
-    name = os.path.basename(path)
+def check(path, shared, name=None):
+    """True when the file is fine. shared: it must have the namespace header.
+    name: how to call it in messages (the .toc's path, as Games\\X\\Lists.lua
+    files share a file name)."""
+    name = name or os.path.basename(path)
     src = open(path, encoding="utf-8").read()
     code = strip(src)
     ok = True
@@ -116,7 +118,7 @@ if arg.lower().endswith(".toc"):
     missing = [f for f in files if not os.path.exists(os.path.join(folder, f))]
     for f in missing:
         print(f"{f}: listed in the .toc but not found")
-    results = [check(os.path.join(folder, f), True) for f in files if f not in missing]
+    results = [check(os.path.join(folder, f), True, f) for f in files if f not in missing]
     good = not missing and all(results)
     print(f"{len(files)} files: " + ("all OK" if good else "PROBLEMS"))
     sys.exit(0 if good else 1)

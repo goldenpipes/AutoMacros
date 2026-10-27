@@ -25,14 +25,16 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.120.0.**
-- **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
-  `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
-  to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
+- **Current version: 0.121.0.**
+- **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
+  `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
+  iteration** (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
+  in the .toc and in Core.lua's first line.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
   `releases/AutoMacros-<version>.zip` containing an `AutoMacros/` folder with only the
-  addon files (`AutoMacros.toc` and the `.lua` files it lists) — no CLAUDE.md, `tools/`,
-  `previous/`, or `.git`.
+  addon files (`AutoMacros.toc` and the `.lua` files it lists, **with their `Games/<game>/`
+  subfolders**) — no CLAUDE.md, `tools/`, `previous/`, or `.git`. Entry names use forward
+  slashes.
 - **GitHub:** public repo https://github.com/goldenpipes/AutoMacros, branch `master`.
   git = GitHub Desktop's `%LOCALAPPDATA%\GitHubDesktop\app-*\resources\app\git\cmd\git.exe`
   (not on PATH; resolve the wildcard, the folder changes when Desktop updates). Push auth is
@@ -52,7 +54,19 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - There is no Lua interpreter here; the checker is the only pre-flight test.
 
 ## Code layout (since 0.102.0)
-- Files, in .toc (load) order: Core (lists, saved data, style, colours, CATALOG, on/off,
+- **Per-game files (since 0.121.0, Lewis: keep each game's things separate; only files a
+  game needs go in its subfolder).** `Game.lua` loads first and sets `GAME` from the
+  interface number: "forever" (16xxx), "classicera" (other < 20000), "tbc" (20000-49999,
+  so a Wrath/Cata client would get TBC's lists), "mists" (50000-99999), "retail"
+  (>= 100000). Then `Games\Forever|ClassicEra|TBC|Mists|Retail\
+  Lists.lua`, each starting `if GAME ~= "<game>" then return end` after the header: every
+  game file loads on every client but only the running game's sets anything. They hold
+  TRAVEL_SPELLS, PROFESSION_SPELLS, TRACKING_SPELLS, PORTAL_SPELLS, HS_RANK, CREATE_HS,
+  MANA_GEM_RANK, CONJURE_GEM, each with only that game's IDs (its expansion and earlier).
+  Core keeps HEARTHSTONE and builds MADE from them. Something new that differs by game goes
+  in those folders, not behind `if` checks in the shared files. (Not per-game .toc files:
+  Forever's .toc suffix is unknown.)
+- Files, in .toc (load) order: Game, Games\*\Lists, Core (lists, saved data, style, colours, CATALOG, on/off,
   Print/Note/Fail), Macros (bag scan, choosing, macro text, Find/Apply/DeleteManaged), Art
   (BLIZZ_ART, button art, StyleGlow, StyleArrow, popout bar art), Bars (POPOUT direction,
   finding action buttons, highlight, empty tooltip), Learning (Classify, LearnNew), Update
@@ -104,6 +118,16 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Still unchecked in game: Weapon Buff with sharpening stones, an unworn teleport ring,
   EllesmereUI bars, the Professions / Tracking spell IDs, ActiveTracking on Classic Era,
   0.117.1's settings-after-combat, the welcome window's look.
+
+## 0.121.0 — Games\ subfolders
+- Lewis asked for a subfolder per game holding only that game's files (separate code per
+  game). See Code layout. The lists were split by expansion from 0.120.0's combined ones:
+  checked with a script that retail's equal 0.120.0's exactly and every other game's are a
+  subset (nothing added). No behaviour change intended: IDs dropped from a game are spells it
+  doesn't have / items it can't carry. Forever = Classic Era's lists for now.
+- tools/luacheck.py names files by their .toc path (four files are called Lists.lua).
+- **Not run in game yet.** First thing to check after /reload: buttons still fill
+  (Hearth/Teleport, Restore Health/Mana, Professions, Tracking), no Lua error on load.
 
 ## 0.120.0 — active tracking is the chosen one
 - Lewis: the active tracking should always be the Tracking button's chosen one. CATALOG
