@@ -118,6 +118,18 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   red potion, popout above with mana potion and green elixir, the selected one ringed in
   gold). releases/ is gitignored; Lewis creates the project and uploads himself.
 - Unknown: whether CurseForge lists a WoW Forever game version yet.
+- **Automatic upload** (`.github/workflows/curseforge.yml`): on every published GitHub
+  release (or by hand for a tag) it runs luacheck, builds the Forever zip with
+  `tools/build_zip.py --game forever` and POSTs it to
+  `https://wow.curseforge.com/api/projects/<id>/upload-file` (header X-Api-Token; metadata:
+  release notes as markdown changelog, displayName = zip name, releaseType beta for a
+  pre-release else release, gameVersions = IDs looked up by name from /api/game/versions).
+  Needs repo secret `CF_API_TOKEN` and variables `CF_PROJECT_ID`, `CF_GAME_VERSIONS`
+  (names, comma-separated; an unknown name makes the run print the names CurseForge has).
+  Lewis sets those himself. **Not run yet.**
+- `tools/build_zip.py [--game <game>]` builds release zips (all games, or one game's
+  Interface number + Games folder); use it instead of hand-made PowerShell zips. It and
+  luacheck.py read the .toc's `\` paths on Linux too.
 
 ## Where things stand (2026-10-27, end of session)
 - **0.128.0 released as a pre-release** (v0.128.0, zip in releases/, notes = every changelog

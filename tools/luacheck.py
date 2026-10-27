@@ -115,10 +115,15 @@ arg = sys.argv[1]
 if arg.lower().endswith(".toc"):
     folder = os.path.dirname(os.path.abspath(arg))
     files = [l.strip() for l in open(arg, encoding="utf-8") if l.strip() and not l.startswith("#")]
-    missing = [f for f in files if not os.path.exists(os.path.join(folder, f))]
+
+    def disk(f):
+        """the .toc's path (Windows separators) as a path on this machine (also Linux, for CI)"""
+        return os.path.join(folder, *re.split(r"[\\/]", f))
+
+    missing = [f for f in files if not os.path.exists(disk(f))]
     for f in missing:
         print(f"{f}: listed in the .toc but not found")
-    results = [check(os.path.join(folder, f), True, f) for f in files if f not in missing]
+    results = [check(disk(f), True, f) for f in files if f not in missing]
     good = not missing and all(results)
     print(f"{len(files)} files: " + ("all OK" if good else "PROBLEMS"))
     sys.exit(0 if good else 1)

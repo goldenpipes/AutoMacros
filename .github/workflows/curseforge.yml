@@ -1,0 +1,98 @@
+# Uploads AutoMacros to CurseForge whenever a GitHub release is published.
+#
+# CurseForge gets the WoW Forever build only (tools/build_zip.py --game forever):
+# a pre-release on GitHub goes up as "beta", a normal release as "release", with
+# the release's notes as its changelog.
+#
+# Needs, in the repo's Settings > Secrets and variables > Actions:
+#   secret   CF_API_TOKEN        a CurseForge API token (curseforge.com, account
+#                                settings > API tokens)
+#   variable CF_PROJECT_ID       the project's ID (on its CurseForge page, "About
+#                                Project")
+#   variable CF_GAME_VERSIONS    the game version name(s) to file it under, as
+#                                CurseForge spells them, comma-separated (e.g.
+#                                "1.60.1"); the run lists the names it knows if
+#                                one is not found
+# Can also be run by hand (Actions tab > CurseForge > Run workflow) for a tag.
+
+name: CurseForge
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to upload (e.g. v0.128.0)"
+        required: true
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Which release
+        id: rel
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_IN: ${{ github.event.inputs.tag }}
+        run: |
+          tag="${TAG_IN:-${{ github.event.release.tag_name }}}"
+          gh release view "$tag" --repo "${{ github.repository }}" --json body,isPrerelease > release.json
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if [ "$(jq -r .isPrerelease release.json)" = "true" ]; then
+            echo "type=beta" >> "$GITHUB_OUTPUT"
+          else
+            echo "type=release" >> "$GITHUB_OUTPUT"
+          fi
+          jq -r .body release.json > changelog.md
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.rel.outputs.tag }}
+          path: src
+
+      - name: Check and build the Forever zip
+        id: build
+        run: |
+          python3 -I src/tools/luacheck.py src/AutoMacros.toc
+          zip="$(python3 -I src/tools/build_zip.py --game forever --out out)"
+          echo "zip=$zip" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$zip" .zip)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload to CurseForge
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_PROJECT_ID: ${{ vars.CF_PROJECT_ID }}
+          CF_GAME_VERSIONS: ${{ vars.CF_GAME_VERSIONS }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CF_API_TOKEN:-}" ] || [ -z "${CF_PROJECT_ID:-}" ] || [ -z "${CF_GAME_VERSIONS:-}" ]; then
+            echo "Set the CF_API_TOKEN secret and the CF_PROJECT_ID and CF_GAME_VERSIONS variables first." >&2
+            exit 1
+          fi
+          curl -sSf -H "X-Api-Token: $CF_API_TOKEN" https://wow.curseforge.com/api/game/versions > versions.json
+          ids="[]"
+          IFS=',' read -ra wanted <<< "$CF_GAME_VERSIONS"
+          for v in "${wanted[@]}"; do
+            v="$(echo "$v" | xargs)"
+            id="$(jq --arg v "$v" '[.[] | select(.name == $v) | .id][0] // empty' versions.json)"
+            if [ -z "$id" ]; then
+              echo "CurseForge has no WoW game version named \"$v\". Names it knows:" >&2
+              jq -r '.[].name' versions.json | sort -V | uniq | tail -n 60 >&2
+              exit 1
+            fi
+            ids="$(jq --argjson id "$id" '. + [$id]' <<< "$ids")"
+          done
+          jq -n --rawfile log changelog.md \
+                --arg name "${{ steps.build.outputs.name }}" \
+                --arg type "${{ steps.rel.outputs.type }}" \
+                --argjson versions "$ids" \
+                '{changelog: $log, changelogType: "markdown", displayName: $name,
+                  gameVersions: $versions, releaseType: $type}' > metadata.json
+          cat metadata.json | jq 'del(.changelog)'
+          curl -sSf -H "X-Api-Token: $CF_API_TOKEN" \
+               -F "metadata=<metadata.json" \
+               -F "file=@${{ steps.build.outputs.zip }}" \
+               "https://wow.curseforge.com/api/projects/$CF_PROJECT_ID/upload-file"
+          echo
+          echo "Uploaded ${{ steps.build.outputs.name }} as ${{ steps.rel.outputs.type }}."
