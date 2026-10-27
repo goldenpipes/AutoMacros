@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.118.0.**
+- **Current version: 0.119.0.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -91,6 +91,19 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.119.0 — Tracking button
+- Lewis: one button for all tracking spells, showing the ones a class/race can do. CATALOG
+  `tracking` (AM_Tracking), same shape as Professions (kind spells, byName, autoSpells,
+  scope character), Utility. `TRACKING_SPELLS`: Find Herbs 2383, Find Minerals 2580, Find
+  Fish 43308 (TBC), Find Treasure 2481, Sense Undead 5502, Sense Demons 5500, Druid Track
+  Humanoids 5225, Hunter Track Beasts 1494 / Humanoids 19883 / Undead 19884 / Hidden 19885 /
+  Elementals 19880 / Demons 19878 / Giants 19882 / Dragonkin 19879. **From memory,
+  unverified.** Hunter and Druid Track Humanoids share a name: byName keeps one (a
+  character only has one). The Druid one needs Cat Form (the game says so if not).
+  Retail tracks from the minimap menu: the button may be empty there.
+- Idea not done: mark the active tracking in the popout (GetTrackingTexture /
+  C_Minimap.GetTrackingInfo).
 
 ## 0.118.0 — Professions button
 - Lewis: a button for the tradeskill windows; first tried as a custom button, but **Classic

@@ -1,4 +1,4 @@
--- AutoMacros 0.118.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.119.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -66,6 +66,15 @@ PROFESSION_SPELLS = {
     25229, 25230, 28894, 28895, 28897, 51311,
     45357, 45358, 45359, 45360, 45361, 45363,
     2656, 2842,
+}
+-- Tracking: gathering (Find Herbs, Find Minerals; Find Fish from TBC), Find
+-- Treasure (Dwarf), Sense Undead (Paladin), Sense Demons (Warlock), Track
+-- Humanoids (Druid, in Cat Form), and the Hunter's: Beasts, Humanoids, Undead,
+-- Hidden, Elementals, Demons, Giants, Dragonkin. The button shows the ones you
+-- know. IDs from memory, unverified: a wrong one never shows.
+TRACKING_SPELLS = {
+    2383, 2580, 43308, 2481, 5502, 5500, 5225,
+    1494, 19883, 19884, 19885, 19880, 19878, 19882, 19879,
 }
 -- Mage portals, in the same order (the first one is the button's icon).
 PORTAL_SPELLS = {
@@ -567,6 +576,11 @@ CATALOG = {
     -- in the popout opens it. On by itself once you know one (autoSpells).
     { key = "professions", name = "AM_Profession", title = "Professions", empty = "Professions",
       label = "professions", kind = "spells", spells = PROFESSION_SPELLS, byName = true, autoSpells = true,
+      scope = "character" },
+    -- every tracking spell you know (your class's, your race's, gathering);
+    -- clicking one in the popout switches to it. On by itself once you know one.
+    { key = "tracking", name = "AM_Tracking", title = "Tracking", empty = "Tracking",
+      label = "tracking", kind = "spells", spells = TRACKING_SPELLS, byName = true, autoSpells = true,
       scope = "character" },
 }
 

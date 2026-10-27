@@ -4,6 +4,14 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.119.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Added
+- **Tracking** button (Utility): every tracking spell you know, Find Herbs, Find Minerals,
+  Find Treasure (Dwarf), Sense Undead (Paladin), Sense Demons (Warlock), Track Humanoids
+  (Druid, in Cat Form) and all the Hunter tracks. Click one in its popout to switch to it.
+  Switches itself on once you know one.
+
 ## 0.118.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Added
