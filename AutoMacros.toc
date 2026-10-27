@@ -1,16 +1,16 @@
 ## Interface: 16001, 11509, 20506, 50504, 120105
 ## Title: AutoMacros
 ## Notes: Keeps draggable macros (Healthstone, potions, food, water) pointed at the best item in your bags. Type /automacros for status.
-## Version: 0.121.0
+## Version: 0.121.1
 ## SavedVariables: AutoMacrosDB
 ## OptionalDeps: EllesmereUI, LibSharedMedia-3.0
 
 Game.lua
-Games\Forever\Lists.lua
-Games\ClassicEra\Lists.lua
-Games\TBC\Lists.lua
-Games\Mists\Lists.lua
-Games\Retail\Lists.lua
+Forever\Lists.lua
+ClassicEra\Lists.lua
+TBC\Lists.lua
+Mists\Lists.lua
+Retail\Lists.lua
 Core.lua
 Macros.lua
 Art.lua

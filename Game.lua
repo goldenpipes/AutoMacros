@@ -1,6 +1,7 @@
--- AutoMacros: which game this is. Loads first, so the files in Games\ can
--- check it: each game's folder holds only what is different on that game (its
--- spell and item ID lists), and its files skip themselves on every other game.
+-- AutoMacros: which game this is. Loads first, so the game folders (Forever\,
+-- ClassicEra\, TBC\, Mists\, Retail\) can check it: each holds only what is
+-- different on that game (its spell and item ID lists), and its files skip
+-- themselves on every other game.
 
 local ADDON, ns = ...
 -- every file shares the addon's own table: names set here are seen by the

@@ -1,4 +1,4 @@
--- AutoMacros 0.121.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.121.1 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -37,7 +37,7 @@ end
 HEARTHSTONE = 6948
 -- The spell and item ID lists that differ between games (TRAVEL_SPELLS,
 -- PROFESSION_SPELLS, TRACKING_SPELLS, PORTAL_SPELLS, HS_RANK, CREATE_HS,
--- MANA_GEM_RANK, CONJURE_GEM) are in Games\<game>\Lists.lua; only the running
+-- MANA_GEM_RANK, CONJURE_GEM) are in <game>\Lists.lua; only the running
 -- game's file sets them (Game.lua).
 
 -- What the Restore Health and Restore Mana buttons can make for you, and so

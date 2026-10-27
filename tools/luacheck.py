@@ -58,7 +58,7 @@ def strip(src):
 
 def check(path, shared, name=None):
     """True when the file is fine. shared: it must have the namespace header.
-    name: how to call it in messages (the .toc's path, as Games\\X\\Lists.lua
+    name: how to call it in messages (the .toc's path, as the game folders'
     files share a file name)."""
     name = name or os.path.basename(path)
     src = open(path, encoding="utf-8").read()
