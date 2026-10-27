@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.126.0.**
+- **Current version: 0.126.1.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   iteration** (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -118,6 +118,16 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Still unchecked in game: Weapon Buff with sharpening stones, an unworn teleport ring,
   EllesmereUI bars, the Professions / Tracking spell IDs, ActiveTracking on Classic Era,
   0.117.1's settings-after-combat, the welcome window's look.
+
+## 0.126.1
+- 0.126.0 in retail: border fine (the BORDER-layer fill does sit under the frame art), but
+  the fill was **flat white bands** (no gradient, no color): the FadeEdge gradient did not
+  draw on textures masked with the button's IconMask (inferred: the only difference from
+  g.edges, which fade fine). Fill now unmasked, inset k = 2.4 button units (x bw/45,
+  snapped) on all sides: from the frame art measurements (ring 3/88 wide from 1/88 in,
+  corners cut 9/88, art 46 wide), the square corner (k,k) lies under the ring's cut
+  corner and the straight edges meet the ring's inner edge. Depth = (bw - 2k) x (t-1)/4.
+  **Rule: no SetGradient on masked textures (retail).**
 
 ## 0.126.0 — retail soft glow: Blizzard's glow + a fill under the frame
 - Lewis: users should still be able to fill the whole button, "just fill inward". The fill

@@ -4,7 +4,13 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
-## 0.126.0 - 2026-10-27 (not yet tested in game)
+## 0.126.1 - 2026-10-27 (not yet tested in game)
+
+### Fixed
+- Retail, Soft glow: the fill showed as flat white bars instead of a soft fade in your
+  highlight color.
+
+## 0.126.0 - 2026-10-27 (fill broken on retail, see 0.126.1)
 
 ### Changed
 - Retail, Soft glow: Blizzard's own button glow at Thickness 1; higher thickness adds a fill

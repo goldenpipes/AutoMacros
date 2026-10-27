@@ -272,16 +272,17 @@ end
 
 -- The fill under retail's glow: four fading edges drawn on the button itself
 -- in its BORDER layer, i.e. over the icon (BACKGROUND) and under the frame art
--- (the NormalTexture, ARTWORK), clipped by the button's own IconMask: so it
--- fills inward from the grey ring and the ring always stays on top. They
--- belong to glow g: shown, hidden and pulsing with it (their own animations,
--- as g's alpha does not reach the button's textures).
+-- (the NormalTexture, ARTWORK): so it fills inward from the grey ring and the
+-- ring always stays on top. Not masked: with the button's IconMask on them the
+-- gradients did not draw (flat white bands, 0.126.0); StyleGlow starts them a
+-- little in, under the ring, so their square corners hide under its cut ones.
+-- They belong to glow g: shown, hidden and pulsing with it (their own
+-- animations, as g's alpha does not reach the button's textures).
 function BLIZZ_ART.GlowFill(g, button)
     if g.amFill then return g.amFill end
     local fill = {}
     for i = 1, 4 do
         local tex = button:CreateTexture(nil, "BORDER", nil, 7)
-        if button.IconMask and tex.AddMaskTexture then pcall(tex.AddMaskTexture, tex, button.IconMask) end
         tex:Hide()
         pcall(function()
             local ag = tex:CreateAnimationGroup()
@@ -346,17 +347,23 @@ function StyleGlow(g, button)
         blizz:SetVertexColor(c[1] * a, c[2] * a, c[3] * a, 1)
         blizz:Show()
         local fill = BLIZZ_ART.GlowFill(g, button)
-        local d = Snap(g, bw * (t - 1) / 4)
+        -- Start under the frame ring. In Blizzard's frame art (88 px across,
+        -- drawn 46 wide on a 45 button) the ring is 3 px wide from 1 px in and
+        -- the corners are cut 9 px back: 2.4 button units in, the fill's
+        -- square corner lies under the ring's cut corner and its straight
+        -- edges meet the ring's inner edge.
+        local k = Snap(g, 2.4 * bw / 45)
+        local d = Snap(g, (bw - 2 * k) * (t - 1) / 4)
         g.amFillOn = d > 0
         if d > 0 then
             for _, tex in ipairs(fill) do
                 tex:ClearAllPoints()
                 if tex.amAnim then pcall(tex.amAnim.SetDuration, tex.amAnim, Style("glowSpeed")) end
             end
-            fill[1]:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0); fill[1]:SetPoint("TOPRIGHT", button, "TOPRIGHT", 0, 0); fill[1]:SetHeight(d)
-            fill[2]:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 0, 0); fill[2]:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, 0); fill[2]:SetHeight(d)
-            fill[3]:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0); fill[3]:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 0, 0); fill[3]:SetWidth(d)
-            fill[4]:SetPoint("TOPRIGHT", button, "TOPRIGHT", 0, 0); fill[4]:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, 0); fill[4]:SetWidth(d)
+            fill[1]:SetPoint("TOPLEFT", button, "TOPLEFT", k, -k); fill[1]:SetPoint("TOPRIGHT", button, "TOPRIGHT", -k, -k); fill[1]:SetHeight(d)
+            fill[2]:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", k, k); fill[2]:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -k, k); fill[2]:SetHeight(d)
+            fill[3]:SetPoint("TOPLEFT", button, "TOPLEFT", k, -k); fill[3]:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", k, k); fill[3]:SetWidth(d)
+            fill[4]:SetPoint("TOPRIGHT", button, "TOPRIGHT", -k, -k); fill[4]:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -k, k); fill[4]:SetWidth(d)
             for i, side in ipairs({ "top", "bottom", "left", "right" }) do FadeEdge(fill[i], side, c) end
         end
     end
