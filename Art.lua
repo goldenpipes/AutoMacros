@@ -249,53 +249,40 @@ function FadeEdge(tex, side, c)
     if not ok then tex:SetColorTexture(c[1], c[2], c[3], a * 0.5) end   -- no gradients: a faint band
 end
 
--- Retail's soft glow: four fading edges drawn on the button itself
--- in its BORDER layer, i.e. over the icon (BACKGROUND) and under the frame art
--- (the NormalTexture, ARTWORK): so it fills inward from the grey ring and the
--- ring always stays on top. Not masked: with the button's IconMask on them the
--- gradients did not draw (flat white bands, 0.126.0); StyleGlow starts them a
--- little in, under the ring, so their square corners hide under its cut ones.
--- They belong to glow g: shown, hidden and pulsing with it (their own
--- animations, as g's alpha does not reach the button's textures).
-function BLIZZ_ART.GlowFill(g, button)
-    if g.amFill then return g.amFill end
-    local fill = {}
+-- The soft glow's edges get the button's own icon mask on retail's rounded
+-- buttons (so the cut corners stay clear), and lose it otherwise.
+local function MaskSoft(g, mask)
     for i = 1, 4 do
-        local tex = button:CreateTexture(nil, "BORDER", nil, 7)
-        tex:Hide()
-        pcall(function()
-            local ag = tex:CreateAnimationGroup()
-            local anim = ag:CreateAnimation("Alpha")
-            anim:SetFromAlpha(1)
-            anim:SetToAlpha(0.25)
-            anim:SetDuration(0.7)
-            ag:SetLooping("BOUNCE")
-            tex.amPulse, tex.amAnim = ag, anim
-        end)
-        fill[i] = tex
-    end
-    g.amFill = fill
-    local sides = { "top", "bottom", "left", "right" }
-    local function follow(self)
-        local on = self:IsShown() and self.amFillOn
-        for i, tex in ipairs(fill) do
-            tex:SetShown(on and true or false)
-            -- the fade goes on once the piece is showing, every time it shows:
-            -- set while hidden, retail drew it as plain white (0.126.0-0.127.0)
-            if on and self.amFillColor then FadeEdge(tex, sides[i], self.amFillColor) end
-            if tex.amPulse then
-                if on and Style("glowPulse") then
-                    if not tex.amPulse:IsPlaying() then tex.amPulse:Play() end
-                else
-                    tex.amPulse:Stop()
-                end
-            end
+        local e = g.edges[i]
+        if e.amMask ~= mask then
+            if e.amMask and e.RemoveMaskTexture then pcall(e.RemoveMaskTexture, e, e.amMask) end
+            e.amMask = nil
+            if mask and e.AddMaskTexture and pcall(e.AddMaskTexture, e, mask) then e.amMask = mask end
         end
     end
-    g.amFollow = follow
-    g:HookScript("OnShow", follow)
-    g:HookScript("OnHide", follow)
-    return fill
+end
+
+-- Retail's rounded buttons: a copy of the button's own frame art (its
+-- NormalTexture: the grey ring) on the glow frame, above the glow, so the glow
+-- sits behind the border as the icon does and the border always shows.
+-- Placed and colored like the NormalTexture itself; nil when it has no atlas.
+function BLIZZ_ART.GlowBorder(g, button)
+    local nt = button.NormalTexture or (button.GetNormalTexture and button:GetNormalTexture())
+    local atlas = nt and nt.GetAtlas and nt:GetAtlas()
+    if type(atlas) ~= "string" or atlas == "" then return nil end
+    local b = g.amBorder
+    if not b then
+        b = g:CreateTexture(nil, "OVERLAY", nil, 7)
+        g.amBorder = b
+    end
+    b:SetAtlas(atlas)
+    local w, h = nt:GetSize()
+    if type(w) ~= "number" or w <= 0 then w, h = button:GetWidth() * 46 / 45, button:GetHeight() end
+    b:ClearAllPoints()
+    b:SetPoint("TOPLEFT", nt, "TOPLEFT", 0, 0)
+    b:SetSize(w, h)
+    b:SetVertexColor(nt:GetVertexColor())
+    return b
 end
 
 function StyleGlow(g, button)
@@ -312,43 +299,17 @@ function StyleGlow(g, button)
     g:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
     for i = 1, 4 do g.edges[i]:Hide() end
     for _, cell in ipairs(g.cells or {}) do cell:Hide() end
-    -- retail's rounded buttons (no EllesmereUI look): our fill, behind the
-    -- frame's grey ring as Blizzard's own icon is, so the ring always shows;
-    -- thickness 1 to 5 = 20%, 40% ... the whole icon, as on the other games
-    local blizz = soft and rounded and not look
-    g.amFillOn = false
-    if blizz then
-        local bw = button:GetWidth()
-        if type(bw) ~= "number" or bw <= 0 then bw = 45 end
-        local fill = BLIZZ_ART.GlowFill(g, button)
-        -- Start under the frame ring. In Blizzard's frame art (88 px across,
-        -- drawn 46 wide on a 45 button) the ring is 3 px wide from 1 px in and
-        -- the corners are cut 9 px back: 2.4 button units in, the fill's
-        -- square corner lies under the ring's cut corner and its straight
-        -- edges meet the ring's inner edge.
-        local k = Snap(g, 2.4 * bw / 45)
-        local d = Snap(g, (bw - 2 * k) * t / 5)
-        g.amFillOn = d > 0
-        if d > 0 then
-            for _, tex in ipairs(fill) do
-                tex:ClearAllPoints()
-                if tex.amAnim then pcall(tex.amAnim.SetDuration, tex.amAnim, Style("glowSpeed")) end
-            end
-            fill[1]:SetPoint("TOPLEFT", button, "TOPLEFT", k, -k); fill[1]:SetPoint("TOPRIGHT", button, "TOPRIGHT", -k, -k); fill[1]:SetHeight(d)
-            fill[2]:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", k, k); fill[2]:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -k, k); fill[2]:SetHeight(d)
-            fill[3]:SetPoint("TOPLEFT", button, "TOPLEFT", k, -k); fill[3]:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", k, k); fill[3]:SetWidth(d)
-            fill[4]:SetPoint("TOPRIGHT", button, "TOPRIGHT", -k, -k); fill[4]:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -k, k); fill[4]:SetWidth(d)
-            g.amFillColor = c   -- (the fade itself goes on in amFollow, once they show)
-        end
-    end
-    if g.amFollow then g.amFollow(g) end
-    if blizz then
-        -- (drawn above)
-    elseif soft then
-        -- fading in from the edges over the icon. Thickness
+    -- retail's rounded buttons (no EllesmereUI look): the glow is clipped to
+    -- the icon's rounded shape and the frame's grey ring is drawn again on top
+    local behind = soft and rounded and not look
+    MaskSoft(g, behind and button.IconMask or nil)
+    local border = behind and BLIZZ_ART.GlowBorder(g, button)
+    if g.amBorder then g.amBorder:SetShown(border and true or false) end
+    if soft then
+        -- every game alike: fading in from the edges over the icon. Thickness
         -- 1 to 5 = each edge's fade reaches 20%, 40% ... 100% of the way across
         -- the button, so at 5 the four overlap and fill it (strongest at the
-        -- edges). (Not retail's rounded buttons: those get Blizzard's glow, above.)
+        -- edges).
         local w = button:GetWidth()
         if type(w) ~= "number" or w <= 0 then w = 36 end
         local d = Snap(g, (w - 2 * inset) * t / 5)

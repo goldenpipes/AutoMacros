@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.127.1.**
+- **Current version: 0.127.2.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   iteration** (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -119,8 +119,18 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   EllesmereUI bars, the Professions / Tracking spell IDs, ActiveTracking on Classic Era,
   0.117.1's settings-after-combat, the welcome window's look.
 
-## 0.127.1
-- 0.127.0 in retail: fill still **flat white, opacity ignored**, so 0.126.1's mask theory
+## 0.127.2 — back to 0.123.0's soft glow, frame drawn again on top
+- 0.127.1 still white. Lewis: go back to the original glow (before Blizzard's texture) and
+  put it behind the border. The on-button BORDER-layer fill (GlowFill, amFollow) is gone;
+  **textures created on the action button itself drew white whatever we did** (cause not
+  found: not the mask, not hidden-when-faded).
+- Now: 0.123.0's g.edges fade (FadeEdge, 20..100%), masked by the button's IconMask on
+  retail rounded buttons (MaskSoft again: that did clip, and the fade worked), plus
+  BLIZZ_ART.GlowBorder(g, button): a copy of the button's NormalTexture (its atlas,
+  size, TOPLEFT point, vertex color) on g at OVERLAY 7, above the fade, so the grey ring
+  shows over the glow like over the icon. It pulses with g (the real ring is underneath).
+
+## 0.127.1- 0.127.0 in retail: fill still **flat white, opacity ignored**, so 0.126.1's mask theory
   was wrong. Remaining difference from g.edges (which fade fine): those are Show()n before
   FadeEdge; the fill pieces were still hidden when FadeEdge ran. Now StyleGlow only stores
   g.amFillColor; amFollow applies FadeEdge to each piece right after showing it (every
