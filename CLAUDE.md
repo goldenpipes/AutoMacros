@@ -92,17 +92,6 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
 
-## 0.119.0 — Tracking button
-- Lewis: one button for all tracking spells, showing the ones a class/race can do. CATALOG
-  `tracking` (AM_Tracking), same shape as Professions (kind spells, byName, autoSpells,
-  scope character), Utility. `TRACKING_SPELLS`: Find Herbs 2383, Find Minerals 2580, Find
-  Fish 43308 (TBC), Find Treasure 2481, Sense Undead 5502, Sense Demons 5500, Druid Track
-  Humanoids 5225, Hunter Track Beasts 1494 / Humanoids 19883 / Undead 19884 / Hidden 19885 /
-  Elementals 19880 / Demons 19878 / Giants 19882 / Dragonkin 19879. **From memory,
-  unverified.** Hunter and Druid Track Humanoids share a name: byName keeps one (a
-  character only has one). The Druid one needs Cat Form (the game says so if not).
-  Retail tracks from the minimap menu: the button may be empty there.
-
 ## 0.120.0 — active tracking is the chosen one
 - Lewis: the active tracking should always be the Tracking button's chosen one. CATALOG
   flag `tracking = true`; `ActiveTracking(list)` (Macros.lua): C_Minimap.GetNumTrackingTypes
@@ -114,6 +103,17 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   whether GetTrackingTexture's value equals the spell's texture (both should be file IDs).
 - Not known: whether pressing the bar button (which /casts the active tracking) does
   nothing or turns tracking off on Classic.
+
+## 0.119.0 — Tracking button
+- Lewis: one button for all tracking spells, showing the ones a class/race can do. CATALOG
+  `tracking` (AM_Tracking), same shape as Professions (kind spells, byName, autoSpells,
+  scope character), Utility. `TRACKING_SPELLS`: Find Herbs 2383, Find Minerals 2580, Find
+  Fish 43308 (TBC), Find Treasure 2481, Sense Undead 5502, Sense Demons 5500, Druid Track
+  Humanoids 5225, Hunter Track Beasts 1494 / Humanoids 19883 / Undead 19884 / Hidden 19885 /
+  Elementals 19880 / Demons 19878 / Giants 19882 / Dragonkin 19879. **From memory,
+  unverified.** Hunter and Druid Track Humanoids share a name: byName keeps one (a
+  character only has one). The Druid one needs Cat Form (the game says so if not).
+  Retail tracks from the minimap menu: the button may be empty there.
 
 ## 0.118.0 — Professions button
 - Lewis: a button for the tradeskill windows; first tried as a custom button, but **Classic
