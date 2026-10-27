@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.123.2.**
+- **Current version: 0.124.0.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   iteration** (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -118,6 +118,18 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Still unchecked in game: Weapon Buff with sharpening stones, an unworn teleport ring,
   EllesmereUI bars, the Professions / Tracking spell IDs, ActiveTracking on Classic Era,
   0.117.1's settings-after-combat, the welcome window's look.
+
+## 0.124.0 — retail soft glow = Blizzard's own glow (+ fill)
+- Lewis: match Blizzard's effect (his retail screenshot: the yellow hover/spell-highlight
+  glow inside the grey frame ring) and **never cover the frame's border** on Blizzard's
+  buttons. 0.123.2's 46 x 45 fill covered the ring.
+- Retail rounded soft glow now: BLIZZ_ART.GlowRing(g) = atlas
+  UI-HUD-ActionBar-IconFrame-Mouseover on the glow frame (OVERLAY 2), desaturated, ADD,
+  vertex color x opacity, at Blizzard's place (TOPLEFT, button x 46/45 by button height).
+  Plus the gradient fill back on the button's bounds, masked by the glow frame's own mask
+  sized and centred exactly like the IconMask (no 46/45: 0.123.0's look, which left the
+  ring alone). Thickness on retail: 1 = Blizzard's glow alone, 2..5 = + fill 25/50/75/100%.
+  Classic/EUI unchanged (20..100%). Unverified in game.
 
 ## 0.123.2
 - 0.123.1 in retail: the glow shrank to a small square up and left of centre. The mask atlas

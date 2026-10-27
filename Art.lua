@@ -280,6 +280,23 @@ function BLIZZ_ART.GlowMask(g)
     return m
 end
 
+-- Blizzard's own button glow on the glow frame: the Mouseover atlas, made grey
+-- so it takes the highlight color, added on (like its HighlightTexture).
+-- false where the atlas is missing.
+BLIZZ_ART.RING_ATLAS = "UI-HUD-ActionBar-IconFrame-Mouseover"
+function BLIZZ_ART.GlowRing(g)
+    if g.amRing ~= nil then return g.amRing end
+    g.amRing = false
+    local atlas = BLIZZ_ART.RING_ATLAS
+    if not (C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(atlas)) then return false end
+    local r = g:CreateTexture(nil, "OVERLAY", nil, 2)
+    r:SetAtlas(atlas)
+    pcall(r.SetDesaturated, r, true)
+    pcall(r.SetBlendMode, r, "ADD")
+    g.amRing = r
+    return r
+end
+
 function StyleGlow(g, button)
     local c = StyleColor("glowColor")
     local t = math.max(1, math.min(5, tonumber(Style("glowThickness")) or 3))   -- 1 to 5
@@ -291,19 +308,28 @@ function StyleGlow(g, button)
     local inset = (soft and look) and look.size * px or 0
     local mask = soft and rounded and not look and BLIZZ_ART.GlowMask(g) or nil
     g:ClearAllPoints()
+    g:SetPoint("TOPLEFT", button, "TOPLEFT", inset, -inset)
+    g:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
+    -- Retail's own glow (Lewis's reference): the hover / spell highlight, atlas
+    -- UI-HUD-ActionBar-IconFrame-Mouseover, a glow inside the frame's grey ring
+    -- that leaves the ring itself alone. Blizzard puts it where the frame art
+    -- is, 46 x 45 from a 45 x 45 button's top left (ActionButtonTemplate.xml).
+    local ring = mask and BLIZZ_ART.GlowRing(g)
+    if g.amRing then g.amRing:SetShown(ring ~= nil and ring ~= false) end
     if mask then
-        -- retail's own highlights (hover, checked, the spell highlight, the red
-        -- attack Flash) all sit where the frame art does: 46 x 45 on a 45 x 45
-        -- button, from its top left (ActionButtonTemplate.xml); the icon is
-        -- only 45 wide, so a glow on the icon looked a pixel short on the right
-        -- and bottom. So the soft glow takes that place, in the frame's shape.
         local bw, bh = button:GetWidth(), button:GetHeight()
         if type(bw) ~= "number" or bw <= 0 then bw = 45 end
         if type(bh) ~= "number" or bh <= 0 then bh = bw end
-        g:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
-        g:SetSize(Snap(g, bw * 46 / 45), Snap(g, bh))
-        -- the mask: as big as the button's own IconMask (padding and all; else
-        -- the atlas's size for a 45 button), 46/45 wider like the frame, centred
+        if ring then
+            ring:ClearAllPoints()
+            ring:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
+            ring:SetSize(Snap(g, bw * 46 / 45), Snap(g, bh))
+            local a = c[4] or 1   -- (added on: opacity has to dim the color itself)
+            ring:SetVertexColor(c[1] * a, c[2] * a, c[3] * a, 1)
+        end
+        -- the fill inside, in the icon's shape (so not over the ring): a mask
+        -- as big as the button's own IconMask, centred like it (the atlas has
+        -- see-through padding, so never stretch it to the area it clips)
         local im = button.IconMask
         local mw, mh = im and im:GetWidth(), im and im:GetHeight()
         if type(mw) ~= "number" or mw <= 0 or type(mh) ~= "number" or mh <= 0 then
@@ -313,10 +339,7 @@ function StyleGlow(g, button)
         end
         mask:ClearAllPoints()
         mask:SetPoint("CENTER", g, "CENTER", 0, 0)
-        mask:SetSize(mw * 46 / 45, mh)
-    else
-        g:SetPoint("TOPLEFT", button, "TOPLEFT", inset, -inset)
-        g:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
+        mask:SetSize(mw, mh)
     end
     for i = 1, 4 do g.edges[i]:Hide() end
     for _, cell in ipairs(g.cells or {}) do cell:Hide() end
@@ -326,13 +349,15 @@ function StyleGlow(g, button)
         -- every game alike: fading in from the edges over the icon. Thickness
         -- 1 to 5 = each edge's fade reaches 20%, 40% ... 100% of the way across
         -- the button, so at 5 the four overlap and fill it (strongest at the
-        -- edges). Retail's rounded buttons clip it to the frame's shape.
-        local w = mask and g:GetWidth() or button:GetWidth()
-        if type(w) ~= "number" or w <= 0 then w = button:GetWidth() end
+        -- edges). On retail Blizzard's glow is always there and the fill adds
+        -- to it: none at 1, then 25% ... 100%.
+        local w = button:GetWidth()
         if type(w) ~= "number" or w <= 0 then w = 36 end
-        local d = Snap(g, (w - 2 * inset) * t / 5)
+        local share = ring and (t - 1) / 4 or t / 5
+        local d = Snap(g, (w - 2 * inset) * share)
         local e = g.edges
-        for i = 1, 4 do e[i]:ClearAllPoints(); e[i]:Show() end
+        for i = 1, 4 do e[i]:ClearAllPoints(); e[i]:SetShown(d > 0) end
+        d = math.max(d, 0.01)
         e[1]:SetPoint("TOPLEFT", g, "TOPLEFT", 0, 0); e[1]:SetPoint("TOPRIGHT", g, "TOPRIGHT", 0, 0); e[1]:SetHeight(d)
         e[2]:SetPoint("BOTTOMLEFT", g, "BOTTOMLEFT", 0, 0); e[2]:SetPoint("BOTTOMRIGHT", g, "BOTTOMRIGHT", 0, 0); e[2]:SetHeight(d)
         e[3]:SetPoint("TOPLEFT", g, "TOPLEFT", 0, 0); e[3]:SetPoint("BOTTOMLEFT", g, "BOTTOMLEFT", 0, 0); e[3]:SetWidth(d)
