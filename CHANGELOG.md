@@ -4,6 +4,15 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.108.3 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Fixed
+- Classic Era: Anti-Venom (filed as a reagent) now goes on Debuff Cure.
+- Classic Era: sharpening stones, weightstones and wizard / mana oils (filed as trade goods)
+  now go on Weapon Buff.
+- Classic Era: Mana Agate and the other mana gems were still skipped; they go on Restore Mana.
+- The rules test also lists reagents and trade goods with a "Use:" line that fit no button.
+
 ## 0.108.2 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Fixed

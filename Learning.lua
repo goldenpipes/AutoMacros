@@ -40,7 +40,9 @@ setfenv(1, ns)
 --   other consumable, "Use:" increases / improves / grants / raises anything
 --     else (armor, attack power, crit, resistance, speed, ...) -> other buffs
 --   Trade Goods, subclass Explosives        -> explosives (classic files them here)
---   other trade goods, "Use:" restores health / mana -> restore health / mana (runes)
+--   other trade goods and reagents, "Use:" restores health / mana -> restore
+--     health / mana (runes); "Use:" mentions your weapon -> weapon buff
+--     (Classic Era's sharpening stones and oils)
 --   quest and misc items (often quest rewards): restoring and buffs, as above
 --   a quest item ("Quest Item" or the quest class) with a "Use:" line and no
 --     button above                         -> quest item (before weapon buff
@@ -48,17 +50,18 @@ setfenv(1, ns)
 -- Gear (rings, cloaks, trinkets) only counts for teleporting; other item
 -- classes are skipped.
 -- ---------------------------------------------------------------------------
--- item classes worth a look: consumable, armour, trade goods, quest (Juju and
--- E'ko are quest items), miscellaneous
-LOOKED_AT = { [0] = true, [4] = true, [7] = true, [12] = true, [15] = true }
+-- item classes worth a look: consumable, armour, reagent (Classic Era files
+-- Anti-Venom there), trade goods, quest (Juju and E'ko are quest items), miscellaneous
+LOOKED_AT = { [0] = true, [4] = true, [5] = true, [7] = true, [12] = true, [15] = true }
 -- gear only counts when it teleports you, and only these slots ever do
 TELEPORT_SLOTS = { INVTYPE_FINGER = true, INVTYPE_TRINKET = true, INVTYPE_CLOAK = true, INVTYPE_NECK = true,
     INVTYPE_TABARD = true }
 
--- Armour that is not worn at all ("" / INVTYPE_NON_EQUIP): Classic files usable
--- odds and ends there (Mana Agate is 4.0), so those count like consumables.
+-- Armour that is not worn at all ("" / INVTYPE_NON_EQUIP / Classic Era's
+-- INVTYPE_NON_EQUIP_IGNORE): Classic files usable odds and ends there (Mana
+-- Agate is 4.0), so those count like consumables.
 function NotWorn(slot)
-    return slot == nil or slot == "" or slot == "INVTYPE_NON_EQUIP"
+    return slot == nil or slot == "" or slot == "INVTYPE_NON_EQUIP" or slot == "INVTYPE_NON_EQUIP_IGNORE"
 end
 
 -- Worth reading the tooltip of? Known without asking the server: its class is
@@ -213,9 +216,16 @@ function Classify(id)
     -- something you use to do a quest ("Use: Place the totem at ..."), unless it
     -- fits a button that helps you (restoring, buffs): those come first
     local questUse = quest and hasUse
-    if class == 7 then   -- other trade goods: only runes and the like, "Restores 900 to 1500 mana"
-        if not restoring then return questUse and { "quest" } or {}, sig end
-        return (health and mana) and { "hpot", "mpot" } or { health and "hpot" or "mpot" }, sig
+    -- other trade goods and reagents: runes and the like ("Restores 900 to 1500
+    -- mana"), and on Classic Era sharpening stones and oils (7.0, "Increase sharp
+    -- weapon damage")
+    if class == 7 or class == 5 then
+        if restoring then
+            return (health and mana) and { "hpot", "mpot" } or { health and "hpot" or "mpot" }, sig
+        end
+        if questUse then return { "quest" }, sig end
+        if weapon and hasUse then return { "weapon_buff" }, sig end
+        return {}, sig
     end
     -- quest and misc items (quest rewards are often one or the other) count
     -- for what helps you: restoring health or mana, and buffs; or as quest items
@@ -347,7 +357,7 @@ end
 -- or changed; the result goes to db.test (saved on /reload or logout):
 --   build, interface, first, last, counts[set] = how many
 --   items[id]   = "sets | class.sub | name | Use: ..."   sorted onto a button
---   unsorted[id] = the same with "-"   a consumable or misc item with a "Use:"
+--   unsorted[id] = the same with "-"   a consumable, reagent, trade good or misc item with a "Use:"
 --                                     line that fits no button (possible misses)
 --   missing     = IDs the server says do not exist (unused items in the game files)
 --   noanswer    = IDs the server never answered for (TEST_TRIES questions)
@@ -486,7 +496,7 @@ function TestSort(run, id)
         for _, s in ipairs(sets) do res.counts[s] = (res.counts[s] or 0) + 1 end
     else
         local class = ItemInstant(id)
-        if class == 0 or class == 15 then
+        if class == 0 or class == 5 or class == 7 or class == 15 then
             local line = TestLine(id, sets)
             if line:find(ITEM_SPELL_TRIGGER_ONUSE or "Use:", 1, true) then res.unsorted[id] = line end
         end

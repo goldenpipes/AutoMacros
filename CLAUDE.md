@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.108.2.**
+- **Current version: 0.108.3.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -90,6 +90,17 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.108.3 — what Classic Era's client says about the missing items
+- Lewis's `/dump GetItemInfoInstant` on Classic Era: Anti-Venom 6452 = **class 5 (Reagent)
+  sub 0**; Rough Sharpening Stone 2862 = **7.0**; Mana Agate 5514 = **4.0**. All three have
+  slot **`INVTYPE_NON_EQUIP_IGNORE`** (so NotWorn missed Mana Agate).
+- Fixed (CLASSIFIER 15): LOOKED_AT + class 5; NotWorn accepts INVTYPE_NON_EQUIP_IGNORE;
+  classes 5 and 7 share one branch: restoring -> hpot/mpot, quest use -> quest, weapon + Use
+  -> weapon_buff, else nothing (cures are caught earlier for every class). The test's
+  `unsorted` now also covers classes 5 and 7, so class-7 misses no longer vanish.
+- Next: another `/amac test` on Classic Era; check that reagents with a Use line don't
+  flood buttons.
 
 ## 0.108.2 — fixes from the third Classic Era test
 - Third test (addon 0.108.1): 871 sorted, 568 Use-but-none, 139 missing, **0 noanswer**,
