@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.123.1.**
+- **Current version: 0.123.2.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   iteration** (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -119,6 +119,14 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   EllesmereUI bars, the Professions / Tracking spell IDs, ActiveTracking on Classic Era,
   0.117.1's settings-after-combat, the welcome window's look.
 
+## 0.123.2
+- 0.123.1 in retail: the glow shrank to a small square up and left of centre. The mask atlas
+  has **see-through padding** (known since 0.80.0, forgotten): stretched to the 46 x 45 area
+  its shape came out far smaller. Now the glow's mask is sized like the button's own IconMask
+  (its GetWidth/GetHeight; else the atlas's size x button/45), x 46/45 wide, centred on the
+  46 x 45 glow frame. **Never size a mask from the area it should clip; size it like the
+  IconMask.** Lewis guessed UI scale; it wasn't.
+
 ## 0.123.1 — retail soft glow where Blizzard's highlights are
 - Lewis's zoomed retail screenshot (soft glow, thickness 5): the IconMask clip worked
   (rounded corners), but the fill stopped a pixel short of the frame on the right and
@@ -132,8 +140,8 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   TOPLEFT, button width x 46/45 by button height, snapped; clipped by its own MaskTexture
   (BLIZZ_ART.GlowMask(g): CreateMaskTexture on the glow frame, atlas
   UI-HUD-ActionBar-IconFrame-Mask, all points; atlas checked with C_Texture.GetAtlasInfo)
-  instead of the button's IconMask (a mask may only clip textures of its own frame).
-  Unverified in game.
+  instead of the button's IconMask. (The claim that a mask only clips its own frame's textures
+  was wrong: 0.123.0's IconMask on the glow frame's edges did clip.)
 
 ## 0.123.0 — soft glow fills the button at 5, every game alike
 - Lewis (retail screenshot of the Highlight demo, soft glow): can it fill the whole button at

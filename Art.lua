@@ -263,17 +263,19 @@ local function MaskSoft(g, mask)
 end
 
 -- The glow's own mask in retail's button shape: Blizzard's icon mask atlas,
--- made on the glow frame itself (a mask only clips textures of its own frame),
--- filling it. nil where the atlas is missing (Classic's square buttons).
+-- made on the glow frame. nil where the atlas is missing (Classic's square
+-- buttons). Sized by StyleGlow: the atlas has see-through padding round its
+-- shape, so it is drawn bigger than the area it clips to (as the button's own
+-- IconMask is), never stretched to that area (0.123.1 shrank the glow so).
+BLIZZ_ART.MASK_ATLAS = "UI-HUD-ActionBar-IconFrame-Mask"
 function BLIZZ_ART.GlowMask(g)
     if g.amMaskTex then return g.amMaskTex end
-    local atlas = "UI-HUD-ActionBar-IconFrame-Mask"
+    local atlas = BLIZZ_ART.MASK_ATLAS
     if not (C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(atlas)) then return nil end
     if not g.CreateMaskTexture then return nil end
     local ok, m = pcall(g.CreateMaskTexture, g)
     if not ok or not m then return nil end
     m:SetAtlas(atlas)
-    m:SetAllPoints(g)
     g.amMaskTex = m
     return m
 end
@@ -300,6 +302,18 @@ function StyleGlow(g, button)
         if type(bh) ~= "number" or bh <= 0 then bh = bw end
         g:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
         g:SetSize(Snap(g, bw * 46 / 45), Snap(g, bh))
+        -- the mask: as big as the button's own IconMask (padding and all; else
+        -- the atlas's size for a 45 button), 46/45 wider like the frame, centred
+        local im = button.IconMask
+        local mw, mh = im and im:GetWidth(), im and im:GetHeight()
+        if type(mw) ~= "number" or mw <= 0 or type(mh) ~= "number" or mh <= 0 then
+            local info = C_Texture.GetAtlasInfo(BLIZZ_ART.MASK_ATLAS)
+            mw = (info and info.width or 45) * bw / 45
+            mh = (info and info.height or 45) * bh / 45
+        end
+        mask:ClearAllPoints()
+        mask:SetPoint("CENTER", g, "CENTER", 0, 0)
+        mask:SetSize(mw * 46 / 45, mh)
     else
         g:SetPoint("TOPLEFT", button, "TOPLEFT", inset, -inset)
         g:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
