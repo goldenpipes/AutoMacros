@@ -4,6 +4,12 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.116.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Changed
+- Buttons page: the checkboxes are four to a row; a button that is off shows how many are
+  available as a green "(3)".
+
 ## 0.115.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Changed

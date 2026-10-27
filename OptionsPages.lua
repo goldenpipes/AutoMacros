@@ -395,32 +395,39 @@ function BuildPage(parent, group, x0, y0, native)
             local w = (parent:GetWidth() or 0) > 0 and parent:GetWidth() or UI.CONTENT_W
             rowH = y - UI.BuildCustomRows(parent, w, lx, y, refreshers)
         elseif item.type == "buttongrid" then
-            -- three checkboxes to a row
+            -- checkboxes in a grid: UI.GRID_COLS to a row on Blizzard's page,
+            -- three on EllesmereUI's (its TripleRow)
+            local cols = W and 3 or UI.GRID_COLS
+            local pw = (parent:GetWidth() or 0) > 0 and parent:GetWidth() or UI.CONTENT_W
+            local colW = math.floor((pw - lx - 10) / cols)
             local h = 0
-            for i = 1, #item.entries, 3 do
-                local cfgs = {}
-                for j = 0, 2 do
-                    local e = item.entries[i + j]
-                    if e then
-                        cfgs[j + 1] = { type = "toggle", text = UI.Name(e) .. (e.custom and " (custom)" or ""),
-                            getValue = function() return Enabled(e) end,
-                            setValue = function(v) UI.SetEnabled(e, v) end }
-                    end
-                end
-                local th = Native("TripleRow", y - h, cfgs[1], cfgs[2], cfgs[3], { 0.34, 0.33 })
-                if not th then
+            for i = 1, #item.entries, cols do
+                local th
+                if W then
+                    local cfgs = {}
                     for j = 0, 2 do
                         local e = item.entries[i + j]
                         if e then
-                            local x = lx + j * 170
+                            cfgs[j + 1] = { type = "toggle", text = UI.Name(e) .. (e.custom and " (custom)" or ""),
+                                getValue = function() return Enabled(e) end,
+                                setValue = function(v) UI.SetEnabled(e, v) end }
+                        end
+                    end
+                    th = Native("TripleRow", y - h, cfgs[1], cfgs[2], cfgs[3], { 0.34, 0.33 })
+                end
+                if not th then
+                    for j = 0, cols - 1 do
+                        local e = item.entries[i + j]
+                        if e then
+                            local x = lx + j * colW
                             refreshers[#refreshers + 1] = MakeToggle(parent, x, y - h,
                                 function() return Enabled(e) end, function(v) UI.SetEnabled(e, v) end).refresh
-                            local fs = MakeLabel(parent, "", x + 26, y - h - 2, 138)
-                            -- "(3 available)" while it is off and you carry or can make some
+                            local fs = MakeLabel(parent, "", x + 26, y - h - 2, colW - 30)
+                            -- "(3)" while it is off and you carry or can make some (as the green number on its icon)
                             local function label()
                                 local n = UI.CouldUse(e)
                                 fs:SetText(Loc(UI.Name(e) .. (e.custom and " (custom)" or ""))
-                                    .. (n > 0 and (" " .. UI.HAVE_COLOR .. "(" .. n .. " available)|r") or ""))
+                                    .. (n > 0 and (" " .. UI.HAVE_COLOR .. "(" .. n .. ")|r") or ""))
                             end
                             label()
                             refreshers[#refreshers + 1] = label
@@ -464,6 +471,7 @@ end
 -- then the settings, built from Blizzard's widgets. /amac options opens it (or
 -- EllesmereUI's page while that is installed).
 UI.CONTENT_W = 560
+UI.GRID_COLS = 4   -- checkboxes to a row on the Buttons page
 UI.SIDE_W, UI.LEFT_W = 120, 480   -- a page with its preview in a right-hand column
 UI.panels = {}   -- per tab: { frame, host (preview strip), scroll, content, built }
 

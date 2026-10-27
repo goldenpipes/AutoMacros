@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.115.0.**
+- **Current version: 0.116.0.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -91,6 +91,13 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.116.0 — four columns (a test)
+- Lewis liked 0.115.0 ("beautiful!"); asked for the Buttons page checkboxes in 4 columns
+  as a test. `UI.GRID_COLS` (OptionsPages.lua, 4) for Blizzard's page: column =
+  (width - lx - 10) / cols (~130 on the 560 page), label width column - 30; the off-button
+  count is now "(3)" in green, not "(3 available)" (too long for the column). EllesmereUI's
+  page keeps its 3-wide TripleRow. Back to 3 = set UI.GRID_COLS = 3.
 
 ## 0.115.0 — popout direction by right-click on the Buttons page
 - Lewis (right after 0.114.0): no labels and dropdowns; click the button to cycle its
