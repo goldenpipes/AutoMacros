@@ -384,8 +384,11 @@ function UI.ButtonSections()
         if e.custom then custom[#custom + 1] = e
         elseif not placed[e.key] then other[#other + 1] = e end
     end
-    add("Custom", custom)
     add("Other", other)
+    -- your own buttons last, one editable row each (Custom.lua)
+    if #custom > 0 then
+        sections[#sections + 1] = { name = "Custom", items = { { type = "customrows" } } }
+    end
     return sections
 end
 
@@ -397,18 +400,31 @@ UI.HEADERS = {}
 -- the flyout preview's note: under it, or across the bottom of its page
 UI.FLYOUT_NOTE = "Hover an item to see the hover color. The highlighted border marks the one in use."
 
--- Buttons: every button's icon, grey when it is off; clicking one turns it on or off.
+-- Buttons: every button's icon, grey when it is off; clicking one turns it on or
+-- off. Last a + to make a button of your own (drop an item or spell on it);
+-- dropping one on your own button's icon adds it there.
 UI.HEADERS.buttons = function(f, width)
     local size, gap = 36, 6
     local list = UI.AvailableButtons()
     local perRow = math.max(1, math.floor((width - 40 + gap) / (size + gap)))
-    local rows = math.ceil(#list / perRow)
+    local slots = #list + 1   -- (the + takes a place in the row too)
+    local rows = math.ceil(slots / perRow)
+    local function place(b, i)
+        local row, col = math.floor((i - 1) / perRow), (i - 1) % perRow
+        local inRow = (row == rows - 1) and (slots - row * perRow) or perRow
+        local left = (width - (inRow * (size + gap) - gap)) / 2
+        BLIZZ_ART.Point(b, "TOPLEFT", f, "TOPLEFT", left + col * (size + gap), -16 - row * (size + gap))
+    end
     f.icons = f.icons or {}
     for i, e in ipairs(list) do
         local b = f.icons[i]
         if not b then
             b = UI.SampleButton(f, size)
-            b:SetScript("OnClick", function(self) UI.SetEnabled(self.entry, not Enabled(self.entry)) end)
+            b:SetScript("OnClick", function(self)
+                if self.entry.custom and UI.CursorThing() then return UI.AddToIcon(self) end
+                UI.SetEnabled(self.entry, not Enabled(self.entry))
+            end)
+            b:SetScript("OnReceiveDrag", function(self) UI.AddToIcon(self) end)
             b:RegisterForDrag("LeftButton")
             b:SetScript("OnDragStart", function(self) UI.PickUp(self.entry) end)
             b:SetScript("OnEnter", function(self)
@@ -421,18 +437,18 @@ UI.HEADERS.buttons = function(f, width)
                 end
                 if UI.NotOnBars(self.entry) then UI.AddNotOnBarsLine(GameTooltip) end
                 GameTooltip:AddLine("Drag onto an action bar to place it", 0.7, 0.7, 0.7)
+                if self.entry.custom then
+                    GameTooltip:AddLine("Drop an item or spell on it to add it", 0.7, 0.7, 0.7)
+                end
                 GameTooltip:Show()
             end)
             b:SetScript("OnLeave", function() GameTooltip:Hide() end)
             f.icons[i] = b
         end
         b.entry = e
-        local row, col = math.floor((i - 1) / perRow), (i - 1) % perRow
-        local inRow = (row == rows - 1) and (#list - row * perRow) or perRow
-        local left = (width - (inRow * (size + gap) - gap)) / 2
         b.icon:SetTexture(UI.CategoryIcon(e))
         UI.StyleSample(b)   -- (sizes it, so before placing)
-        BLIZZ_ART.Point(b, "TOPLEFT", f, "TOPLEFT", left + col * (size + gap), -16 - row * (size + gap))
+        place(b, i)
         local on = Enabled(e)
         pcall(b.icon.SetDesaturated, b.icon, not on)
         b:SetAlpha(on and 1 or 0.5)
@@ -454,6 +470,12 @@ UI.HEADERS.buttons = function(f, width)
         b:Show()
     end
     for i = #list + 1, #f.icons do f.icons[i]:Hide() end
+    if not f.newSlot then
+        f.newSlot = UI.DropSlot(f, size, function(kind, id) UI.CustomCreate(kind, id) end, UI.NEW_BUTTON_TIP)
+    end
+    UI.StyleSample(f.newSlot)
+    place(f.newSlot, slots)
+    f.newSlot:Show()
     f.hint = f.hint or UI.SmallText(f, "Click an icon to turn it on or off for this character, or drag it onto an action bar. The green number is how many you have or can make. A glowing icon has items but isn't on any of your bars yet.")
     f.hint:ClearAllPoints()
     f.hint:SetWidth(width - 20)

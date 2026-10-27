@@ -4,6 +4,15 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.110.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Changed
+- Your own buttons live on the main AutoMacros settings page now; the Custom page is gone.
+  Make one by dropping an item or spell on the **+** at the end of the icon row (hover it to
+  see how). Drop more onto your button's icon to add them.
+- The Custom section at the bottom of that page lists your buttons: turn them on or off,
+  rename them, take items out or delete them.
+
 ## 0.109.2 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Fixed

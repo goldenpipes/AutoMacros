@@ -69,7 +69,7 @@ function RegisterEUI()
                         local okH, errH = pcall(EllesmereUI.SetContentHeader, EllesmereUI, hb)
                         if not okH then Fail("EllesmereUI preview", errH) end
                     end
-                    if page.build then   -- a page that lays itself out (Custom)
+                    if page.build then   -- a page that lays itself out
                         local okB, h = pcall(page.build, parent, (parent:GetWidth() or UI.CONTENT_W) - 40)
                         if okB then y = h else Fail("EllesmereUI page", h) end
                     end

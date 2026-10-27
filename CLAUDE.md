@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.109.2.**
+- **Current version: 0.110.0.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -58,7 +58,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   finding action buttons, highlight, empty tooltip), Learning (Classify, LearnNew), Update
   (AutoEnable, UpdateCore, Update), Popout (the popout, indicators, labels), Widgets, Options
   (UI: Buttons page, availability, recipes, previews), OptionsPages (PAGES, BuildPage, the
-  AddOns panel), Custom (your own buttons + the Custom page, since 0.106.0), EllesmereUI,
+  AddOns panel), Custom (your own buttons + their rows on the Buttons page; since 0.106.0), EllesmereUI,
   Events (Schedule, bar watcher, migrations, Init, events, /amac).
 - When searching code, keep to the top-level `*.lua`: `previous/` holds every old build.
 - **Every file starts with** `local ADDON, ns = ...` / `setmetatable(ns, { __index = _G })` /
@@ -90,6 +90,20 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.110.0 — custom buttons on the Buttons page
+- Lewis: the Custom page can go; put a + "at the end of the row" (the Buttons page's icon
+  strip) with a tooltip explaining what to do. PAGES has no Custom entry any more (EUI's page
+  list follows PAGES); Buttons' stamp = ButtonsStamp .. "|" .. CustomStamp.
+- HEADERS.buttons: `slots = #list + 1`, `place(b, i)` centres rows incl. the +; `f.newSlot` =
+  `UI.DropSlot(f, size, CustomCreate, UI.NEW_BUTTON_TIP)` (DropSlot takes tooltip lines now).
+  Custom icons in the strip take drops (OnReceiveDrag, or OnClick with something on the
+  cursor) -> `UI.AddToIcon` -> CustomAdd.
+- ButtonSections: custom buttons are no longer in a checkbox grid; last section "Custom" =
+  item type `customrows` (BuildPage) -> `UI.BuildCustomRows(parent, width, x, y,
+  refreshers)` (was BuildCustomPage, minus title/note/New button): per row MakeToggle
+  (via `UI.CustomEntry(key)`), name box (tooltip "Type a new name and press Enter"), icons,
+  add slot, Delete. UI.RefreshCustomPage removed. Untested in game.
 
 ## 0.109.2
 - Lewis: rework the Buttons page's icon-strip hint (HEADERS.buttons `f.hint`). Now plain

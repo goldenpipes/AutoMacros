@@ -1,5 +1,6 @@
--- AutoMacros: your own buttons (db.custom), and the Custom settings page where
--- you make them by dragging items from your bags or spells from your spellbook.
+-- AutoMacros: your own buttons (db.custom), made on the Buttons settings page
+-- by dragging items from your bags or spells from your spellbook onto the +
+-- at the end of its icon row; edited in its Custom section.
 
 local ADDON, ns = ...
 -- every file shares the addon's own table: names set here are seen by the
@@ -65,7 +66,6 @@ function UI.CustomChanged()
     pcall(RebuildMacros)
     Refresh()
     RefreshHeaders()
-    UI.RefreshCustomPage()
     UI.RefreshButtonsPage()
     RefreshEUIPage()
 end
@@ -76,7 +76,7 @@ function UI.CustomCreate(kind, id)
     local key = UI.CustomKey(title)
     UI.CustomTable()[key] = { title = title, kind = kind, ids = { id } }
     OnOff()[key] = true
-    Note("new button " .. title .. " - drag more onto it on the Custom page")
+    Note("new button " .. title .. " - drag more onto its icon in the AutoMacros settings")
     UI.CustomChanged()
 end
 
@@ -132,7 +132,7 @@ function UI.CustomDelete(key)
     UI.CustomChanged()
 end
 
--- what the page shows; it is built again when this changes
+-- what the Custom section shows; the Buttons page is built again when this changes
 function UI.CustomStamp()
     local custom, keys, parts = UI.CustomTable(), {}, {}
     for k in pairs(custom) do keys[#keys + 1] = k end
@@ -144,22 +144,15 @@ function UI.CustomStamp()
     return table.concat(parts, ";")
 end
 
--- the Custom page and the Buttons page (whose Custom section lists them), if shown
-function UI.RefreshCustomPage()
-    for i, page in ipairs(PAGES) do
-        local pn = UI.panels and UI.panels[i]
-        if page.name == "Custom" and pn and pn.frame:IsVisible() then UI.ShowPanel(i) end
-    end
-end
-
+-- the Buttons page (whose Custom section lists them), if shown
 function UI.RefreshButtonsPage()
     local pn = UI.panels and UI.panels[1]
     if pn and pn.frame:IsVisible() then UI.ShowPanel(1) end
 end
 
 -- A slot to drag an item or spell onto (or click while carrying one): drop(kind,
--- id) gets it. size: the slot's size.
-function UI.DropSlot(parent, size, drop)
+-- id) gets it. size: the slot's size; tip: its tooltip lines (a default if nil).
+function UI.DropSlot(parent, size, drop, tip)
     local b = UI.SampleButton(parent, size, "Interface\\PaperDoll\\UI-Backpack-EmptySlot")
     local plus = b:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     plus:SetPoint("CENTER")
@@ -174,7 +167,10 @@ function UI.DropSlot(parent, size, drop)
     b:SetScript("OnClick", take)
     b:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:AddLine(Loc("Drag an item from your bags or a spell from your spellbook here"))
+        local lines = tip or { "Drag an item from your bags or a spell from your spellbook here" }
+        for i, line in ipairs(lines) do
+            if i == 1 then GameTooltip:AddLine(Loc(line)) else GameTooltip:AddLine(Loc(line), 1, 0.82, 0, true) end
+        end
         GameTooltip:Show()
     end)
     b:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -183,49 +179,54 @@ end
 
 UI.CUSTOM_ICON, UI.CUSTOM_GAP = 36, 6
 
--- The page: a note and a slot for a new button, then one row per button: its
--- name (type to rename), its items or spells (hover for the tooltip,
--- right-click to take one out), a slot to add more, and Delete. Returns the
--- height used. (parent: the page's scroll sheet; width: its width.)
-function UI.BuildCustomPage(parent, width)
+-- the + at the end of the Buttons page's icon row: its tooltip says how it all works
+UI.NEW_BUTTON_TIP = {
+    "New button",
+    "Drag an item from your bags or a spell from your spellbook here to make your own button.",
+    "Drag more onto its icon to add them. A button holds items or spells, not both.",
+    "Rename it, take things out or delete it under Custom at the bottom of this page.",
+}
+
+-- an item or spell dropped on your own button's icon in the icon row: add it
+function UI.AddToIcon(b)
+    local e = b and b.entry
+    if not (e and e.custom) then return end
+    local kind, id = UI.CursorThing()
+    if not kind then return end
+    ClearCursor()
+    UI.CustomAdd(e.key, kind, id)
+end
+
+function UI.CustomEntry(key)
+    for _, e in ipairs(ALL) do
+        if e.custom and e.key == key and not e.removed then return e end
+    end
+end
+
+-- The Buttons page's Custom section: one row per button of your own: on/off,
+-- its name (type to rename), its items or spells (hover for the tooltip,
+-- right-click to take one out), a slot to add more, and Delete. x, y: where it
+-- starts; returns the y below it. refreshers: the page's list (the on/off boxes).
+function UI.BuildCustomRows(parent, width, x, y, refreshers)
     width = width or UI.CONTENT_W
     local size, gap = UI.CUSTOM_ICON, UI.CUSTOM_GAP
-    local y = -10
-    local title = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
-    title:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
-    title:SetText(Loc("Your own buttons"))
-    y = y - 30
-    local note = UI.SmallText(parent, "Drag an item from your bags or a spell from your spellbook onto the + to make a new"
-        .. " button. A button holds items or spells. Right-click an icon to take it out; type in the name box to"
-        .. " rename it (press Enter).")
-    note:SetPoint("TOPLEFT", parent, "TOPLEFT", 30, y)
-    note:SetWidth(width - 60)
-    note:SetJustifyH("LEFT")
-    y = y - math.max(28, (note:GetStringHeight() or 24) + 8)
-    MakeLabel(parent, "New button", 30, y - 12)
-    local new = UI.DropSlot(parent, size, function(kind, id) UI.CustomCreate(kind, id) end)
-    BLIZZ_ART.Point(new, "TOPLEFT", parent, "TOPLEFT", 190, y)
-    y = y - size - 20
-
     local custom = UI.CustomTable()
     local keys = {}
     for k in pairs(custom) do keys[#keys + 1] = k end
     table.sort(keys, function(a, b) return tostring(custom[a].title):lower() < tostring(custom[b].title):lower() end)
-    if #keys > 0 then
-        local head = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
-        head:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
-        head:SetText(Loc("Buttons"))
-        y = y - 34
-    end
-    local iconsX = 190
+    local iconsX = x + 186
     local perRow = math.max(1, math.floor((width - iconsX - 100 + gap) / (size + gap)))
     for _, key in ipairs(keys) do
         local c = custom[key]
+        local cb = MakeToggle(parent, x, y - 6,
+            function() local e = UI.CustomEntry(key); return e and Enabled(e) or false end,
+            function(v) local e = UI.CustomEntry(key); if e then UI.SetEnabled(e, v) end end)
+        if refreshers and cb.refresh then refreshers[#refreshers + 1] = cb.refresh end
         local box
         local okBox, made = pcall(CreateFrame, "EditBox", nil, parent, "InputBoxTemplate")
         if okBox and made then box = made else box = CreateFrame("EditBox", nil, parent) end
         box:SetSize(140, 22)
-        box:SetPoint("TOPLEFT", parent, "TOPLEFT", 36, y - 6)
+        box:SetPoint("TOPLEFT", parent, "TOPLEFT", x + 36, y - 6)
         box:SetAutoFocus(false)
         box:SetMaxLetters(16)
         box:SetFontObject("GameFontHighlight")
@@ -252,11 +253,18 @@ function UI.BuildCustomPage(parent, width)
                 end)
                 b:SetScript("OnLeave", function() GameTooltip:Hide() end)
             else
-                b = UI.DropSlot(parent, size, function(k, newID) UI.CustomAdd(key, k, newID) end)
+                b = UI.DropSlot(parent, size, function(k, newID) UI.CustomAdd(key, k, newID) end,
+                    { "Add to " .. tostring(c.title), "Drag an item from your bags or a spell from your spellbook here." })
             end
             local row, col = math.floor((i - 1) / perRow), (i - 1) % perRow
             BLIZZ_ART.Point(b, "TOPLEFT", parent, "TOPLEFT", iconsX + col * (size + gap), y - row * (size + gap))
         end
+        box:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:AddLine(Loc("Type a new name and press Enter"))
+            GameTooltip:Show()
+        end)
+        box:SetScript("OnLeave", function() GameTooltip:Hide() end)
         MakeButton(parent, width - 90, y - 6, 80, "Delete", function() UI.CustomDelete(key) end)
         local rows = math.ceil(#slots / perRow)
         y = y - rows * (size + gap) - 14

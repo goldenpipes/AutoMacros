@@ -1,4 +1,4 @@
--- AutoMacros 0.109.2 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.110.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -575,7 +575,7 @@ function CustomEntries()
             local e = {
                 key = k, custom = true, name = "AM_C_" .. k, title = title,
                 empty = ("No " .. title):sub(1, 16), label = tostring(c.title or k):lower(), default = true,
-                oldNames = type(c.oldNames) == "table" and c.oldNames or nil,   -- (renamed on the Custom page)
+                oldNames = type(c.oldNames) == "table" and c.oldNames or nil,   -- (renamed on the Buttons page)
             }
             if c.kind == "spells" then
                 e.kind, e.spells, e.scope = "spells", c.ids, "character"

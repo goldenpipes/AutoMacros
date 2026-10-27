@@ -62,12 +62,11 @@ end
 PAGES = {
     -- previewH: the preview strip's fixed height on Blizzard's pages (see UI.FitHeader);
     -- previewSide = "right": the preview in a column right of the settings instead
-    -- (stamp: built again when the buttons change, e.g. a new one on the Custom page)
+    -- (stamp: built again when the buttons change, e.g. a new one of your own,
+    -- or what one of yours holds)
+    -- (a page may also have build = fn(parent, width) -> y: one that lays itself out)
     { name = "Buttons", header = "buttons", previewH = 140, sections = UI.ButtonSections,
-        stamp = function() return UI.ButtonsStamp() end },
-    -- build: a page that lays itself out (Custom.lua) instead of sections
-    { name = "Custom", sections = {}, build = function(parent, width) return UI.BuildCustomPage(parent, width) end,
-        stamp = function() return UI.CustomStamp() end },
+        stamp = function() return UI.ButtonsStamp() .. "|" .. UI.CustomStamp() end },
     { name = "Highlight", header = "glow", previewH = 120, sections = {
         { name = "Highlight", items = {
             { type = "toggle", label = "Highlight empty buttons",
@@ -391,6 +390,10 @@ function BuildPage(parent, group, x0, y0, native)
             refreshers[#refreshers + 1] = function() fs:SetText(Loc(item.text())) end
             fs:SetText(Loc(item.text()))
             rowH = item.height or 70
+        elseif item.type == "customrows" then
+            -- your own buttons, one row each (Custom.lua)
+            local w = (parent:GetWidth() or 0) > 0 and parent:GetWidth() or UI.CONTENT_W
+            rowH = y - UI.BuildCustomRows(parent, w, lx, y, refreshers)
         elseif item.type == "buttongrid" then
             -- three checkboxes to a row
             local h = 0
