@@ -1,4 +1,4 @@
--- AutoMacros 0.117.2 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.118.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -47,6 +47,25 @@ TRAVEL_SPELLS = {
     53140, 88342, 88344, 132621, 132627, 120145,
     224869, 176248, 176242, 281403, 281404,
     344587, 395277, 446540,
+}
+-- Spells that open a profession's window, every rank of each (Apprentice,
+-- Journeyman, Expert, Artisan, Master, Grand Master): the Professions button
+-- shows the highest one you know of each (KnownSpells, byName). First Aid,
+-- Cooking, Alchemy, Blacksmithing, Enchanting, Engineering, Leatherworking,
+-- Tailoring, Jewelcrafting (TBC), Inscription (Wrath), then Smelting (Mining's
+-- window) and Poisons (Rogue). IDs from memory, unverified: a wrong one never shows.
+PROFESSION_SPELLS = {
+    3273, 3274, 7924, 10846, 27028, 45542,
+    2550, 3102, 3413, 18260, 33359, 51296,
+    2259, 3101, 3464, 11611, 28596, 51304,
+    2018, 3100, 3538, 9785, 29844, 51300,
+    7411, 7412, 7413, 13920, 28029, 51313,
+    4036, 4037, 4038, 12656, 30350, 51306,
+    2108, 3104, 3811, 10662, 32549, 51302,
+    3908, 3909, 3910, 12180, 26790, 51309,
+    25229, 25230, 28894, 28895, 28897, 51311,
+    45357, 45358, 45359, 45360, 45361, 45363,
+    2656, 2842,
 }
 -- Mage portals, in the same order (the first one is the button's icon).
 PORTAL_SPELLS = {
@@ -544,6 +563,11 @@ CATALOG = {
       label = "usable quest items", set = "quest", placeholder = { item = 1307 } },   -- Gold Pickup Schedule
     { key = "portals", name = "AM_Portal", title = "Portals", empty = "Portals", label = "portals",
       kind = "spells", spells = PORTAL_SPELLS, class = "MAGE", scope = "character" },
+    -- every profession window you know (each at its highest rank); clicking one
+    -- in the popout opens it. On by itself once you know one (autoSpells).
+    { key = "professions", name = "AM_Profession", title = "Professions", empty = "Professions",
+      label = "professions", kind = "spells", spells = PROFESSION_SPELLS, byName = true, autoSpells = true,
+      scope = "character" },
 }
 
 MACROS = {}            -- the categories in use for this character (rebuilt by RebuildMacros)

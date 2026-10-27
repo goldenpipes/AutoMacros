@@ -239,10 +239,22 @@ function SpellIcon(id)
     return icon or QUESTION_MARK
 end
 
+-- The spells of button m you know, in its order. byName (Professions): one
+-- per spell name, the last known rank in the list (they go up), at the place
+-- of the first, so "Alchemy" shows once whatever ranks the game counts as known.
+-- Its pick (what the popout saves) is the name, so a rank-up keeps your choice.
 function KnownSpells(m)
-    local list = {}
+    local list, at = {}, {}
     for _, id in ipairs(m.spells or {}) do
-        if KnowsSpell(id) then list[#list + 1] = { id = id } end
+        if KnowsSpell(id) then
+            local name = m.byName and SpellName(id)
+            if name and at[name] then
+                list[at[name]].id = id
+            else
+                list[#list + 1] = { id = id, pick = name or nil }
+                if name then at[name] = #list end
+            end
+        end
     end
     return list
 end

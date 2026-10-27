@@ -4,6 +4,15 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.118.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Added
+- **Professions** button (Utility): every profession window you know, First Aid, Cooking,
+  Alchemy, Blacksmithing, Enchanting, Engineering, Leatherworking, Tailoring,
+  Jewelcrafting, Inscription, plus Smelting for Mining and Poisons for rogues. Hover it
+  and click one to open its window. It follows your ranks (Apprentice to Grand Master)
+  and switches itself on once you know a profession.
+
 ## 0.117.2 - 2026-10-26 (pre-release, tested in Classic Era)
 
 ### Fixed

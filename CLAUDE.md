@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.117.2.**
+- **Current version: 0.118.0.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -91,6 +91,23 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.118.0 — Professions button
+- Lewis: a button for the tradeskill windows; first tried as a custom button, but **Classic
+  Era's settings window blocks opening the spellbook** (no dragging spells from it while
+  settings are open; dragging from an action bar onto the + works). Built-in instead, in
+  Utility (A-Z puts it between Hearth/Teleport and Quest Item; Lewis said "on the bottom in
+  utility").
+- `PROFESSION_SPELLS` (Core.lua): every rank of First Aid, Cooking, Alchemy, Blacksmithing,
+  Enchanting, Engineering, Leatherworking, Tailoring, Jewelcrafting, Inscription, plus
+  Smelting 2656 and Poisons 2842. **IDs from memory, unverified** (3464 Expert Alchemy
+  matched Lewis's bar in /amac debug). Retail professions likely use other spells: the
+  button may stay empty there.
+- CATALOG `professions` (AM_Profession, kind "spells", scope character, `byName`,
+  `autoSpells`). KnownSpells with byName: one entry per spell name, highest known rank,
+  `pick = name` (so a popout choice survives a rank-up). autoSpells: Stocked = #KnownSpells,
+  AutoEnable takes it ("turned on (you know some)"). UI.Available counts known spells for
+  any kind "spells" button (Portals too).
 
 ## 0.117.2
 - Lewis (Classic Era): Agility on, Scroll of Agility in bags, not on a bar, but no glow on

@@ -103,6 +103,8 @@ function UI.Available(e, have)
         for _, o in ipairs(TravelOptions(e, have)) do
             if o.spell then parts.spells = parts.spells + 1 else parts.bags = parts.bags + 1 end
         end
+    elseif e.kind == "spells" then   -- (Portals, Professions)
+        parts.spells = #KnownSpells(e)
     elseif e.set then
         local counted = {}
         for _, c in ipairs(Candidates(have, e.set)) do
@@ -307,7 +309,7 @@ UI.BUTTON_GROUPS = {
     { name = "Food & Drink", keys = { "food", "water", "bufffood" } },
     { name = "Buffs", keys = { "agility", "intellect", "stamina", "strength", "spirit", "armor",
         "resistance", "otherbuff", "flask", "weaponbuff" } },
-    { name = "Utility", keys = { "travel", "questitem", "explosives" } },
+    { name = "Utility", keys = { "travel", "questitem", "explosives", "professions" } },
     { name = "Class", keys = { "portals", "comprehend" } },
 }
 

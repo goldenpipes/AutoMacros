@@ -9,23 +9,24 @@ setfenv(1, ns)
 pending, timerSet, glowTimerSet = false, false, false
 
 -- How many different items you carry for a button (travel: also the teleport
--- spells you know); 0 = none.
+-- spells you know; Professions: the profession windows you know); 0 = none.
 function Stocked(e, have)
     if e.kind == "travel" then return #TravelOptions(e, have) end
+    if e.autoSpells then return #KnownSpells(e) end
     if e.set then return #Candidates(have, e.set) end
     return 0
 end
 
 -- Switches on, for good, every item button this character has not set once
--- it carries something for it, and any of its own (character tab) macros an
--- earlier version already made (so nobody loses a button from their bars).
--- Returns true when one changed.
+-- it carries something for it (Professions: once it knows one), and any of its
+-- own (character tab) macros an earlier version already made (so nobody loses
+-- a button from their bars). Returns true when one changed.
 function AutoEnable(have)
     local on = OnOff()
     local _, class = UnitClass("player")
     local changed = false
     for _, e in ipairs(ALL) do
-        if on[e.key] == nil and not e.custom and e.special ~= "scroll" and e.kind ~= "spells"
+        if on[e.key] == nil and not e.custom and e.special ~= "scroll" and (e.kind ~= "spells" or e.autoSpells)
             and (not e.class or e.class == class) then
             -- (or it can make something for it: a Warlock's healthstones, a Mage's mana gems)
             local stocked = Stocked(e, have) > 0 or MadeCreate(e.set, have) ~= nil
@@ -33,7 +34,9 @@ function AutoEnable(have)
             if stocked or made then
                 on[e.key] = true
                 changed = true
-                if stocked and not made then Note(e.title .. ": turned on (you are carrying some)") end
+                if stocked and not made then
+                    Note(e.title .. (e.autoSpells and ": turned on (you know some)" or ": turned on (you are carrying some)"))
+                end
             end
         end
     end
