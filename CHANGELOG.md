@@ -4,6 +4,12 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.127.0 - 2026-10-27 (not yet tested in game)
+
+### Changed
+- Retail, Soft glow: our own glow only, drawn behind the button's frame so the frame always
+  shows. Thickness 1 to 5 fills from the edges up to the whole icon, as on the other games.
+
 ## 0.126.1 - 2026-10-27 (not yet tested in game)
 
 ### Fixed

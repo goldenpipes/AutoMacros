@@ -249,28 +249,7 @@ function FadeEdge(tex, side, c)
     if not ok then tex:SetColorTexture(c[1], c[2], c[3], a * 0.5) end   -- no gradients: a faint band
 end
 
--- Retail's own button glow (Lewis's reference: the yellow glow inside the grey
--- frame ring on hover): atlas UI-HUD-ActionBar-IconFrame-Mouseover, which
--- Blizzard draws 46 x 45 from a 45 x 45 button's top left (its HighlightTexture,
--- CheckedTexture and SpellHighlightTexture in ActionButtonTemplate.xml). Copy i
--- of it on the glow frame, made grey so it takes the highlight color and added
--- on like Blizzard's; false where the atlas is missing.
-BLIZZ_ART.RING_ATLAS = "UI-HUD-ActionBar-IconFrame-Mouseover"
-function BLIZZ_ART.GlowRing(g, i)
-    g.amRings = g.amRings or {}
-    if g.amRings[i] ~= nil then return g.amRings[i] end
-    g.amRings[i] = false
-    local atlas = BLIZZ_ART.RING_ATLAS
-    if not (C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(atlas)) then return false end
-    local r = g:CreateTexture(nil, "OVERLAY", nil, 2)
-    r:SetAtlas(atlas)
-    pcall(r.SetDesaturated, r, true)
-    pcall(r.SetBlendMode, r, "ADD")
-    g.amRings[i] = r
-    return r
-end
-
--- The fill under retail's glow: four fading edges drawn on the button itself
+-- Retail's soft glow: four fading edges drawn on the button itself
 -- in its BORDER layer, i.e. over the icon (BACKGROUND) and under the frame art
 -- (the NormalTexture, ARTWORK): so it fills inward from the grey ring and the
 -- ring always stays on top. Not masked: with the button's IconMask on them the
@@ -329,23 +308,14 @@ function StyleGlow(g, button)
     g:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
     for i = 1, 4 do g.edges[i]:Hide() end
     for _, cell in ipairs(g.cells or {}) do cell:Hide() end
-    for _, r in ipairs(g.amRings or {}) do if r then r:Hide() end end
-    -- retail's rounded buttons (no EllesmereUI look): Blizzard's glow exactly,
-    -- inside the frame's grey ring, never over it, plus a fill that grows
-    -- inward from the ring under the frame art: thickness 1 = Blizzard's glow
-    -- alone, 2 to 5 = the fill reaching 25%, 50%, 75%, all the icon
-    local blizz = soft and rounded and not look and BLIZZ_ART.GlowRing(g, 1)
+    -- retail's rounded buttons (no EllesmereUI look): our fill, behind the
+    -- frame's grey ring as Blizzard's own icon is, so the ring always shows;
+    -- thickness 1 to 5 = 20%, 40% ... the whole icon, as on the other games
+    local blizz = soft and rounded and not look
     g.amFillOn = false
     if blizz then
-        local bw, bh = button:GetWidth(), button:GetHeight()
+        local bw = button:GetWidth()
         if type(bw) ~= "number" or bw <= 0 then bw = 45 end
-        if type(bh) ~= "number" or bh <= 0 then bh = bw end
-        local a = c[4] or 1   -- (added on: opacity has to dim the color itself)
-        blizz:ClearAllPoints()
-        blizz:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
-        blizz:SetSize(Snap(g, bw * 46 / 45), Snap(g, bh))
-        blizz:SetVertexColor(c[1] * a, c[2] * a, c[3] * a, 1)
-        blizz:Show()
         local fill = BLIZZ_ART.GlowFill(g, button)
         -- Start under the frame ring. In Blizzard's frame art (88 px across,
         -- drawn 46 wide on a 45 button) the ring is 3 px wide from 1 px in and
@@ -353,7 +323,7 @@ function StyleGlow(g, button)
         -- square corner lies under the ring's cut corner and its straight
         -- edges meet the ring's inner edge.
         local k = Snap(g, 2.4 * bw / 45)
-        local d = Snap(g, (bw - 2 * k) * (t - 1) / 4)
+        local d = Snap(g, (bw - 2 * k) * t / 5)
         g.amFillOn = d > 0
         if d > 0 then
             for _, tex in ipairs(fill) do
