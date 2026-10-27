@@ -101,6 +101,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   fallback also when GetAtlas() is empty afterwards. **Rule: don't trust SetAtlas's return
   value on Classic; check the atlas exists first** (other SetAtlas uses: BarArt checks
   GetAtlas from a live texture, fine).
+- **Confirmed fixed in Classic Era** (Lewis).
 - `/amac debug` was the right tool again: per category "N item(s), on a bar Nx".
 
 ## 0.117.1
