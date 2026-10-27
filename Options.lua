@@ -332,9 +332,8 @@ end
 -- The Popout page's Direction section: a note, then a dropdown per button that
 -- is on (Automatic, Up, Down, Left, Right), saved in db.popDir (Automatic = not saved).
 function UI.DirectionItems()
-    local items = { { type = "text", height = 50, text = function()
-        return "Automatic opens away from the screen edge: to the right on a bar down the left side,"
-            .. " to the left on the right side, up from a bar at the bottom, down from one at the top."
+    local items = { { type = "text", height = 30, text = function()
+        return "Automatic opens each popout toward the middle of the screen."
     end } }
     local list = UI.EnabledButtons()
     if #list == 0 then
