@@ -126,7 +126,13 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   pre-release else release, gameVersions = IDs looked up by name from /api/game/versions).
   Needs repo secret `CF_API_TOKEN` and variables `CF_PROJECT_ID`, `CF_GAME_VERSIONS`
   (names, comma-separated; an unknown name makes the run print the names CurseForge has).
-  Lewis sets those himself. **Not run yet.**
+  Lewis set them: project **1769719**, game version **1.60.1** (CurseForge id 17053).
+  **Works:** first run (by hand for v0.128.0, run 40596286177) uploaded
+  AutoMacros-0.128.0-forever as beta, file id 9347729. It checks out the release tag into
+  `src/` and the default branch into `ci/`, and builds src with ci's tools
+  (`build_zip.py --root src`), so older tags build too. Releasing = `gh release create`
+  as before; the upload follows by itself (watch the Actions tab / `gh run list`).
+  Pushing workflow files needed the CLI's `workflow` scope (added 2026-10-27).
 - `tools/build_zip.py [--game <game>]` builds release zips (all games, or one game's
   Interface number + Games folder); use it instead of hand-made PowerShell zips. It and
   luacheck.py read the .toc's `\` paths on Linux too.
