@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.123.0.**
+- **Current version: 0.123.1.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   iteration** (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -118,6 +118,22 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Still unchecked in game: Weapon Buff with sharpening stones, an unworn teleport ring,
   EllesmereUI bars, the Professions / Tracking spell IDs, ActiveTracking on Classic Era,
   0.117.1's settings-after-combat, the welcome window's look.
+
+## 0.123.1 — retail soft glow where Blizzard's highlights are
+- Lewis's zoomed retail screenshot (soft glow, thickness 5): the IconMask clip worked
+  (rounded corners), but the fill stopped a pixel short of the frame on the right and
+  bottom. Blizzard's retail template (gh api, Blizzard_ActionBar/Mainline/
+  ActionButtonTemplate.xml): NormalTexture, PushedTexture, HighlightTexture and
+  CheckedTexture are **46 x 45 anchored TOPLEFT** on the 45 x 45 button; Flash
+  (UI-HUD-ActionBar-IconFrame-Flash), NewActionTexture and SpellHighlightTexture (Mouseover
+  atlas, ADD, alpha 0.4, pulsing 0.35 s in / 0.35 s out) use their atlas size at TOPLEFT.
+  The icon is 45 wide with IconMask (UI-HUD-ActionBar-IconFrame-Mask) centred on it.
+- So on retail's rounded buttons (no EUI look) the soft glow frame now sits like those:
+  TOPLEFT, button width x 46/45 by button height, snapped; clipped by its own MaskTexture
+  (BLIZZ_ART.GlowMask(g): CreateMaskTexture on the glow frame, atlas
+  UI-HUD-ActionBar-IconFrame-Mask, all points; atlas checked with C_Texture.GetAtlasInfo)
+  instead of the button's IconMask (a mask may only clip textures of its own frame).
+  Unverified in game.
 
 ## 0.123.0 — soft glow fills the button at 5, every game alike
 - Lewis (retail screenshot of the Highlight demo, soft glow): can it fill the whole button at

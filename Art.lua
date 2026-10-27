@@ -262,6 +262,22 @@ local function MaskSoft(g, mask)
     end
 end
 
+-- The glow's own mask in retail's button shape: Blizzard's icon mask atlas,
+-- made on the glow frame itself (a mask only clips textures of its own frame),
+-- filling it. nil where the atlas is missing (Classic's square buttons).
+function BLIZZ_ART.GlowMask(g)
+    if g.amMaskTex then return g.amMaskTex end
+    local atlas = "UI-HUD-ActionBar-IconFrame-Mask"
+    if not (C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(atlas)) then return nil end
+    if not g.CreateMaskTexture then return nil end
+    local ok, m = pcall(g.CreateMaskTexture, g)
+    if not ok or not m then return nil end
+    m:SetAtlas(atlas)
+    m:SetAllPoints(g)
+    g.amMaskTex = m
+    return m
+end
+
 function StyleGlow(g, button)
     local c = StyleColor("glowColor")
     local t = math.max(1, math.min(5, tonumber(Style("glowThickness")) or 3))   -- 1 to 5
@@ -271,18 +287,34 @@ function StyleGlow(g, button)
     local rounded = BLIZZ_ART.Rounded()   -- retail's buttons: cut corners
     -- always inside the button (inside EllesmereUI's border for its soft glow)
     local inset = (soft and look) and look.size * px or 0
+    local mask = soft and rounded and not look and BLIZZ_ART.GlowMask(g) or nil
     g:ClearAllPoints()
-    g:SetPoint("TOPLEFT", button, "TOPLEFT", inset, -inset)
-    g:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
+    if mask then
+        -- retail's own highlights (hover, checked, the spell highlight, the red
+        -- attack Flash) all sit where the frame art does: 46 x 45 on a 45 x 45
+        -- button, from its top left (ActionButtonTemplate.xml); the icon is
+        -- only 45 wide, so a glow on the icon looked a pixel short on the right
+        -- and bottom. So the soft glow takes that place, in the frame's shape.
+        local bw, bh = button:GetWidth(), button:GetHeight()
+        if type(bw) ~= "number" or bw <= 0 then bw = 45 end
+        if type(bh) ~= "number" or bh <= 0 then bh = bw end
+        g:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
+        g:SetSize(Snap(g, bw * 46 / 45), Snap(g, bh))
+    else
+        g:SetPoint("TOPLEFT", button, "TOPLEFT", inset, -inset)
+        g:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
+    end
     for i = 1, 4 do g.edges[i]:Hide() end
     for _, cell in ipairs(g.cells or {}) do cell:Hide() end
-    MaskSoft(g, soft and rounded and not look and button.IconMask or nil)
+    if g.amMaskTex then pcall(g.amMaskTex.SetShown, g.amMaskTex, mask ~= nil) end
+    MaskSoft(g, mask)
     if soft then
         -- every game alike: fading in from the edges over the icon. Thickness
         -- 1 to 5 = each edge's fade reaches 20%, 40% ... 100% of the way across
         -- the button, so at 5 the four overlap and fill it (strongest at the
-        -- edges). Retail's rounded buttons clip it to their icon mask.
-        local w = button:GetWidth()
+        -- edges). Retail's rounded buttons clip it to the frame's shape.
+        local w = mask and g:GetWidth() or button:GetWidth()
+        if type(w) ~= "number" or w <= 0 then w = button:GetWidth() end
         if type(w) ~= "number" or w <= 0 then w = 36 end
         local d = Snap(g, (w - 2 * inset) * t / 5)
         local e = g.edges
