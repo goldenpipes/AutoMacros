@@ -4,6 +4,14 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.113.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Added
+- A welcome window the first time a new character logs in: what AutoMacros does, the
+  buttons it has set up for you (drag them onto your bars), a checkbox for every button,
+  and a way to the settings. `/amac welcome` shows it again. Characters that already used
+  AutoMacros don't get it.
+
 ## 0.112.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Changed

@@ -629,6 +629,7 @@ end
 report.afterUpdate = function()
     UI.RefreshPanels()
     RefreshHeaders()
+    if UI.RefreshWelcome then pcall(UI.RefreshWelcome) end   -- (the welcome window, if open)
 end
 
 -- ---- EllesmereUI: a page in its settings, and its look for the popup ----

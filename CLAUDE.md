@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.112.0.**
+- **Current version: 0.113.0.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -58,7 +58,8 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   finding action buttons, highlight, empty tooltip), Learning (Classify, LearnNew), Update
   (AutoEnable, UpdateCore, Update), Popout (the popout, indicators, labels), Widgets, Options
   (UI: Buttons page, availability, recipes, previews), OptionsPages (PAGES, BuildPage, the
-  AddOns panel), Custom (your own buttons + their rows on the Buttons page; since 0.106.0), EllesmereUI,
+  AddOns panel), Custom (your own buttons + their rows on the Buttons page; since 0.106.0),
+  Welcome (first-login window, since 0.113.0), EllesmereUI,
   Events (Schedule, bar watcher, migrations, Init, events, /amac).
 - When searching code, keep to the top-level `*.lua`: `previous/` holds every old build.
 - **Every file starts with** `local ADDON, ns = ...` / `setmetatable(ns, { __index = _G })` /
@@ -90,6 +91,24 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.113.0 — welcome window
+- New file **Welcome.lua** (after Custom in the .toc). Lewis chose: what the addon does,
+  buttons found for you (draggable), pick buttons to turn on, Open settings + Got it; once
+  per character.
+- `UI.WelcomeDue()` runs at the start of Init (before anything is saved for the char):
+  `db.welcomed[char]` set -> no; the char has a non-empty table in enabledBy / picks / idx
+  (used AutoMacros before) -> marked welcomed, no; else `report.welcomeDue`. Shown from the
+  3 s step after PLAYER_ENTERING_WORLD (bags read, AutoEnable done) via `UI.ShowWelcome`.
+  Any close (Got it, X, Escape via UISpecialFrames, Open settings) marks it seen (OnHide).
+  `/amac welcome` shows it again.
+- Frame `AutoMacrosWelcome`: BasicFrameTemplateWithInset (TitleText) or a plain dark frame
+  + UIPanelCloseButton; DIALOG strata, movable. `UI.RefreshWelcome` (also from
+  report.afterUpdate) lays it out: intro, "Ready for you" = `UI.WelcomeReady()` (on and
+  `UI.Available` > 0; icons drag/click -> UI.PickUp), "Your buttons" = `UI.WelcomeButtons()`
+  (ButtonSections' grids flattened, so no custom buttons), MakeToggle 3 per row with
+  "(n)" counts, then the two buttons; height fits the content. Untested in game; the
+  template's look on Classic Era / Forever unchecked.
 
 ## 0.112.0 — custom buttons mix items and spells
 - Lewis: why can't a custom button hold both? (No reason: built-in set buttons already

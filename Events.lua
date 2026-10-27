@@ -224,6 +224,9 @@ function Init()
     local db = DB()
     report.priorSessions = tonumber(db.sessions) or 0
     db.sessions = report.priorSessions + 1
+    -- a new character gets the welcome window (looked at before anything is saved for it)
+    local okWelcome, due = pcall(UI.WelcomeDue)
+    report.welcomeDue = okWelcome and due or nil
     if (tonumber(db.schema) or 0) < SCHEMA then
         db.schema = SCHEMA   -- version 2 added style, learned and ignored; older data needs no conversion
     end
@@ -321,6 +324,12 @@ frame:SetScript("OnEvent", function(_, event)
                 SafeCollect()
                 local ok, err = pcall(RefreshGlow)
                 if not ok then Fail("highlight/popout", err) end
+                -- (by now the bags have been read and buttons switched on)
+                if report.welcomeDue then
+                    report.welcomeDue = nil
+                    local okW, errW = pcall(UI.ShowWelcome)
+                    if not okW then Fail("welcome window", errW) end
+                end
             end)
         end
         Schedule()
@@ -365,7 +374,8 @@ SlashCmdList["AUTOMACROS"] = function(msg)
                 e.custom and " - custom" or ""))
         end
         Print("/amac add <name>, /amac remove <name>, /amac custom <name> <items|spells> <id,id,...>")
-        Print("/amac options, /amac assign <item> <name>, /amac unassign <item>, /amac learned, /amac status, /amac test")
+        Print("/amac options, /amac welcome, /amac assign <item> <name>, /amac unassign <item>, /amac learned,"
+            .. " /amac status, /amac test")
         return
     elseif msg:match("^%s*add%s+") or msg:match("^%s*remove%s+") then
         local verb, key = msg:match("^%s*(%a+)%s+(%S+)")
@@ -407,6 +417,10 @@ SlashCmdList["AUTOMACROS"] = function(msg)
             db.custom[name] = { title = name:sub(1, 1):upper() .. name:sub(2), kind = kind, ids = ids }
             Print("custom category " .. name .. ": " .. #ids .. " " .. kind .. " - it appears on your next update")
         end
+    elseif msg:match("^%s*welcome") then
+        local ok, err = pcall(UI.ShowWelcome)
+        if not ok then Fail("welcome window", err) end
+        return
     elseif msg:match("^%s*options") or msg:match("^%s*config") or msg:match("^%s*opt") then
         local ok, err = pcall(OpenOptions, msg:find("blizz", 1, true) ~= nil or msg:find("standalone", 1, true) ~= nil)
         if not ok then Fail("options window", err) end
