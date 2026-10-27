@@ -126,10 +126,9 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - **Lewis, Classic Era: works** out of combat (Bandage popout, Cannibalize cast at once and
   became the button's spell) and in combat (item used, popout closed, button changed after
   combat). Classic Era target dummies are Engineering items: test combat on a mob.
-- Still to test: hover/click out of combat in each mode; same in combat; a
-  spell entry (Bandage + Cannibalize, Hearth/Teleport); unworn teleport ring; popout
-  closes on leave; bars moved / buttons dragged then hover; EllesmereUI bars; any
-  "action blocked" / taint error (BugSack).
+- Then also confirmed: Set only and Use only, closing on leave, a button moved to another
+  slot then hovered, Hearth/Teleport (spells). Not checked: unworn teleport ring,
+  EllesmereUI bars, retail.
 
 ## 0.116.1
 - Lewis: the "A" isn't needed (Automatic is the default, the tooltip says the direction).
