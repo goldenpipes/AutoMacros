@@ -55,14 +55,20 @@ LOOKED_AT = { [0] = true, [4] = true, [7] = true, [12] = true, [15] = true }
 TELEPORT_SLOTS = { INVTYPE_FINGER = true, INVTYPE_TRINKET = true, INVTYPE_CLOAK = true, INVTYPE_NECK = true,
     INVTYPE_TABARD = true }
 
+-- Armour that is not worn at all ("" / INVTYPE_NON_EQUIP): Classic files usable
+-- odds and ends there (Mana Agate is 4.0), so those count like consumables.
+function NotWorn(slot)
+    return slot == nil or slot == "" or slot == "INVTYPE_NON_EQUIP"
+end
+
 -- Worth reading the tooltip of? Known without asking the server: its class is
 -- one of LOOKED_AT, and gear only in a slot that can teleport (not chest,
--- legs, boots, ...). nil when the game does not know the item at all.
+-- legs, boots, ...) or not worn at all. nil when the game does not know the item.
 function WorthALook(id)
     local class, _, _, _, _, slot = ItemInstant(id)
     if class == nil then return nil end
     if not LOOKED_AT[class] then return false end
-    if class == 4 and not TELEPORT_SLOTS[slot] then return false end
+    if class == 4 and not (TELEPORT_SLOTS[slot] or NotWorn(slot)) then return false end
     return true
 end
 STAT_KEYS = { "strength", "agility", "stamina", "intellect", "spirit" }   -- SPELL_STAT1..5_NAME
@@ -102,7 +108,7 @@ end
 -- numbers left out, so cooldowns and scaling do not count). LearnNew compares
 -- it once a session to notice an item Blizzard has changed.
 function Classify(id)
-    local class, sub = ItemInstant(id)
+    local class, sub, _, _, _, slot = ItemInstant(id)
     if class == nil then return nil end
     local sig = class * 1000 + (tonumber(sub) or 0)
     if WorthALook(id) == false then return {}, sig end
@@ -111,7 +117,9 @@ function Classify(id)
     if class == 7 and sub == 2 then return { "explosives" }, sig end
     -- (other trade goods only count when they restore health or mana: Demonic and Dark Runes)
     local lines = TooltipLines(id)
-    if not lines or #lines < 2 or lines[1] == RETRIEVING_ITEM_INFO then return nil end
+    -- (one line is enough: a plain reagent's tooltip can be just its name; the
+    -- sell price is not a text line. Before 0.108.2 those counted as not loaded.)
+    if not lines or #lines < 1 or lines[1] == "" or lines[1] == RETRIEVING_ITEM_INFO then return nil end
     local use = ITEM_SPELL_TRIGGER_ONUSE or "Use:"
     local health, mana, rage, damage, weapon, travel, wellFed = false, false, false, false, false, false, false
     local stats, hasUse, restore, buff, armor, resist, seated = {}, false, false, false, false, false, false
@@ -136,20 +144,23 @@ function Classify(id)
         if low:find("well fed", 1, true) then wellFed = true end
         if text:find(use, 1, true) then
             if HasWord(low, "teleport", "returns you to") then travel = true end
-            if HasWord(low, "weapon") then weapon = true end
+            if HasWord(low, "weapon", "coats a") then weapon = true end   -- ("Coats a sword or dagger with poison")
             -- "Cures 1 poison effect", "Target is cured of diseases", "Removes 1 magic,
             -- curse, poison or disease effect", "cured of bleeds" (Forever's tourniquets),
             -- stuns and snares ("removes existing stun and movement impairing effects")
-            if HasWord(low, "cure", "remove", "neutralize", "dispel")
+            -- ("removing 1 disease effect": Cleansing Water; "Removes 1 negative spell
+            -- effect": Moist Towelette; "Cures the user of Brood Affliction")
+            if (HasWord(low, "cure", "remov", "neutraliz", "dispel")
                 and HasWord(low, "poison", "disease", "bleed", "curse", "magic", "stun", "impair", "snare",
-                    "root", "harmful") then
+                    "root", "harmful", "negative", "affliction"))
+                or HasWord(low, "cures the user", "cure for the") then
                 cure = true
             end
             -- real food and drink: "Must remain seated while eating"
             if HasWord(low, "seated", "while eating", "while drinking") then seated = true end
             -- "You can only have the effect of one flask at a time. This effect persists through death."
             if HasWord(low, "one flask", "persists through death") then flask = true end
-            if HasWord(low, "permanently", "permanent enchant") then permanent = true end
+            if HasWord(low, "perman") then permanent = true end   -- (also a test item's "Permantly")
             if text:find("%d") then
                 if HasWord(low, "health", HEALTH) then health = true end
                 if HasWord(low, "mana", MANA) then mana = true end
@@ -163,8 +174,12 @@ function Classify(id)
                 -- raises something for a while (not "permanently", like an armor kit)
                 -- (and not a fishing lure: "increases fishing by 25")
                 -- ("regenerate 20 health every 5 sec for 1 hour": Troll's Blood, Mageblood)
-                if HasWord(low, "increase", "improve", "grant", "raise", "regenerate")
-                    and not HasWord(low, "permanent", "fishing") then buff = true end
+                -- (and utility potions: "Gives the imbiber lesser invisibility", "Allows the
+                -- Imbiber to breathe water", "Lets you walk on water", "Imbiber is immune
+                -- to physical attacks", "Shows the location of all nearby undead")
+                if HasWord(low, "increase", "improve", "grant", "raise", "regenerate", "gives the imbiber",
+                        "gives you", "allows the imbiber", "lets you", "is immune", "shows the location")
+                    and not HasWord(low, "perman", "fishing") then buff = true end
                 if buff and HasWord(low, "armor", ARMOR, "defense") then armor = true end
                 -- raises a resistance, or a protection potion: "Absorbs 1950 to 3250 fire damage"
                 if (buff and HasWord(low, "resist")) or (HasWord(low, "absorb") and damage) then resist = true end
@@ -188,11 +203,11 @@ function Classify(id)
         end
     end
     if travel then return { "travel" }, sig end
-    if class == 4 then return {}, sig end   -- gear (rings, cloaks, trinkets): only teleports count
+    if class == 4 and not NotWorn(slot) then return {}, sig end   -- gear (rings, cloaks, trinkets): only teleports count
     if permanent then return {}, sig end    -- enchants and kits put on gear
     -- a cure, from anything you carry: potions, First Aid's poultices and
     -- tourniquets (trade goods), quest rewards
-    if cure then return { "cure" }, sig end
+    if cure and not quest then return { "cure" }, sig end   -- (a quest item that "cures a sickly animal" is the quest's)
     local sets = {}
     local restoring = restore and (health or mana) and not weapon   -- (not mana oils)
     -- something you use to do a quest ("Use: Place the totem at ..."), unless it

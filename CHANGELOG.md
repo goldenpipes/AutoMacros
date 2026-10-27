@@ -4,7 +4,18 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
-## 0.108.1 - 2026-10-26 (pre-release, not yet tested in game)
+## 0.108.2 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Fixed
+- Usable items Classic files as armor (Mana Agate) were skipped.
+- Cleansing Water, Moist Towelette and the like now go on Debuff Cure; quest items that
+  "cure" something (a sick animal, a brazier) go on Quest Item instead.
+- Utility potions go on Other Buffs: invisibility, invulnerability, water breathing, water
+  walking, detect undead / demons.
+- Rogue poisons that coat "a sword or dagger" go on Weapon Buff, not Explosive.
+- Plain reagents in your bags are no longer checked again and again each session.
+
+## 0.108.1 - 2026-10-26 (pre-release, tested in Classic Era)
 
 ### Fixed
 - Permanent enchants and armor kits ("Permanently enchant ...", "Permanently adds ...") no

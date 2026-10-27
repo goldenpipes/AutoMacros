@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.108.1.**
+- **Current version: 0.108.2.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -90,6 +90,30 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.108.2 — fixes from the third Classic Era test
+- Third test (addon 0.108.1): 871 sorted, 568 Use-but-none, 139 missing, **0 noanswer**,
+  1033 notext. Flow control works. All common potions, mana gems, flasks, elixirs, Juju,
+  protection potions, bandages, conjured water, rage potions, poisons/oils, 302 quest items
+  (sample right), travel incl. Stormwind Medallion / Scepter of Celebras portals.
+- **The Classic Era client reports nearly everything as class 0 sub 0** (833 of the listed),
+  not Wowhead's classes (Wowhead: Anti-Venom 15.1, sharpening stones / wizard oils 0.-3,
+  Mana Agate 4.0). Anti-Venom 6452/19440, Rough/Dense Sharpening Stone 2862/12404, Brilliant
+  Wizard Oil 20749, Mana Agate 5514 were in **no** list (not found by WorthALook?): asked
+  Lewis for `/dump GetItemInfoInstant(6452 / 2862 / 5514)`. Healthstones say "life", come
+  via MADE (InSet), so the test lists them unsorted: expected.
+- Fixed (CLASSIFIER 14): `NotWorn(slot)` ("" / INVTYPE_NON_EQUIP / nil): class 4 not worn
+  counts like a consumable (WorthALook, Classify); cure words "remov"/"neutraliz" +
+  "negative"/"affliction", or "cures the user"/"cure for the"; cure only when not a quest item
+  (quest items that "cure a sickly animal" -> quest); weapon also on "coats a"; permanent on
+  "perman" (test item "Permantly"); buff also "gives the imbiber", "gives you", "allows the
+  imbiber", "lets you", "is immune", "shows the location" (utility potions -> other).
+- **Classify needed 2 tooltip lines**, so plain reagents (tooltip = name only) returned nil:
+  1033 "notext" in the test (IDs 537, 555, 723, 729: Dull Heart, vulture feathers, Goretusk
+  Liver, vulture meat), and in play every reagent in bags was retried for ~20 s each session.
+  Now 1 line is enough (the GetItemSpell guard still waits for missing Use text).
+- Not handled (ideas): combat tools (nets, Sticky Glue, Marbles, Wail of the Banshee),
+  fishing lures, Thistle Tea (energy; could share Rage), soulstones / resurrection items.
 
 ## 0.108.1 — fixes from the second Classic Era test
 - Second test (probably 0.107.0: event-driven, no flow control): 374 sorted, 219 Use-but-none,
