@@ -42,6 +42,9 @@ setfenv(1, ns)
 --   Trade Goods, subclass Explosives        -> explosives (classic files them here)
 --   other trade goods, "Use:" restores health / mana -> restore health / mana (runes)
 --   quest and misc items (often quest rewards): restoring and buffs, as above
+--   a quest item ("Quest Item" or the quest class) with a "Use:" line and no
+--     button above                         -> quest item (before weapon buff
+--                                             and explosives)
 -- Gear (rings, cloaks, trinkets) only counts for teleporting; other item
 -- classes are skipped.
 -- ---------------------------------------------------------------------------
@@ -116,9 +119,12 @@ function Classify(id)
     -- Classic Era files nearly every consumable as plain "Consumable" (subclass
     -- 0), not Food & Drink, Potion, Bandage, Flask: those are known by their text
     local bandaged, flask = false, false
+    -- a quest item: the quest class, or "Quest Item" in its tooltip
+    local quest = class == 12
     for _, text in ipairs(lines) do
         local low = text:lower()
         if text:find(use, 1, true) then hasUse = true end
+        if text == (ITEM_BIND_QUEST or "Quest Item") or low == "quest item" then quest = true end
         if low:find("well fed", 1, true) or text:find(use, 1, true) then
             for i = 1, #low do
                 local c = low:byte(i)
@@ -182,15 +188,18 @@ function Classify(id)
     if cure then return { "cure" }, sig end
     local sets = {}
     local restoring = restore and (health or mana) and not weapon   -- (not mana oils)
+    -- something you use to do a quest ("Use: Place the totem at ..."), unless it
+    -- fits a button that helps you (restoring, buffs): those come first
+    local questUse = quest and hasUse
     if class == 7 then   -- other trade goods: only runes and the like, "Restores 900 to 1500 mana"
-        if not restoring then return {}, sig end
+        if not restoring then return questUse and { "quest" } or {}, sig end
         return (health and mana) and { "hpot", "mpot" } or { health and "hpot" or "mpot" }, sig
     end
     -- quest and misc items (quest rewards are often one or the other) count
-    -- for what helps you: restoring health or mana, and buffs
+    -- for what helps you: restoring health or mana, and buffs; or as quest items
     if class == 12 or class == 15 then sub = -1 end
     local own = sub ~= -1   -- a consumable (not a quest or misc item)
-    if not own and not (restoring or next(stats) or armor or resist or buff) then
+    if not own and not (restoring or next(stats) or armor or resist or buff or questUse) then
         -- a quest or misc item that does none of that
     elseif own and bandaged then
         sets[#sets + 1] = "bandage"
@@ -216,6 +225,9 @@ function Classify(id)
     elseif sub ~= 6 and (resist or armor) then
         if resist then sets[#sets + 1] = "buff_resistance" end
         if armor then sets[#sets + 1] = "buff_armor" end
+    elseif questUse then
+        -- (before weapon and explosives: "throw it at the wagon" is the quest's)
+        sets[#sets + 1] = "quest"
     elseif weapon and own then
         sets[#sets + 1] = "weapon_buff"
     elseif sub == 0 and damage and not buff then

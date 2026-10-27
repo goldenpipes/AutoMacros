@@ -1,4 +1,4 @@
--- AutoMacros 0.107.1 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.108.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -167,7 +167,7 @@ end
 --   glow, noFlyout, stockTooltip, showNames, quiet, noEmptyMsg   on/off options
 -- ---------------------------------------------------------------------------
 SCHEMA = 2
-CLASSIFIER = 11   -- raise when the learning rules change, so items are checked again
+CLASSIFIER = 12   -- raise when the learning rules change, so items are checked again
 
 STYLE_DEFAULTS = {
     glowColor = { 1, 0.15, 0.15, 1 }, glowThickness = 3, glowTexture = "solid",
@@ -538,6 +538,10 @@ CATALOG = {
     { key = "travel", alias = "teleports", name = "AM_Teleport", title = "Hearth/Teleport", empty = "No Hearthstone",
       label = "hearthstone or teleport", kind = "travel", set = "travel", spells = TRAVEL_SPELLS,
       oldNames = { "Teleports" }, placeholder = { item = HEARTHSTONE }, default = true },
+    -- quest items you use to do the quest ("Use: Place the totem at ..."): a quest
+    -- item, or one marked "Quest Item", with a "Use:" line and no other button
+    { key = "questitem", name = "AM_QuestItem", title = "Quest Item", empty = "No Quest Item",
+      label = "usable quest items", set = "quest", placeholder = { item = 1307 } },   -- Gold Pickup Schedule
     { key = "portals", name = "AM_Portal", title = "Portals", empty = "Portals", label = "portals",
       kind = "spells", spells = PORTAL_SPELLS, class = "MAGE", scope = "character" },
 }

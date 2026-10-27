@@ -4,6 +4,12 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.108.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Added
+- **Quest Item** button (Utility): the quest items you use to do a quest ("Use: Place the
+  totem at ..."). Quest items that heal or buff you stay on those buttons.
+
 ## 0.107.1 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Fixed

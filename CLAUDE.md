@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.107.1.**
+- **Current version: 0.108.0.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -90,6 +90,14 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.108.0 — Quest Item button
+- Lewis: a button for usable quest items. CATALOG `questitem` ("Quest Item", AM_QuestItem,
+  set `quest`, placeholder Gold Pickup Schedule 1307 = class 12 on classic/retail/forever),
+  Utility group. Classify (CLASSIFIER 12): `quest` = class 12 or a tooltip line equal to
+  ITEM_BIND_QUEST ("Quest Item"); `questUse` = quest + Use line -> "quest", after restoring /
+  stats / armor / resistance (so Juju, E'ko, healing quest rewards keep their buttons) and
+  before weapon / explosives / other buffs; class 7 (non-restoring) and 12/15 too.
 
 ## 0.107.1 — test flow control
 - **First Classic Era test (0.105.0)**: 11,476 items looked at, only 31 sorted (28 explosives,
