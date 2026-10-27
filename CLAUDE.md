@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.108.3.**
+- **Current version: 0.108.4.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -90,6 +90,20 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.108.4 — fourth Classic Era test (addon 0.108.3)
+- 912 sorted, 623 Use-but-none, 142 missing, 0 noanswer, 44 notext. All 0.108.3 targets
+  right (Anti-Venoms 5.0 -> cure; 20+ stones/oils 7.0 -> weapon_buff; mana gems -> mpot).
+  Class 5 caused no false positives.
+- Fixed (CLASSIFIER 16): weapon not on "attach" (Steel Weapon Chain 6041); class 5/7 weapon
+  not sub 3 (Goblin Dragon Gun 10727); restore not on "mechanical" (Mechanical Repair Kit
+  11590); class 5/7 `resist` -> buff_resistance (Frozen Rune 22682, Flame/Ice Deflector
+  4376/4386).
+- Left as is: Recombobulators 4381/18637 (7.3, dispel polymorph + restore health and mana)
+  -> hpot+mpot; Seaforium charges and Flash Bomb (7.2) -> explosives via the sub-2 rule.
+  Unsorted 7.3 = engineering gadgets (dragonlings, pets, scopes "permanent", target dummies,
+  jumper cables, reflectors), 7.0 essences / skeleton keys / shield spikes: no button, fine.
+- The scratchpad testread.py from 0.107.1 was lost; rewritten (summary / unsorted / ids / <set>).
 
 ## 0.108.3 — what Classic Era's client says about the missing items
 - Lewis's `/dump GetItemInfoInstant` on Classic Era: Anti-Venom 6452 = **class 5 (Reagent)

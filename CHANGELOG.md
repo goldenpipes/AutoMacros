@@ -4,7 +4,14 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
-## 0.108.3 - 2026-10-26 (pre-release, not yet tested in game)
+## 0.108.4 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Fixed
+- Goblin Dragon Gun and Steel Weapon Chain no longer land on Weapon Buff.
+- Mechanical Repair Kit (heals a mechanical pet) no longer lands on Restore Health.
+- Frozen Rune and Engineering's Flame / Ice Deflectors go on Resistance.
+
+## 0.108.3 - 2026-10-26 (pre-release, tested in Classic Era)
 
 ### Fixed
 - Classic Era: Anti-Venom (filed as a reagent) now goes on Debuff Cure.

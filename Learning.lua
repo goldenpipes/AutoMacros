@@ -42,7 +42,8 @@ setfenv(1, ns)
 --   Trade Goods, subclass Explosives        -> explosives (classic files them here)
 --   other trade goods and reagents, "Use:" restores health / mana -> restore
 --     health / mana (runes); "Use:" mentions your weapon -> weapon buff
---     (Classic Era's sharpening stones and oils)
+--     (Classic Era's sharpening stones and oils; not devices); absorbs damage
+--     -> resistance (Frozen Rune, deflectors)
 --   quest and misc items (often quest rewards): restoring and buffs, as above
 --   a quest item ("Quest Item" or the quest class) with a "Use:" line and no
 --     button above                         -> quest item (before weapon buff
@@ -147,7 +148,9 @@ function Classify(id)
         if low:find("well fed", 1, true) then wellFed = true end
         if text:find(use, 1, true) then
             if HasWord(low, "teleport", "returns you to") then travel = true end
-            if HasWord(low, "weapon", "coats a") then weapon = true end   -- ("Coats a sword or dagger with poison")
+            -- ("Coats a sword or dagger with poison"; not a Steel Weapon Chain, which
+            -- "attaches a chain to your weapon" for good)
+            if HasWord(low, "weapon", "coats a") and not HasWord(low, "attach") then weapon = true end
             -- "Cures 1 poison effect", "Target is cured of diseases", "Removes 1 magic,
             -- curse, poison or disease effect", "cured of bleeds" (Forever's tourniquets),
             -- stuns and snares ("removes existing stun and movement impairing effects")
@@ -171,7 +174,8 @@ function Classify(id)
                 if HasWord(low, "damage") then damage = true end
                 -- a potion that heals, not one that raises health ("heals 2100 health and
                 -- 2100 mana": Greater Dreamless Sleep; bandages, "heals 301 damage", go first)
-                if HasWord(low, "restore", "heals") then restore = true end
+                -- (not a Mechanical Repair Kit: "restores 700 health to a friendly mechanical target")
+                if HasWord(low, "restore", "heals") and not HasWord(low, "mechanical") then restore = true end
                 -- a bandage: "Heals 301 damage over 7 sec."
                 if HasWord(low, "heals") and HasWord(low, "damage") then bandaged = true end
                 -- raises something for a while (not "permanently", like an armor kit)
@@ -217,14 +221,16 @@ function Classify(id)
     -- fits a button that helps you (restoring, buffs): those come first
     local questUse = quest and hasUse
     -- other trade goods and reagents: runes and the like ("Restores 900 to 1500
-    -- mana"), and on Classic Era sharpening stones and oils (7.0, "Increase sharp
-    -- weapon damage")
+    -- mana"), on Classic Era sharpening stones and oils (7.0, "Increase sharp
+    -- weapon damage"), Frozen Rune and Engineering's deflectors ("Absorbs 500
+    -- fire damage"). Not devices (7.3) for weapons: Goblin Dragon Gun.
     if class == 7 or class == 5 then
         if restoring then
             return (health and mana) and { "hpot", "mpot" } or { health and "hpot" or "mpot" }, sig
         end
         if questUse then return { "quest" }, sig end
-        if weapon and hasUse then return { "weapon_buff" }, sig end
+        if weapon and hasUse and sub ~= 3 then return { "weapon_buff" }, sig end
+        if resist then return { "buff_resistance" }, sig end
         return {}, sig
     end
     -- quest and misc items (quest rewards are often one or the other) count
