@@ -4,6 +4,11 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.121.2 - 2026-10-27 (not yet tested in game)
+
+### Changed
+- The game folders are back in one Games folder, and retail's is now called Mainline.
+
 ## 0.121.1 - 2026-10-27 (not yet tested in game)
 
 ### Changed

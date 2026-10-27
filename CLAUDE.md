@@ -25,14 +25,14 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.121.1.**
+- **Current version: 0.121.2.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
-  game subfolders (Forever\, ClassicEra\, TBC\, Mists\, Retail\)) into `previous/<version>/` BEFORE the first edit of a new
+  `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   iteration** (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
   in the .toc and in Core.lua's first line.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
   `releases/AutoMacros-<version>.zip` containing an `AutoMacros/` folder with only the
-  addon files (`AutoMacros.toc` and the `.lua` files it lists, **with their game subfolders, e.g. `Retail/`
+  addon files (`AutoMacros.toc` and the `.lua` files it lists, **with their `Games/<game>/` subfolders
   subfolders**) — no CLAUDE.md, `tools/`, `previous/`, or `.git`. Entry names use forward
   slashes.
 - **GitHub:** public repo https://github.com/goldenpipes/AutoMacros, branch `master`.
@@ -57,8 +57,8 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - **Per-game files (since 0.121.0, Lewis: keep each game's things separate; only files a
   game needs go in its subfolder).** `Game.lua` loads first and sets `GAME` from the
   interface number: "forever" (16xxx), "classicera" (other < 20000), "tbc" (20000-49999,
-  so a Wrath/Cata client would get TBC's lists), "mists" (50000-99999), "retail"
-  (>= 100000). Then `Forever|ClassicEra|TBC|Mists|Retail\
+  so a Wrath/Cata client would get TBC's lists), "mists" (50000-99999), "mainline"
+  (>= 100000). Then `Games\Forever|ClassicEra|TBC|Mists|Mainline\
   Lists.lua`, each starting `if GAME ~= "<game>" then return end` after the header: every
   game file loads on every client but only the running game's sets anything. They hold
   TRAVEL_SPELLS, PROFESSION_SPELLS, TRACKING_SPELLS, PORTAL_SPELLS, HS_RANK, CREATE_HS,
@@ -66,7 +66,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   Core keeps HEARTHSTONE and builds MADE from them. Something new that differs by game goes
   in those folders, not behind `if` checks in the shared files. (Not per-game .toc files:
   Forever's .toc suffix is unknown.)
-- Files, in .toc (load) order: Game, <game>\Lists (x5), Core (lists, saved data, style, colours, CATALOG, on/off,
+- Files, in .toc (load) order: Game, Games\*\Lists, Core (lists, saved data, style, colours, CATALOG, on/off,
   Print/Note/Fail), Macros (bag scan, choosing, macro text, Find/Apply/DeleteManaged), Art
   (BLIZZ_ART, button art, StyleGlow, StyleArrow, popout bar art), Bars (POPOUT direction,
   finding action buttons, highlight, empty tooltip), Learning (Classify, LearnNew), Update
@@ -118,6 +118,10 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Still unchecked in game: Weapon Buff with sharpening stones, an unworn teleport ring,
   EllesmereUI bars, the Professions / Tracking spell IDs, ActiveTracking on Classic Era,
   0.117.1's settings-after-combat, the welcome window's look.
+
+## 0.121.2
+- Lewis changed his mind: the game folders go back under Games\, and retail's folder is
+  called **Mainline** (Blizzard's own name for the retail client); GAME = "mainline".
 
 ## 0.121.1
 - Lewis: the game folders live in the project root (Forever\, ClassicEra\, TBC\, Mists\,

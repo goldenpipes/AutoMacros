@@ -1,4 +1,4 @@
--- AutoMacros: spell and item ID lists for retail only (see Game.lua): every
+-- AutoMacros: spell and item ID lists for retail only (Mainline, see Game.lua): every
 -- expansion's. IDs after vanilla are from memory, unverified: a wrong one is
 -- never known or found, so it never shows. Retail's professions and tracking
 -- may not use these spells at all (the buttons may stay empty there).
@@ -8,7 +8,7 @@ local ADDON, ns = ...
 -- other files, anything else (the game's API) comes from _G
 if not getmetatable(ns) then setmetatable(ns, { __index = _G }) end
 setfenv(1, ns)
-if GAME ~= "retail" then return end
+if GAME ~= "mainline" then return end
 
 -- Hearth/Teleport button's spells: Astral Recall (Shaman), Teleport: Moonglade
 -- and Dreamwalk (Druid), Death Gate, Zen Pilgrimage, then the mage teleports:
