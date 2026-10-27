@@ -317,15 +317,19 @@ end
 --   missing     = IDs the server says do not exist (unused items in the game files)
 --   nodata      = IDs the server never answered for, or whose "Use:" text never came
 -- Steps: find the IDs worth a look (WorthALook, no server needed); ask the
--- server for them, a few at a time, and sort each one as its answer arrives
--- (GET_ITEM_INFO_RECEIVED / ITEM_DATA_LOAD_RESULT say found or not; items the
--- game already has are sorted straight away); items whose "Use:" text has not
--- come yet are looked at again each tick. Done when every item is answered,
--- or after TEST_QUIET seconds in which nothing more came.
+-- server for them with at most TEST_INFLIGHT questions out at once (asked too
+-- fast, the server drops them: the first run got 31 of 11,476), and sort each
+-- one as its answer arrives (GET_ITEM_INFO_RECEIVED / ITEM_DATA_LOAD_RESULT say
+-- found or not; items the game already has are sorted straight away). No
+-- answer in TEST_RETRY seconds: asked again, TEST_TRIES times in all. Items in
+-- but without their "Use:" text yet: looked at again, for TEST_QUIET seconds.
 -- ---------------------------------------------------------------------------
-TEST_STEP = 20      -- items asked for per tick
+TEST_STEP = 20      -- items whose "Use:" text is looked at again per tick
 TEST_TICK = 0.25    -- seconds between ticks
-TEST_QUIET = 30     -- seconds without any progress before the rest count as no data
+TEST_INFLIGHT = 50  -- questions out to the server at once (more go out as answers come back)
+TEST_RETRY = 10     -- seconds without an answer before an item is asked again
+TEST_TRIES = 3      -- times an item is asked before it counts as no data
+TEST_QUIET = 30     -- seconds an item may wait for its "Use:" text
 
 -- "sets | class.sub | name | Use: ... | well fed ..." for the saved result
 function TestLine(id, sets)
@@ -419,6 +423,14 @@ function TestBarDone(text)
     f:Show()
 end
 
+-- One item is finished with (sorted, missing or given up on): off every list.
+function TestDone(run, id)
+    if run.pending[id] then run.inflight = run.inflight - 1 end
+    run.pending[id], run.spell[id], run.waiting[id] = nil, nil, nil
+    run.answered = run.answered + 1
+    run.lastProgress = GetTime()
+end
+
 -- An item whose data is in: sorted into the result. false when its "Use:"
 -- text has not come yet (Classify has asked for it; it is looked at again).
 function TestSort(run, id)
@@ -426,13 +438,12 @@ function TestSort(run, id)
     local ok, sets = pcall(Classify, id)
     if not ok then sets = {} end   -- (a rule failed on this item: kept as unsorted, with its text)
     if sets == nil then
-        run.spell[id] = true
+        -- the item is in (no question out for it any more); its spell text is not
+        if run.pending[id] then run.pending[id] = nil; run.inflight = run.inflight - 1 end
+        run.spell[id] = run.spell[id] or GetTime()
         return false
     end
-    run.spell[id] = nil
-    run.waiting[id] = nil
-    run.answered = run.answered + 1
-    run.lastProgress = GetTime()
+    TestDone(run, id)
     if #sets > 0 then
         res.items[id] = TestLine(id, sets)
         for _, s in ipairs(sets) do res.counts[s] = (res.counts[s] or 0) + 1 end
@@ -453,9 +464,7 @@ function TestAnswer(id, success)
     id = tonumber(id)
     if not run or not id or not run.waiting[id] then return end
     if success == false then
-        run.waiting[id] = nil
-        run.answered = run.answered + 1
-        run.lastProgress = GetTime()
+        TestDone(run, id)
         run.res.missing[#run.res.missing + 1] = id
         return
     end
@@ -468,8 +477,10 @@ function RulesTest(first, last)
     local version, build, _, iface = GetBuildInfo()
     local res = { build = tostring(version) .. " " .. tostring(build), interface = iface, first = first, last = last,
         counts = {}, items = {}, unsorted = {}, missing = {}, nodata = {} }
+    -- waiting: not finished; pending: a question out (time asked), tries; spell:
+    -- in, but its "Use:" text not yet (since when)
     local run = { res = res, first = first, last = last, next = first, found = {}, asked = 0, answered = 0,
-        waiting = {}, spell = {}, lastProgress = GetTime() }
+        waiting = {}, pending = {}, tries = {}, spell = {}, inflight = 0, lastProgress = GetTime() }
     testRun = run
     if not testEvents then   -- the server's answers
         testEvents = CreateFrame("Frame")
@@ -486,6 +497,16 @@ function RulesTest(first, last)
             if ok then return r end
         end
         return GetItemInfo(id) ~= nil
+    end
+    local function ask(id)
+        if not run.pending[id] then run.inflight = run.inflight + 1 end
+        run.pending[id] = GetTime()
+        run.tries[id] = (run.tries[id] or 0) + 1
+        pcall(request, id)
+    end
+    local function giveUp(id)
+        TestDone(run, id)
+        res.nodata[#res.nodata + 1] = id
     end
     Print(string.format("rules test: items %d-%d on %s. Stay logged in; it takes a few minutes (/amac test stop)",
         first, last, res.build))
@@ -505,6 +526,7 @@ function RulesTest(first, last)
     end
     local function step()
         if run.stop then return finish("stopped") end
+        local now = GetTime()
         -- 1. which IDs are worth a look (the client knows without the server)
         if run.next <= last then
             for _ = 1, 1000 do
@@ -515,29 +537,36 @@ function RulesTest(first, last)
             end
             if run.next > last then
                 Print(string.format("rules test: %d items to look at, asking the server for them...", #run.found))
-                run.lastProgress = GetTime()
+                run.lastProgress = now
             end
             return TEST_TICK
         end
-        -- 2. ask the server for them, a few at a time (answers come as events)
-        for _ = 1, TEST_STEP do
-            local id = run.found[run.asked + 1]
-            if not id then break end
-            run.asked = run.asked + 1
-            run.waiting[id] = true
-            if cached(id) then TestSort(run, id) else pcall(request, id) end
+        -- 2. questions with no answer for a while: the data may be in without an
+        -- event; else ask again, at most TEST_TRIES times
+        for id, at in pairs(run.pending) do
+            if now - at > TEST_RETRY then
+                if cached(id) then TestSort(run, id)
+                elseif run.tries[id] >= TEST_TRIES then giveUp(id)
+                else ask(id) end
+            end
         end
-        -- 3. items whose "Use:" text was still on its way: look again
+        -- 3. new questions, while fewer than TEST_INFLIGHT are out (the server's
+        -- pace: one goes out as an answer comes back)
+        while run.inflight < TEST_INFLIGHT and run.asked < #run.found do
+            run.asked = run.asked + 1
+            local id = run.found[run.asked]
+            run.waiting[id] = true
+            if cached(id) then TestSort(run, id) else ask(id) end
+        end
+        -- 4. items in, but their "Use:" text still on its way: look again, give up after TEST_QUIET
         local n = 0
-        for id in pairs(run.spell) do
-            TestSort(run, id)
+        for id, since in pairs(run.spell) do
+            if not TestSort(run, id) and now - since > TEST_QUIET then giveUp(id) end
             n = n + 1
             if n >= TEST_STEP then break end
         end
-        if run.asked >= #run.found then
-            if not next(run.waiting) then return finish("done") end
-            if GetTime() - run.lastProgress > TEST_QUIET then return finish("done") end
-        end
+        if run.asked >= #run.found and not next(run.waiting) then return finish("done") end
+        if now - run.lastProgress > 2 * TEST_QUIET then return finish("done") end   -- (nothing at all for a minute)
         return TEST_TICK
     end
     local function tick()

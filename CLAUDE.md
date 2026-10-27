@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.107.0.**
+- **Current version: 0.107.1.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -90,6 +90,18 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.107.1 — test flow control
+- **First Classic Era test (0.105.0)**: 11,476 items looked at, only 31 sorted (28 explosives,
+  which need no server), **11,445 no data**, 0 unsorted. Asking ~80/s for 6 rounds: the server
+  drops most requests. Fix: at most TEST_INFLIGHT (50) questions out; `run.pending[id]` =
+  time asked, `run.inflight`; no answer in TEST_RETRY (10 s) -> cached? sort : ask again, up
+  to TEST_TRIES (3), then `res.nodata`; items in but no Use text -> `run.spell[id]` = since,
+  given up after TEST_QUIET (30 s); `TestDone` takes an item off every list. Finish when
+  nothing waits, or after 60 s without progress.
+- Reading the results: scratchpad script `testread.py <SavedVariables file> [set|unsorted|all]`
+  (one-off, not in the repo).
+- previous/0.107.0 was again saved from git after the first edit.
 
 ## 0.107.0 — event-driven test; gear slot filter
 - Lewis: why so many "no data" (first test was on retry round 4 of 6); wait for each item's

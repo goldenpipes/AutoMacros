@@ -4,6 +4,13 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.107.1 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Fixed
+- `/amac test` asked the server for items too fast and got almost no answers. It now keeps
+  at most 50 questions out at once, asks again after 10 seconds without an answer (3 tries),
+  and so goes at the server's own pace.
+
 ## 0.107.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Changed
