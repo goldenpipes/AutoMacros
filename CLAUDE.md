@@ -137,6 +137,15 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   Interface number + Games folder); use it instead of hand-made PowerShell zips. It and
   luacheck.py read the .toc's `\` paths on Linux too.
 
+## Releases (2026-10-27)
+- Lewis wants **only the latest release shown on GitHub**: v0.128.1 published as a
+  pre-release (notes: changelog since 0.120.0), then every older release deleted with its
+  tag (`gh release delete <tag> --cleanup-tag --yes`). `git fetch --prune --prune-tags` also
+  dropped the local-only tags v0.24.0/v0.25.0 (commits e2d8a82, 3b7af1a still there).
+  When publishing a new version, ask whether to delete the previous release again.
+- v0.128.1's CurseForge upload ran by itself off the release (run 40597397284, file id
+  9347782): the automatic path works.
+
 ## Where things stand (2026-10-27, end of session)
 - **0.128.0 released as a pre-release** (v0.128.0, zip in releases/, notes = every changelog
   section since 0.120.0). Lewis: "looks great, done for now" after checking the learned
