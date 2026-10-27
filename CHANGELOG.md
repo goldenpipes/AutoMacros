@@ -4,6 +4,20 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.117.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Added
+- Clicking an item in a popout uses it, in combat too. Popout page > Behaviour >
+  "Clicking an item": **Use and set** (use it and make it the button's item, the default),
+  **Set only** (as before), **Use only** (use it, the button keeps its item). Gear that has
+  to be worn first (teleport rings, cloaks) is still put on by the click.
+
+### Changed
+- In combat a popout shows what you had when combat began; a new pick reaches the button
+  on your bar when combat ends.
+- The popout closes when the mouse leaves it (or out of combat on a click elsewhere), no
+  longer with Escape. The tab on a button is only a sign now: hover the button itself.
+
 ## 0.116.1 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Fixed

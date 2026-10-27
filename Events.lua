@@ -311,6 +311,10 @@ frame:SetScript("OnEvent", function(_, event)
     end
     if event == "PLAYER_REGEN_ENABLED" then
         if pending then Schedule() end
+        if secureStale then   -- the popouts' data waits for the end of combat (PrepareSecure)
+            local ok, err = pcall(PrepareSecure)
+            if not ok then Fail("popout", err) end
+        end
     elseif BAR_EVENTS[event] then
         ScheduleGlow()
     else

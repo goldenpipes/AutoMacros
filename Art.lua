@@ -23,6 +23,8 @@ BLIZZ_ART = {
 -- by scale, never by stretching the art. Under EllesmereUI's look (and on a
 -- client without the template) they are sized normally and drawn by us.
 function BLIZZ_ART.Size(b, size)
+    -- (a secure button, the popout's items, keeps its size in combat: the game forbids changing it)
+    if InCombatLockdown() and b.IsProtected and b:IsProtected() then return end
     if b.native and not b.euiLook then
         b.k = size / b.native
         b:SetScale(b.k)
@@ -37,6 +39,7 @@ end
 -- SetPoint for such a button, with x and y in its parent's units (a scaled
 -- frame reads its offsets in its own, scaled units)
 function BLIZZ_ART.Point(b, point, rel, relPoint, x, y)
+    if InCombatLockdown() and b.IsProtected and b:IsProtected() then return end   -- (as above)
     local k = b.k or 1
     b:ClearAllPoints()
     b:SetPoint(point, rel, relPoint, x / k, y / k)
@@ -412,7 +415,7 @@ function StyleButtonArt(b, o)
         if ct then
             local c = (not look) and o.sel
             b.amChecked = c and true or false
-            b:SetChecked(b.amChecked)
+            pcall(b.SetChecked, b, b.amChecked)
             ct:SetAlpha(c and 1 or 0)
             if c then
                 local tint = o.selTint and c or nil

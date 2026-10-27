@@ -131,6 +131,14 @@ PAGES = {
                     set = function(v) DB().noFlyout = not v; Refresh() end },
                 { type = "range", label = "Close delay", key = "closeDelay", min = 0.1, max = 1.5, step = 0.1 },
             } },
+            -- what a click on an item does: use it and/or make it the button's item
+            -- (a change in combat reaches the popout when combat ends)
+            { type = "choice", label = "Clicking an item", list = function() return POPOUT_CLICKS end,
+                get = function() return PopoutClick() end,
+                set = function(v)
+                    DB().popoutClick = (v ~= "useset") and v or nil
+                    pcall(PrepareSecure)
+                end },
         } },
         { name = "Popout indicator", items = {
             { type = "color", label = "Color", key = "tabColor", alpha = true },

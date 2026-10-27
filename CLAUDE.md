@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.116.1.**
+- **Current version: 0.117.0.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -91,6 +91,42 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.117.0 — secure popout: click uses the item, in combat too
+- Lewis wanted popout clicks to use the item (option: use and set / set only / use without
+  setting), in combat as well; macro still only changes after combat. He'd never resize in
+  combat (so sizing out of combat only is fine). **Entirely untested in game.**
+- Design (Popout.lua): `flyout` = SecureHandlerBaseTemplate frame (protected);
+  `secureHeader` (AutoMacrosSecure) holds frame refs "flyout", "e1".."e10" and attributes;
+  entries = `ItemButton(flyout, true)` ("ActionButtonTemplate, SecureActionButtonTemplate"),
+  made once in BuildFlyout, RegisterForClicks Left/RightButtonUp + attribute
+  `useOnKeyDown` false (unverified that this makes them fire on release on every client).
+- Every bar button in `buttons` that IsProtected gets `WrapButton(b)`: id, and
+  SecureHandlerWrapScript(b, "OnEnter", header, "local id = N\n" .. OPEN_SNIPPET). The
+  snippet (restricted env) reads header attributes n<id>, w/h, pt/rpt/x/y, per item
+  ex/ey (offset / item scale k) and t/v ("item","item:ID" | "spell", name | "" = none),
+  "mode" (set -> no type), "off", "max", "delay"; places/shows entries and flyout, sets
+  type/item/spell, `f:RegisterAutoHide(delay)` + `f:AddToAutoHide(self)` (unverified that
+  these handle methods exist on every client). Entries' OnClick wrapped: pre `return nil,
+  true`, post hides the flyout.
+- `PrepareSecure()` (end of RefreshArrows, ApplyStyle, the setting, PLAYER_REGEN_ENABLED
+  when `secureStale`): out of combat only; StyleFlyout + StyleEntry all, writes the
+  attributes from `FlyoutPlan(flyout, n, b, arrows[b], dir)` (LayoutFlyout split into
+  plan + apply; LayoutFlyout now only for the settings demo) and keeps `prepared[id] = { m,
+  list (copy), n, dir, plan }`. Insecure `OpenFlyout(button)` (HookScript OnEnter, after
+  the snippet) only draws from prepared: icons, counts, desaturate, selected, dividers.
+- PostClick (our code): equip unworn gear (out of combat), else unless mode "use"
+  ChooseItem (automatic = prepared list[1]). Tooltip line per mode (POPOUT_CLICK_TIPS).
+  Setting: `db.popoutClick` (nil = useset), `POPOUT_CLICKS`, `PopoutClick()`; Popout page
+  Behaviour "Clicking an item".
+- Combat guards: BLIZZ_ART.Size / Point return for protected frames in combat;
+  StyleButtonArt's SetChecked pcall'd; RefreshArrows only hides the flyout out of combat.
+- Dropped: hover tracking (SetOver/AnyOver/idle OnUpdate), opening from the tab (arrow
+  EnableMouse false), Escape closing (UISpecialFrames with a protected frame taints).
+- To test: hover/click out of combat in each mode; same in combat (target dummy); a
+  spell entry (Bandage + Cannibalize, Hearth/Teleport); unworn teleport ring; popout
+  closes on leave; bars moved / buttons dragged then hover; EllesmereUI bars; any
+  "action blocked" / taint error (BugSack).
 
 ## 0.116.1
 - Lewis: the "A" isn't needed (Automatic is the default, the tooltip says the direction).
