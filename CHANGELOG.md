@@ -10,7 +10,7 @@ for bug fixes only.
 - Buttons page: no more "A" on icons whose popout direction is Automatic; the tab and the
   tooltip already say which way it opens.
 
-## 0.116.0 - 2026-10-26 (pre-release, tested in Classic Era)
+## 0.116.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Changed
 - Buttons page: the checkboxes are four to a row; a button that is off shows how many are
