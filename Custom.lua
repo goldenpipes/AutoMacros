@@ -8,11 +8,12 @@ local ADDON, ns = ...
 if not getmetatable(ns) then setmetatable(ns, { __index = _G }) end
 setfenv(1, ns)
 
--- Saved as db.custom[key] = { title = "...", kind = "items" | "spells",
--- ids = { ... }, oldNames = { ... } }: key is made from the first name (letters
--- and digits), title is the macro's name (16 characters at most), oldNames the
--- names it had before a rename, so its macro is found and renamed rather than
--- made again (see CustomEntries).
+-- Saved as db.custom[key] = { title = "...", list = { { kind = "item" | "spell",
+-- id = n }, ... }, scope = "character" | nil, oldNames = { ... } }: key is made
+-- from the first name (letters and digits), title is the macro's name (16
+-- characters at most), list what it holds in your order (CustomThings turns
+-- the old kind/ids form into it), oldNames the names it had before a rename,
+-- so its macro is found and renamed rather than made again (see CustomEntries).
 
 function UI.CustomTable()
     local db = DB()
@@ -52,12 +53,12 @@ function UI.CursorThing()
 end
 
 function UI.ThingName(kind, id)
-    if kind == "spells" then return SpellName(id) or ("Spell " .. id) end
+    if UI.ThingKind(kind) == "spell" then return SpellName(id) or ("Spell " .. id) end
     return ItemRef(id)
 end
 
 function UI.ThingIcon(kind, id)
-    if kind == "spells" then return SpellIcon(id) end
+    if UI.ThingKind(kind) == "spell" then return SpellIcon(id) end
     return IconFor({ item = id })
 end
 
@@ -70,39 +71,57 @@ function UI.CustomChanged()
     RefreshEUIPage()
 end
 
--- a new button with one item or spell in it, named after it
+-- "item" or "spell", from UI.CursorThing's "items" / "spells"
+function UI.ThingKind(kind)
+    return (kind == "spells" or kind == "spell") and "spell" or "item"
+end
+
+-- a new button with one item or spell in it, named after it. One that starts
+-- with a spell goes in the character macro tab (spells differ per character),
+-- one that starts with an item in the shared tab.
 function UI.CustomCreate(kind, id)
+    kind = UI.ThingKind(kind)
     local title = UI.ThingName(kind, id):sub(1, 16)
     local key = UI.CustomKey(title)
-    UI.CustomTable()[key] = { title = title, kind = kind, ids = { id } }
+    UI.CustomTable()[key] = { title = title, list = { { kind = kind, id = id } },
+        scope = kind == "spell" and "character" or nil }
     OnOff()[key] = true
     Note("new button " .. title .. " - drag more onto its icon in the AutoMacros settings")
     UI.CustomChanged()
 end
 
+-- adds an item or spell at the end (items and spells can share a button)
 function UI.CustomAdd(key, kind, id)
     local c = UI.CustomTable()[key]
     if not c then return end
-    if c.kind ~= kind then
-        Print(c.title .. " holds " .. (c.kind == "spells" and "spells" or "items") .. " only - make a new button for "
-            .. (kind == "spells" and "spells" or "items"))
-        return
+    kind = UI.ThingKind(kind)
+    local list = CustomThings(c)
+    for _, t in ipairs(list) do
+        if t.kind == kind and t.id == id then return end
     end
-    for _, have in ipairs(c.ids) do
-        if have == id then return end
-    end
-    c.ids[#c.ids + 1] = id
+    list[#list + 1] = { kind = kind, id = id }
     UI.CustomChanged()
 end
 
--- takes one out; taking the last one out deletes the button
-function UI.CustomRemove(key, id)
+-- takes the i-th one out; taking the last one out deletes the button
+function UI.CustomRemove(key, i)
     local c = UI.CustomTable()[key]
     if not c then return end
-    for i, have in ipairs(c.ids) do
-        if have == id then table.remove(c.ids, i) break end
-    end
-    if #c.ids == 0 then return UI.CustomDelete(key) end
+    local list = CustomThings(c)
+    if list[i] then table.remove(list, i) end
+    if #list == 0 then return UI.CustomDelete(key) end
+    UI.CustomChanged()
+end
+
+-- moves the i-th one to place j (the button's order is the popout's, and the
+-- first one you have is what the button uses unless you pick another)
+function UI.CustomMove(key, i, j)
+    local c = UI.CustomTable()[key]
+    if not c then return end
+    local list = CustomThings(c)
+    if i == j or not list[i] or j < 1 or j > #list then return end
+    local t = table.remove(list, i)
+    table.insert(list, j, t)
     UI.CustomChanged()
 end
 
@@ -138,8 +157,9 @@ function UI.CustomStamp()
     for k in pairs(custom) do keys[#keys + 1] = k end
     table.sort(keys)
     for _, k in ipairs(keys) do
-        local c = custom[k]
-        parts[#parts + 1] = k .. "=" .. tostring(c.title) .. ":" .. table.concat(c.ids or {}, ",")
+        local c, ids = custom[k], {}
+        for _, t in ipairs(CustomThings(c)) do ids[#ids + 1] = t.kind:sub(1, 1) .. t.id end
+        parts[#parts + 1] = k .. "=" .. tostring(c.title) .. ":" .. table.concat(ids, ",")
     end
     return table.concat(parts, ";")
 end
@@ -185,8 +205,8 @@ UI.CUSTOM_ICON, UI.CUSTOM_GAP = 36, 6
 UI.NEW_BUTTON_TIP = {
     "New button",
     "Drag an item from your bags or a spell from your spellbook here to make your own button.",
-    "Drag more onto its icon to add them. A button holds items or spells, not both.",
-    "Rename it, take things out or delete it under Custom at the bottom of this page.",
+    "Drag more items or spells onto its icon to add them.",
+    "Rename it, reorder or take things out, or delete it under Custom at the bottom of this page.",
 }
 
 -- an item or spell dropped on your own button's icon in the icon row: add it
@@ -205,12 +225,27 @@ function UI.CustomEntry(key)
     end
 end
 
+-- Moving one: clicking an icon picks it (UI.customMoving = { key, i }), it is
+-- shown checked; clicking another icon of the same button moves it there.
+UI.customMoving = nil
+function UI.MarkMoving(parent)
+    local mv = UI.customMoving
+    for _, ic in ipairs(parent.amCustomIcons or {}) do
+        local on = mv ~= nil and mv.key == ic.key and mv.i == ic.i
+        if ic.b.SetChecked then pcall(ic.b.SetChecked, ic.b, on) end
+        if on and ic.b.LockHighlight then ic.b:LockHighlight() elseif ic.b.UnlockHighlight then ic.b:UnlockHighlight() end
+    end
+end
+
 -- The Buttons page's Custom section: one row per button of your own: on/off,
--- its name (type to rename), its items or spells (hover for the tooltip,
--- right-click to take one out), a slot to add more, and Delete. x, y: where it
--- starts; returns the y below it. refreshers: the page's list (the on/off boxes).
+-- its name (type to rename), its items and spells in order (hover for the
+-- tooltip, click to move one, right-click to take it out), a slot to add more,
+-- and Delete. x, y: where it starts; returns the y below it. refreshers: the
+-- page's list (the on/off boxes).
 function UI.BuildCustomRows(parent, width, x, y, refreshers)
     width = width or UI.CONTENT_W
+    parent.amCustomIcons = {}
+    UI.customMoving = nil   -- (a fresh page: nothing picked)
     local size, gap = UI.CUSTOM_ICON, UI.CUSTOM_GAP
     local custom = UI.CustomTable()
     local keys = {}
@@ -236,20 +271,39 @@ function UI.BuildCustomRows(parent, width, x, y, refreshers)
         box:SetCursorPosition(0)
         box:SetScript("OnEnterPressed", function(self) self:ClearFocus(); UI.CustomRename(key, self:GetText()) end)
         box:SetScript("OnEscapePressed", function(self) self:SetText(c.title or key); self:ClearFocus() end)
-        local kind = c.kind == "spells" and "spells" or "items"
         local slots = {}
-        for _, id in ipairs(c.ids or {}) do slots[#slots + 1] = id end
+        for _, t in ipairs(CustomThings(c)) do slots[#slots + 1] = t end
         slots[#slots + 1] = false   -- the slot to add more
-        for i, id in ipairs(slots) do
+        for i, t in ipairs(slots) do
             local b
-            if id then
-                b = UI.SampleButton(parent, size, UI.ThingIcon(kind, id))
+            if t then
+                local spell = t.kind == "spell"
+                b = UI.SampleButton(parent, size, UI.ThingIcon(t.kind, t.id))
                 b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+                parent.amCustomIcons[#parent.amCustomIcons + 1] = { key = key, i = i, b = b }
                 b:SetScript("OnClick", function(_, button)
-                    if button == "RightButton" then UI.CustomRemove(key, id) end
+                    local mv = UI.customMoving
+                    if button == "RightButton" then
+                        UI.customMoving = nil
+                        UI.CustomRemove(key, i)
+                    elseif mv and mv.key == key and mv.i ~= i then
+                        UI.customMoving = nil
+                        UI.CustomMove(key, mv.i, i)
+                    elseif mv and mv.key == key then   -- (clicked again: put it back)
+                        UI.customMoving = nil
+                    else
+                        UI.customMoving = { key = key, i = i }
+                    end
+                    UI.MarkMoving(parent)
                 end)
                 b:SetScript("OnEnter", function(self)
-                    ShowEntryTooltip(self, id, nil, kind == "spells")
+                    ShowEntryTooltip(self, t.id, nil, spell)
+                    local mv = UI.customMoving
+                    if mv and mv.key == key and mv.i ~= i then
+                        GameTooltip:AddLine(Loc("Click to move the picked one here"), 0.25, 1, 0.25)
+                    else
+                        GameTooltip:AddLine(Loc("Click to move it, then click where it should go"), 0.7, 0.7, 0.7)
+                    end
                     GameTooltip:AddLine(Loc("Right-click to take it out of this button"), 0.7, 0.7, 0.7)
                     GameTooltip:Show()
                 end)

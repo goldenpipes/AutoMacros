@@ -4,6 +4,14 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.112.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Changed
+- Your own buttons can hold items and spells together, in the order you add them. The
+  button uses the first one you have (or know), unless you pick another in its popout.
+- Rearrange them under Custom on the Buttons page: click an icon, then click where it
+  should go.
+
 ## 0.111.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Changed

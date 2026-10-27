@@ -98,6 +98,27 @@ function UpdateCore()
             flyoutItems[m.name] = list
             id = Chosen(m, list)
             body = id and SpellBody(id) or nil
+        elseif m.order then
+            -- a button of your own: what you carry or know of it, in your order
+            local list = {}
+            for _, t in ipairs(m.order) do
+                if t.kind == "spell" then
+                    if KnowsSpell(t.id) then list[#list + 1] = { id = t.id, spell = true, pick = -t.id } end
+                elseif have[t.id] then
+                    list[#list + 1] = { id = t.id }
+                end
+            end
+            flyoutItems[m.name] = list
+            local entry
+            id, entry = Chosen(m, list)
+            spellUsed = entry ~= nil and entry.spell == true
+            if not id then
+                body = EmptyBody(m.label)
+            elseif spellUsed then
+                body = SpellBody(id)
+            else
+                body = UseBody(id)
+            end
         elseif m.kind == "travel" then
             local list = TravelOptions(m, have)
             flyoutItems[m.name] = list

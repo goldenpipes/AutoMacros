@@ -1,4 +1,4 @@
--- AutoMacros 0.111.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.112.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -560,7 +560,22 @@ function Enabled(e)
     return false
 end
 
--- Categories you made yourself (/amac custom): kept in the saved data.
+-- What a button of your own holds, in your order: { { kind = "item" | "spell",
+-- id = n }, ... } (c.list). Before 0.112.0 a button held one kind only (c.kind
+-- = items | spells, c.ids); those are turned into a list here, once, keeping
+-- the macro tab they were in (spells went in the character tab).
+function CustomThings(c)
+    if type(c.list) ~= "table" then
+        local kind = c.kind == "spells" and "spell" or "item"
+        c.list = {}
+        for _, id in ipairs(type(c.ids) == "table" and c.ids or {}) do c.list[#c.list + 1] = { kind = kind, id = id } end
+        if kind == "spell" and not c.scope then c.scope = "character" end
+        c.kind, c.ids = nil, nil
+    end
+    return c.list
+end
+
+-- Categories you made yourself (the Buttons page, /amac custom): kept in the saved data.
 function CustomEntries()
     local list = {}
     local custom = DB().custom
@@ -570,20 +585,25 @@ function CustomEntries()
     table.sort(keys)
     for _, k in ipairs(keys) do
         local c = custom[k]
-        if type(c) == "table" and type(c.ids) == "table" and #c.ids > 0 then
+        local things = type(c) == "table" and CustomThings(c) or {}
+        if #things > 0 then
             local title = tostring(c.title or k):sub(1, 16)
+            -- order: its items and spells as you arranged them (UpdateCore goes by it);
+            -- set and spells: the same split up, for counting and recognising its macro
             local e = {
                 key = k, custom = true, name = "AM_C_" .. k, title = title,
                 empty = ("No " .. title):sub(1, 16), label = tostring(c.title or k):lower(), default = true,
                 oldNames = type(c.oldNames) == "table" and c.oldNames or nil,   -- (renamed on the Buttons page)
+                order = things, set = "custom_" .. k, spells = {}, scope = c.scope,
             }
-            if c.kind == "spells" then
-                e.kind, e.spells, e.scope = "spells", c.ids, "character"
-            else
-                e.set = "custom_" .. k
-                e.placeholder = { item = c.ids[1] }
-                DATA[e.set] = ToSet(c.ids)
+            local items = {}
+            for _, t in ipairs(things) do
+                if t.kind == "spell" then e.spells[#e.spells + 1] = t.id else items[#items + 1] = t.id end
             end
+            DATA[e.set] = ToSet(items)
+            if #e.spells == 0 then e.spells = nil end   -- (BodyMatches: only then does /cast count as ours)
+            local first = things[1]
+            e.placeholder = first.kind == "spell" and { icon = SpellIcon(first.id) } or { item = first.id }
             list[#list + 1] = e
         end
     end

@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.111.0.**
+- **Current version: 0.112.0.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -90,6 +90,30 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.112.0 — custom buttons mix items and spells
+- Lewis: why can't a custom button hold both? (No reason: built-in set buttons already
+  append spells.) He chose: in the order added, rearrangeable in the custom settings.
+- Saved form `db.custom[key] = { title, list = { {kind="item"|"spell", id}, ... }, scope,
+  oldNames }`. `CustomThings(c)` (Core.lua) converts the old `kind`/`ids` on first read
+  (spells -> scope "character"; `/amac custom` still writes the old form, converted too).
+  New buttons: scope "character" if the first thing is a spell, else general (never changes
+  afterwards, so the macro never moves tab).
+- CustomEntries: `e.order` = the list, `e.set` (items via DATA) and `e.spells` (nil when
+  none, so BodyMatches only accepts /cast then) for counting/recognising; placeholder =
+  first thing ({ icon = SpellIcon } for a spell). UpdateCore has an `m.order` branch: carried
+  items / known spells in list order (spell entries pick = -id), Chosen, Use/SpellBody,
+  EmptyBody when none. No item level filter there (you chose them).
+- Custom.lua: `UI.ThingKind` ("items"/"spells" -> "item"/"spell"), CustomAdd appends any
+  kind (dedup kind+id), `CustomRemove(key, i)`, `CustomMove(key, i, j)`. Rows: click an icon
+  = pick (`UI.customMoving = {key, i}`, shown with SetChecked + LockHighlight via
+  `UI.MarkMoving(parent)` over `parent.amCustomIcons`), click another of the same button =
+  move there, same one again = cancel; right-click removes. Click-to-move instead of drag:
+  dragging would need the thing on the cursor (could land on a bar) and the simulator's
+  cursor position is unreliable.
+- Next: the welcome screen (Lewis chose all four parts: what the addon does, buttons found
+  (draggable), pick buttons to turn on, Open settings + Got it; once per character,
+  `/amac welcome` to show it again).
 
 ## 0.111.0 — General first
 - Lewis: General should be the page settings open on; Buttons its own page. PAGES order is
