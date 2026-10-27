@@ -13,7 +13,13 @@ function OpenOptions(blizzard)
         local ok, opened = pcall(EllesmereUI.OpenPlugin, "AutoMacros")
         if ok and opened then return end
     end
-    -- the game's options window, at our page
+    -- the game's options window, at our page; the game does not let an addon
+    -- open it in combat (ADDON_ACTION_BLOCKED), so then it opens when combat ends
+    if InCombatLockdown() then
+        if not optionsAfterCombat then Print("the settings will open when combat ends") end
+        optionsAfterCombat = { blizzard = blizzard }
+        return
+    end
     UI.RegisterBlizzPanel()
     local cat = UI.blizzCategory
     if cat and Settings and Settings.OpenToCategory then
@@ -314,6 +320,12 @@ frame:SetScript("OnEvent", function(_, event)
         if secureStale then   -- the popouts' data waits for the end of combat (PrepareSecure)
             local ok, err = pcall(PrepareSecure)
             if not ok then Fail("popout", err) end
+        end
+        if optionsAfterCombat then   -- /amac options in combat (see OpenOptions)
+            local want = optionsAfterCombat
+            optionsAfterCombat = nil
+            local ok, err = pcall(OpenOptions, want.blizzard)
+            if not ok then Fail("options window", err) end
         end
     elseif BAR_EVENTS[event] then
         ScheduleGlow()

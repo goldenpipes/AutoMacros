@@ -4,6 +4,13 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.117.1 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Fixed
+- `/amac options` (or the welcome window's Open settings) in combat caused an "action
+  blocked" error: the game's settings window can't be opened by an addon in combat. It
+  now says so and opens when combat ends.
+
 ## 0.117.0 - 2026-10-26 (tested in Classic Era)
 
 ### Added

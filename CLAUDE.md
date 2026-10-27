@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.117.0.**
+- **Current version: 0.117.1.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -91,6 +91,15 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.117.1
+- Lewis's BugGrabber (Classic Era, in combat): ADDON_ACTION_BLOCKED, AutoMacros called
+  protected `OpenSettingsPanel()` from Settings.OpenToCategory in OpenOptions, reached from
+  the slash handler via a **bar macro** (UseAction -> MacroExecutionManager -> /amac
+  opt...). None of our macros run that (only `/amac empty`), so likely a macro of his own.
+  Fix: OpenOptions' Blizzard path in combat prints once and sets `optionsAfterCombat`;
+  PLAYER_REGEN_ENABLED opens it then. EllesmereUI's OpenPlugin path is tried first as
+  before (not protected).
 
 ## 0.117.0 — secure popout: click uses the item, in combat too
 - Lewis wanted popout clicks to use the item (option: use and set / set only / use without
