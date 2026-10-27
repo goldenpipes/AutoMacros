@@ -23,11 +23,15 @@ GAMES = {
     "mainline": ("Mainline", lambda n: n >= 100000),
 }
 
-here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ap = argparse.ArgumentParser()
 ap.add_argument("--game", choices=sorted(GAMES))
-ap.add_argument("--out", default=os.path.join(here, "releases"))
+# --root: the addon's folder (default: the one this script is in); CI builds an
+# older release's files with today's script
+ap.add_argument("--root", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+ap.add_argument("--out")
 args = ap.parse_args()
+here = os.path.abspath(args.root)
+args.out = args.out or os.path.join(here, "releases")
 
 toc = open(os.path.join(here, "AutoMacros.toc"), encoding="utf-8").read().splitlines()
 version = next((l.split(":", 1)[1].strip() for l in toc if l.startswith("## Version:")), None)
