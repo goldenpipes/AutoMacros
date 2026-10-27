@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.122.0.**
+- **Current version: 0.123.0.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   iteration** (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -118,6 +118,18 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Still unchecked in game: Weapon Buff with sharpening stones, an unworn teleport ring,
   EllesmereUI bars, the Professions / Tracking spell IDs, ActiveTracking on Classic Era,
   0.117.1's settings-after-combat, the welcome window's look.
+
+## 0.123.0 — soft glow fills the button at 5, every game alike
+- Lewis (retail screenshot of the Highlight demo, soft glow): can it fill the whole button at
+  max thickness? Unsure about the steps; same for every game.
+- StyleGlow's soft glow is now the FadeEdge gradients on every look (retail's rounded
+  buttons included; the UI-ActionButton-Border ring copies, g.softs and BLIZZ_ART.GLOW are
+  gone). Depth = (button width - 2 x inset) x thickness / 5: 20/40/60/80/100%, so at 5 each
+  edge's fade spans the whole button and the four overlap to fill it. Retail (rounded, no
+  EUI look): the four edges get the button's own IconMask via MaskSoft(g, mask)
+  (pcall'd AddMaskTexture; removed again for other looks). **Unverified that a mask on the
+  button applies to textures in the glow's child frame**: if not, the glow shows square
+  corners on retail.
 
 ## 0.122.0 — fixes from the first retail (Midnight) test
 - Lewis ran `/amac test 1 25000` on retail (addon 0.120.0, build 12.1.5 70575, interface

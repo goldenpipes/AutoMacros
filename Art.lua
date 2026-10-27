@@ -249,8 +249,18 @@ function FadeEdge(tex, side, c)
     if not ok then tex:SetColorTexture(c[1], c[2], c[3], a * 0.5) end   -- no gradients: a faint band
 end
 
--- Blizzard's item-border glow, used for the soft glow on Blizzard's buttons
-BLIZZ_ART.GLOW = "Interface\\Buttons\\UI-ActionButton-Border"
+-- The soft glow's edges get the button's own icon mask on retail's rounded
+-- buttons (so the cut corners stay clear), and lose it otherwise.
+local function MaskSoft(g, mask)
+    for i = 1, 4 do
+        local e = g.edges[i]
+        if e.amMask ~= mask then
+            if e.amMask and e.RemoveMaskTexture then pcall(e.RemoveMaskTexture, e, e.amMask) end
+            e.amMask = nil
+            if mask and e.AddMaskTexture and pcall(e.AddMaskTexture, e, mask) then e.amMask = mask end
+        end
+    end
+end
 
 function StyleGlow(g, button)
     local c = StyleColor("glowColor")
@@ -265,14 +275,16 @@ function StyleGlow(g, button)
     g:SetPoint("TOPLEFT", button, "TOPLEFT", inset, -inset)
     g:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
     for i = 1, 4 do g.edges[i]:Hide() end
-    for _, s in ipairs(g.softs or {}) do s:Hide() end
     for _, cell in ipairs(g.cells or {}) do cell:Hide() end
-    if soft and (look or not rounded) then
-        -- square buttons (EllesmereUI's, Classic's): fading in from the edges
-        -- over the icon, thickness x3 screen pixels deep
+    MaskSoft(g, soft and rounded and not look and button.IconMask or nil)
+    if soft then
+        -- every game alike: fading in from the edges over the icon. Thickness
+        -- 1 to 5 = each edge's fade reaches 20%, 40% ... 100% of the way across
+        -- the button, so at 5 the four overlap and fill it (strongest at the
+        -- edges). Retail's rounded buttons clip it to their icon mask.
         local w = button:GetWidth()
         if type(w) ~= "number" or w <= 0 then w = 36 end
-        local d = math.min(t * 3 * px, w * 0.45)
+        local d = Snap(g, (w - 2 * inset) * t / 5)
         local e = g.edges
         for i = 1, 4 do e[i]:ClearAllPoints(); e[i]:Show() end
         e[1]:SetPoint("TOPLEFT", g, "TOPLEFT", 0, 0); e[1]:SetPoint("TOPRIGHT", g, "TOPRIGHT", 0, 0); e[1]:SetHeight(d)
@@ -280,31 +292,6 @@ function StyleGlow(g, button)
         e[3]:SetPoint("TOPLEFT", g, "TOPLEFT", 0, 0); e[3]:SetPoint("BOTTOMLEFT", g, "BOTTOMLEFT", 0, 0); e[3]:SetWidth(d)
         e[4]:SetPoint("TOPRIGHT", g, "TOPRIGHT", 0, 0); e[4]:SetPoint("BOTTOMRIGHT", g, "BOTTOMRIGHT", 0, 0); e[4]:SetWidth(d)
         for i, side in ipairs({ "top", "bottom", "left", "right" }) do FadeEdge(e[i], side, c) end
-    elseif soft then
-        -- Retail's buttons (cut corners): Blizzard's item-border glow, tinted,
-        -- its ring on the button's edge (always cropped the same: cropping less
-        -- only shrank the ring away from the edge, 0.104.0). Each step of
-        -- thickness adds another copy 2 screen pixels further in, so the glow
-        -- reaches deeper in the button's own shape. Drawn added on, so opacity
-        -- dims the color itself.
-        g.softs = g.softs or {}
-        local a = c[4] or 1
-        for i = 1, t do
-            local s = g.softs[i]
-            if not s then
-                s = g:CreateTexture(nil, "OVERLAY")
-                g.softs[i] = s
-            end
-            s:SetTexture(BLIZZ_ART.GLOW)
-            pcall(s.SetBlendMode, s, "ADD")
-            s:SetTexCoord(0.21, 0.79, 0.21, 0.79)
-            local ins = Snap(g, (i - 1) * 2 * px)
-            s:ClearAllPoints()
-            s:SetPoint("TOPLEFT", g, "TOPLEFT", ins, -ins)
-            s:SetPoint("BOTTOMRIGHT", g, "BOTTOMRIGHT", -ins, ins)
-            s:SetVertexColor(c[1] * a, c[2] * a, c[3] * a, 1)   -- (its ring is already rounded)
-            s:Show()
-        end
     elseif rounded then
         -- On the button's frame ring. In the frame art (88 px wide in
         -- uiactionbar2x, drawn 46 wide on a 45 wide button) the grey ring starts
