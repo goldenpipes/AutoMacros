@@ -146,8 +146,10 @@ end
 
 -- the Buttons page (whose Custom section lists them), if shown
 function UI.RefreshButtonsPage()
-    local pn = UI.panels and UI.panels[1]
-    if pn and pn.frame:IsVisible() then UI.ShowPanel(1) end
+    for i, page in ipairs(PAGES) do
+        local pn = UI.panels and UI.panels[i]
+        if page.name == "Buttons" and pn and pn.frame:IsVisible() then UI.ShowPanel(i) end
+    end
 end
 
 -- A slot to drag an item or spell onto (or click while carrying one): drop(kind,

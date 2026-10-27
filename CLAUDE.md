@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.110.0.**
+- **Current version: 0.111.0.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -90,6 +90,13 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.111.0 — General first
+- Lewis: General should be the page settings open on; Buttons its own page. PAGES order is
+  now General, Buttons, Highlight, Popout. **PAGES[1] is the AutoMacros category itself**
+  (MakePanel names it "AutoMacros", RegisterBlizzPanel registers it, older clients open it);
+  the rest are subcategories. Nothing may assume Buttons is panel 1: RefreshButtonsPage
+  finds it by name.
 
 ## 0.110.0 — custom buttons on the Buttons page
 - Lewis: the Custom page can go; put a + "at the end of the row" (the Buttons page's icon

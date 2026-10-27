@@ -60,6 +60,44 @@ end
 -- two toggles, sliders or dropdowns next to each other go side by side.
 -- An item with when = function shows only while it returns true.
 PAGES = {
+    -- the first page is the one AutoMacros opens on (named AutoMacros in the
+    -- options tree, the others under it)
+    { name = "General", sections = {
+        { name = "Tooltips and labels", items = {
+            { type = "toggle", label = "Clean \"No X in inventory\" tooltip",
+                get = function() return not DB().stockTooltip end, set = function(v) DB().stockTooltip = not v end },
+            { type = "toggle", label = "Hide macro names on buttons",
+                get = function() return not DB().showNames end,
+                set = function(v) DB().showNames = not v; Refresh() end },
+            { type = "color", label = "Tooltip text color", key = "tooltipColor" },
+        } },
+        { name = "Chat", items = {
+            -- what the addon says by itself: items learned, buttons turned on, macros removed
+            { type = "toggle", label = "Show info messages",
+                get = function() return not DB().quiet end,
+                set = function(v) DB().quiet = (not v) or nil end },
+            -- the "No water in inventory." line when you click an empty button
+            { type = "toggle", label = "Show the empty-button message",
+                get = function() return not DB().noEmptyMsg end,
+                set = function(v) DB().noEmptyMsg = (not v) or nil end },
+        } },
+        { name = "Item learning", items = {
+            { type = "text", text = UI.LearnedSummary },
+        } },
+        { name = "Appearance", items = {
+            { type = "eui", items = {
+                { type = "toggle", label = "Use EllesmereUI styling",
+                    get = function() return Style("euiSkin") and true or false end,
+                    set = function(v)
+                        SetStyle("euiSkin", v)
+                        -- the Flyout tab shows different item options for each look
+                        if EllesmereUI and EllesmereUI.RefreshPage then pcall(EllesmereUI.RefreshPage, EllesmereUI, true) end
+                        RefreshOptions()
+                    end },
+            } },
+            { type = "button", label = "Reset appearance", action = function() ResetStyle() end, refreshAll = true },
+        } },
+    } },
     -- previewH: the preview strip's fixed height on Blizzard's pages (see UI.FitHeader);
     -- previewSide = "right": the preview in a column right of the settings instead
     -- (stamp: built again when the buttons change, e.g. a new one of your own,
@@ -124,42 +162,6 @@ PAGES = {
             -- greyed out with the bar background on: the items then use the main bar's spacing
             { type = "range", label = "Item spacing", key = "entrySpacing", min = 0, max = 10, step = 1,
                 disabled = function() return BLIZZ_ART.PopupArt() end },
-        } },
-    } },
-    { name = "General", sections = {
-        { name = "Tooltips and labels", items = {
-            { type = "toggle", label = "Clean \"No X in inventory\" tooltip",
-                get = function() return not DB().stockTooltip end, set = function(v) DB().stockTooltip = not v end },
-            { type = "toggle", label = "Hide macro names on buttons",
-                get = function() return not DB().showNames end,
-                set = function(v) DB().showNames = not v; Refresh() end },
-            { type = "color", label = "Tooltip text color", key = "tooltipColor" },
-        } },
-        { name = "Chat", items = {
-            -- what the addon says by itself: items learned, buttons turned on, macros removed
-            { type = "toggle", label = "Show info messages",
-                get = function() return not DB().quiet end,
-                set = function(v) DB().quiet = (not v) or nil end },
-            -- the "No water in inventory." line when you click an empty button
-            { type = "toggle", label = "Show the empty-button message",
-                get = function() return not DB().noEmptyMsg end,
-                set = function(v) DB().noEmptyMsg = (not v) or nil end },
-        } },
-        { name = "Item learning", items = {
-            { type = "text", text = UI.LearnedSummary },
-        } },
-        { name = "Appearance", items = {
-            { type = "eui", items = {
-                { type = "toggle", label = "Use EllesmereUI styling",
-                    get = function() return Style("euiSkin") and true or false end,
-                    set = function(v)
-                        SetStyle("euiSkin", v)
-                        -- the Flyout tab shows different item options for each look
-                        if EllesmereUI and EllesmereUI.RefreshPage then pcall(EllesmereUI.RefreshPage, EllesmereUI, true) end
-                        RefreshOptions()
-                    end },
-            } },
-            { type = "button", label = "Reset appearance", action = function() ResetStyle() end, refreshAll = true },
         } },
     } },
 }

@@ -338,7 +338,7 @@ function UI.DirectionItems()
     local list = UI.EnabledButtons()
     if #list == 0 then
         items[#items + 1] = { type = "text", height = 24,
-            text = function() return "No buttons are on yet (see the AutoMacros page)." end }
+            text = function() return "No buttons are on yet (see the Buttons page)." end }
     end
     for _, e in ipairs(list) do
         items[#items + 1] = { type = "choice", label = e.title, list = function() return POPOUT.DIRS end,

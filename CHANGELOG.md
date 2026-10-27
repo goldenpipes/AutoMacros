@@ -4,6 +4,12 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.111.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Changed
+- Opening AutoMacros' settings now shows the General page; Buttons is a page of its own
+  under AutoMacros, like Highlight and Popout.
+
 ## 0.110.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Changed
