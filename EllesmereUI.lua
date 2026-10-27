@@ -7,6 +7,10 @@ local ADDON, ns = ...
 if not getmetatable(ns) then setmetatable(ns, { __index = _G }) end
 setfenv(1, ns)
 
+-- the preview column's width on EllesmereUI's page (its page is wider than
+-- Blizzard's, so wider than UI.SIDE_W)
+UI.EUI_SIDE_W = 220
+
 function UI.FindPage(name)
     for _, page in ipairs(PAGES) do
         if page.name == name then return page end
@@ -60,28 +64,59 @@ function RegisterEUI()
                     local y = yOffset or 0
                     local page = UI.FindPage(pageName)
                     if not page then return math.abs(y) end
-                    -- EllesmereUI's own pages draw their preview strip from inside
-                    -- the page build (getHeaderBuilder only brings it back when a
-                    -- cached page is shown again), so this page does the same
-                    local hb = UI.EUIHeader(pageName)
                     local prebuild = EllesmereUI.IsSearchPrebuild and EllesmereUI.IsSearchPrebuild()
-                    if hb and not prebuild and EllesmereUI.SetContentHeader then
-                        local okH, errH = pcall(EllesmereUI.SetContentHeader, EllesmereUI, hb)
-                        if not okH then Fail("EllesmereUI preview", errH) end
+                    -- a page with its preview on the right (Popout), as on
+                    -- Blizzard's page: the settings in a narrower column on the
+                    -- left, the preview in its own column right of them
+                    local side = page.header and page.previewSide == "right" and not prebuild
+                    local into = parent
+                    local sideH = 0
+                    if side then
+                        local pw = (parent:GetWidth() or 0) > 0 and parent:GetWidth() or UI.CONTENT_W + 40
+                        -- (a page built again gets fresh columns; the old ones go)
+                        if parent.amCol then parent.amCol:Hide() end
+                        if parent.amSide then parent.amSide:Hide() end
+                        local sideW = UI.EUI_SIDE_W
+                        into = CreateFrame("Frame", nil, parent)
+                        into:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, 0)
+                        into:SetSize(pw - sideW, 10)
+                        parent.amCol = into
+                        local host = CreateFrame("Frame", nil, parent)
+                        host:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -20, y - 20)
+                        host:SetSize(sideW - 20, 10)
+                        parent.amSide = host
+                        local okS, h = pcall(UI.ShowHeader, page.header, host, sideW - 20,
+                            function(nh) host:SetHeight(nh) end)   -- (a bigger popout later)
+                        if okS and type(h) == "number" then
+                            host:SetHeight(h)
+                            sideH = math.abs(y) + 20 + h
+                        else
+                            Fail("EllesmereUI preview", h)
+                        end
+                    else
+                        -- EllesmereUI's own pages draw their preview strip from inside
+                        -- the page build (getHeaderBuilder only brings it back when a
+                        -- cached page is shown again), so this page does the same
+                        local hb = UI.EUIHeader(pageName)
+                        if hb and not prebuild and EllesmereUI.SetContentHeader then
+                            local okH, errH = pcall(EllesmereUI.SetContentHeader, EllesmereUI, hb)
+                            if not okH then Fail("EllesmereUI preview", errH) end
+                        end
                     end
                     if page.build then   -- a page that lays itself out
-                        local okB, h = pcall(page.build, parent, (parent:GetWidth() or UI.CONTENT_W) - 40)
+                        local okB, h = pcall(page.build, into, (into:GetWidth() or UI.CONTENT_W) - 40)
                         if okB then y = h else Fail("EllesmereUI page", h) end
                     end
                     for _, section in ipairs(UI.PageSections(page)) do
-                        local ok2, newY = pcall(BuildPage, parent, section, 20, y, true)
+                        local ok2, newY = pcall(BuildPage, into, section, 20, y, true)
                         if not ok2 then
                             Fail("EllesmereUI page", newY)
                             break
                         end
                         y = newY
                     end
-                    return math.abs(y)
+                    if into ~= parent then into:SetHeight(math.max(math.abs(y), 10)) end
+                    return math.max(math.abs(y), sideH)
                 end,
                 -- the same builder again, when a cached page comes back
                 getHeaderBuilder = function(pageName) return UI.EUIHeader(pageName) end,

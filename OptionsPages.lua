@@ -14,26 +14,81 @@ function UI.SToggle(label, key)
         set = function(v) SetStyle(key, v) end }
 end
 
-function UI.LearnedSummary()
+-- What item learning knows: a heading ("Learned items: 44 (44 automatic, 0 by
+-- hand).") and every learned item on its own line, "Name - Button, Button",
+-- A-Z by name (for the copyable list on the General page).
+function UI.LearnedText()
     local learned = DB().learned
-    local n, auto, lines = 0, 0, {}
+    local n, auto, rows = 0, 0, {}
     if type(learned) == "table" then
-        local ids = {}
-        for id in pairs(learned) do ids[#ids + 1] = id end
-        table.sort(ids)
-        for _, id in ipairs(ids) do
-            local rec = learned[id]
+        for id, rec in pairs(learned) do
             n = n + 1
-            if type(rec) ~= "table" or rec.how ~= "manual" then auto = auto + 1 end
-            if #lines < 4 and type(rec) == "table" then
-                local t = {}
-                for _, s in ipairs(rec.sets or {}) do t[#t + 1] = (SetTitle(s)) end
-                lines[#lines + 1] = ItemRef(id) .. " - " .. table.concat(t, ", ")
-            end
+            local byHand = type(rec) == "table" and rec.how == "manual"
+            if not byHand then auto = auto + 1 end
+            local t = {}
+            for _, s in ipairs(type(rec) == "table" and rec.sets or {}) do t[#t + 1] = SetTitle(s) or s end
+            rows[#rows + 1] = ItemRef(id) .. " - " .. (#t > 0 and table.concat(t, ", ") or "no button")
+                .. (byHand and " (by hand)" or "")
         end
     end
-    local head = string.format("Learned items: %d (%d automatic, %d by hand). /amac learned lists them all.", n, auto, n - auto)
-    return head .. (#lines > 0 and ("\n" .. table.concat(lines, "\n")) or "")
+    table.sort(rows, function(a, b) return a:lower() < b:lower() end)
+    local head = string.format("Learned items: %d (%d automatic, %d by hand).", n, auto, n - auto)
+    return head, table.concat(rows, "\n")
+end
+
+-- The learned items as a scrolling list you can copy from: click it to select
+-- everything, then Ctrl+C (an edit box, but typing in it changes nothing).
+-- At x, y on parent, w wide; returns its height.
+function UI.BuildLearnedList(parent, x, y, w, refreshers)
+    local head = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    head:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y - 4)
+    head:SetJustifyH("LEFT")
+    local listH = 120
+    local ok, sf = pcall(CreateFrame, "ScrollFrame", nil, parent, "UIPanelScrollFrameTemplate")
+    local templated = ok and sf
+    if not templated then sf = CreateFrame("ScrollFrame", nil, parent) end
+    sf:SetPoint("TOPLEFT", parent, "TOPLEFT", x + 4, y - 26)
+    sf:SetSize(w - 34, listH)   -- (room for the scroll bar on its right)
+    local bg = sf:CreateTexture(nil, "BACKGROUND")
+    bg:SetPoint("TOPLEFT", sf, "TOPLEFT", -4, 4)
+    bg:SetPoint("BOTTOMRIGHT", sf, "BOTTOMRIGHT", 4, -4)
+    bg:SetColorTexture(0, 0, 0, 0.35)
+    local eb = CreateFrame("EditBox", nil, sf)
+    eb:SetMultiLine(true)
+    eb:SetAutoFocus(false)
+    eb:SetFontObject("GameFontHighlightSmall")
+    eb:SetWidth(w - 40)
+    eb:SetHeight(listH)
+    sf:SetScrollChild(eb)
+    if not templated then
+        sf:EnableMouseWheel(true)
+        sf:SetScript("OnMouseWheel", function(self, delta)
+            local v = self:GetVerticalScroll() - delta * 20
+            self:SetVerticalScroll(math.max(0, math.min(v, self:GetVerticalScrollRange())))
+        end)
+    end
+    local text = ""
+    -- read-only: anything typed is put back; clicking selects it all for copying
+    eb:SetScript("OnTextChanged", function(self, byUser)
+        if byUser then self:SetText(text); self:HighlightText() end
+    end)
+    eb:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
+    eb:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+    local hint = parent:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    hint:SetPoint("TOPLEFT", sf, "BOTTOMLEFT", -4, -8)
+    hint:SetText(Loc("Click the list to select it all, then press Ctrl+C to copy it."))
+    local function refresh()
+        local h, body = UI.LearnedText()
+        head:SetText(Loc(h))
+        if body == "" then body = Loc("Nothing learned yet: carry some consumables.") end
+        if body ~= text then
+            text = body
+            eb:SetText(body)
+        end
+    end
+    refresh()
+    refreshers[#refreshers + 1] = refresh
+    return 26 + listH + 30
 end
 
 -- true while buttons use Blizzard's art (no EllesmereUI look): for settings
@@ -82,7 +137,7 @@ PAGES = {
                 set = function(v) DB().noEmptyMsg = (not v) or nil end },
         } },
         { name = "Item learning", items = {
-            { type = "text", text = UI.LearnedSummary },
+            { type = "learned" },
         } },
         { name = "Appearance", items = {
             { type = "eui", items = {
@@ -322,6 +377,11 @@ function BuildPage(parent, group, x0, y0, native)
     -- start sooner and the wide rows are more compact)
     local lx = native and x0 or x0 + 30
     local ctlX = native and x0 + 190 or x0 + (parent.amNarrow and 170 or 240)
+    -- notes and lists line up with the labels: on EllesmereUI's page its rows
+    -- sit CONTENT_PAD (45) in and their labels 20 further
+    local pw = (parent:GetWidth() or 0) > 0 and parent:GetWidth() or UI.CONTENT_W
+    local tx = native and (tonumber(EllesmereUI and EllesmereUI.CONTENT_PAD) or 45) + 20 or lx
+    local tw = pw - tx - (native and tx or 20)
 
     -- one item on a row of its own; returns the row's height
     local function BuildItem(item)
@@ -392,12 +452,15 @@ function BuildPage(parent, group, x0, y0, native)
                 c.min, c.max, c.step, c.getValue, c.setValue).refresh
         elseif item.type == "text" then
             local fs = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            fs:SetPoint("TOPLEFT", parent, "TOPLEFT", lx, y - 4)
-            fs:SetWidth((parent:GetWidth() or UI.CONTENT_W) - lx - 20)
+            fs:SetPoint("TOPLEFT", parent, "TOPLEFT", tx, y - 4)
+            fs:SetWidth(tw)
             fs:SetJustifyH("LEFT")
             refreshers[#refreshers + 1] = function() fs:SetText(Loc(item.text())) end
             fs:SetText(Loc(item.text()))
             rowH = item.height or 70
+        elseif item.type == "learned" then
+            -- every learned item, in a list you can scroll and copy from
+            rowH = UI.BuildLearnedList(parent, tx, y, tw, refreshers)
         elseif item.type == "customrows" then
             -- your own buttons, one row each (Custom.lua)
             local w = (parent:GetWidth() or 0) > 0 and parent:GetWidth() or UI.CONTENT_W

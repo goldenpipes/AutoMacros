@@ -4,6 +4,14 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.128.0 - 2026-10-27 (not yet tested in game)
+
+### Changed
+- General > Item learning is now a scrollable list of every learned item and which button it
+  went to. Click it to select everything, then Ctrl+C to copy it out of the game.
+- Notes on the settings pages line up with the other settings.
+- EllesmereUI settings, Popout page: the demo popout is in a column on the right, like on
+  Blizzard's settings page.
 ## 0.127.2 - 2026-10-27 (soft glow checked on retail)
 
 ### Fixed

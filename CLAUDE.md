@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.127.2.**
+- **Current version: 0.128.0.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   iteration** (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -119,6 +119,24 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   EllesmereUI bars, the Professions / Tracking spell IDs, ActiveTracking on Classic Era,
   0.117.1's settings-after-combat, the welcome window's look.
 
+## 0.128.0 — learned list; EllesmereUI Popout page with the demo on the right
+- Lewis (EllesmereUI page, retail): the Item learning text wasn't indented like the rest, and
+  should be a scrollable list he can copy out of the game. New settings item type
+  `learned` (General > Item learning, was a `text` item with UI.LearnedSummary, now gone):
+  `UI.LearnedText()` = heading + every learned item "Name - Button, Button" (A-Z, "(by
+  hand)" marked); `UI.BuildLearnedList(parent, x, y, w, refreshers)` = heading, a
+  UIPanelScrollFrameTemplate scroll frame (plain one + mouse wheel as fallback) holding a
+  multi-line EditBox, read-only (OnTextChanged by the user puts the text back), focus
+  selects all for Ctrl+C, a hint line; 176 high.
+- Notes and the list line up with the labels: BuildPage's `tx`/`tw`. On EllesmereUI's page
+  rows sit `EllesmereUI.CONTENT_PAD` (45) in and labels 20 further, so tx = 65 there (text
+  was at x0 = 20, left of everything); Blizzard's page unchanged (lx).
+- EllesmereUI Popout page: preview in a right-hand column like Blizzard's page. For pages
+  with previewSide = "right" (not in search prebuild) buildPage makes `parent.amCol`
+  (settings column, page width - UI.EUI_SIDE_W 220) and `parent.amSide` (preview host at
+  the top right, UI.ShowHeader into it, onResize sets its height); old ones are hidden on a
+  rebuild; no SetContentHeader for that page. Returns max(settings height, preview height).
+  **Untested**: EUI widgets built into a child frame instead of the page itself.
 ## 0.127.2 — back to 0.123.0's soft glow, frame drawn again on top
 - **Confirmed in retail** (Lewis: "looks perfect"): red fade, rounded corners, the grey
   frame shows over it all round. This settles the retail soft glow after 0.123.x-0.127.1.
