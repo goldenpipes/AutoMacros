@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.114.0.**
+- **Current version: 0.115.0.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -91,6 +91,22 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.115.0 — popout direction by right-click on the Buttons page
+- Lewis (right after 0.114.0): no labels and dropdowns; click the button to cycle its
+  direction, on the Buttons page: right-click, Automatic default, cycle; an indicator for
+  automatic vs manual; buttons on the bars should show (on the page) how they open there.
+- `POPOUT.CYCLE` auto/up/right/down/left, `POPOUT.Chosen(e)`, `POPOUT.Next(e)` (saves
+  db.popDir, auto = nil). RefreshArrows fills `report.barDir[name]` = **POPOUT.Auto** of
+  the first visible bar button holding it (the automatic direction, not Direction(), so
+  going back to Automatic doesn't show the old manual one).
+- Icon strip: RegisterForClicks left+right; right-click = POPOUT.Next + Refresh +
+  RefreshHeaders (+ tooltip redrawn). `UI.DirShown(e)` = chosen dir, or on auto barDir
+  while on (nil = not on a bar); `UI.DirMark(b, e, size)`: solid tab (tabColor, alpha 0.6
+  on auto) 3 px x half the edge on that edge inside the icon, "A" top-left on auto, both
+  ignore parent alpha. Tooltip line `UI.DirText(e)`. Hint text extended; previewH 160.
+- Removed: the Popout page's Direction section, UI.DirectionItems / DirectionStamp, and
+  0.114.0's `choicepairs` item type (nothing else used it).
 
 ## 0.114.0 — Direction in two columns
 - Lewis (Classic Era screenshot of the Popout page): note that only buttons that are on are

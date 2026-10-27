@@ -392,13 +392,20 @@ RefreshArrows = function()
     local enabled = DB().noFlyout ~= true
     local tabs = 0
     report.onBar = {}
+    report.barDir = {}   -- which way Automatic opens each button's popout on your bars (the Buttons page shows it)
     for _, b in ipairs(buttons) do
         HookButton(b)
         local mine = MacroOnButton(b)
         ApplyLabel(b, mine)
         local m = enabled and mine or nil
         -- on a bar you can see (popouts on or off): the settings mark buttons that are on none
-        if mine and b:IsVisible() then report.onBar[mine.name] = (report.onBar[mine.name] or 0) + 1 end
+        if mine and b:IsVisible() then
+            report.onBar[mine.name] = (report.onBar[mine.name] or 0) + 1
+            if not report.barDir[mine.name] then
+                local okDir, auto = pcall(POPOUT.Auto, b)
+                report.barDir[mine.name] = okDir and auto or "up"
+            end
+        end
         local list = m and flyoutItems[m.name]
         if list and #list >= 2 then
             local a = ArrowFor(b)

@@ -55,6 +55,28 @@ function POPOUT.Auto(b)
     return POPOUT.AWAY[near]
 end
 
+-- What right-clicking a button on the Buttons page goes through.
+POPOUT.CYCLE = { "auto", "up", "right", "down", "left" }
+
+-- button e's direction as you set it: up / down / left / right, or "auto"
+function POPOUT.Chosen(e)
+    local set = type(DB().popDir) == "table" and DB().popDir[e.key]
+    if set == "up" or set == "down" or set == "left" or set == "right" then return set end
+    return "auto"
+end
+
+-- the next one after the current (Automatic is not saved)
+function POPOUT.Next(e)
+    local now, nxt = POPOUT.Chosen(e), "auto"
+    for i, d in ipairs(POPOUT.CYCLE) do
+        if d == now then nxt = POPOUT.CYCLE[i % #POPOUT.CYCLE + 1] end
+    end
+    local db = DB()
+    if type(db.popDir) ~= "table" then db.popDir = {} end
+    db.popDir[e.key] = (nxt ~= "auto") and nxt or nil
+    return nxt
+end
+
 -- The direction for our button m's popout on action button b.
 function POPOUT.Direction(b, m)
     local set = m and type(DB().popDir) == "table" and DB().popDir[m.key]

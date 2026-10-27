@@ -321,44 +321,6 @@ function UI.ButtonsStamp()
     return table.concat(keys, ",")
 end
 
--- which buttons the Direction section lists: the page is built again when this
--- changes (see UI.ShowPanel)
-function UI.DirectionStamp()
-    local keys = {}
-    for _, e in ipairs(UI.EnabledButtons()) do keys[#keys + 1] = e.key end
-    return table.concat(keys, ",")
-end
-
--- The Popout page's Direction section: a note, then a dropdown per button that
--- is on (Automatic, Up, Down, Left, Right), two to a row, saved in db.popDir
--- (Automatic = not saved).
-function UI.DirectionItems()
-    local items = { { type = "text", height = 36, text = function()
-        return "Automatic opens each popout toward the middle of the screen. Only buttons that are on are listed here."
-    end } }
-    local list = UI.EnabledButtons()
-    if #list == 0 then
-        items[#items + 1] = { type = "text", height = 24,
-            text = function() return "No buttons are on yet (see the Buttons page)." end }
-    end
-    local pairs2 = { type = "choicepairs", items = {} }
-    items[#items + 1] = pairs2
-    for _, e in ipairs(list) do
-        pairs2.items[#pairs2.items + 1] = { type = "choice", label = e.title, list = function() return POPOUT.DIRS end,
-            get = function()
-                local d = DB().popDir
-                return type(d) == "table" and d[e.key] or "auto"
-            end,
-            set = function(v)
-                local db = DB()
-                if type(db.popDir) ~= "table" then db.popDir = {} end
-                db.popDir[e.key] = (v ~= "auto") and v or nil
-                Refresh()   -- the indicators move to their new side
-            end }
-    end
-    return items
-end
-
 -- The Buttons tab: one section per group, each a grid of checkboxes in
 -- alphabetical order of the names shown.
 function UI.ButtonSections()
@@ -403,8 +365,52 @@ UI.HEADERS = {}
 -- the flyout preview's note: under it, or across the bottom of its page
 UI.FLYOUT_NOTE = "Hover an item to see the hover color. The highlighted border marks the one in use."
 
+-- The way button e's popout opens: the direction you chose, or on Automatic
+-- the way it opens on your bars (nil when it is on none, or off).
+function UI.DirShown(e)
+    local dir = POPOUT.Chosen(e)
+    if dir ~= "auto" then return dir, false end
+    return Enabled(e) and report.barDir and report.barDir[e.name] or nil, true
+end
+
+UI.DIR_NAMES = { auto = "Automatic", up = "up", down = "down", left = "left", right = "right" }
+
+-- "Popout: opens up (Automatic)", "Popout: opens left (set by you)"
+function UI.DirText(e)
+    local dir, auto = UI.DirShown(e)
+    if auto and not dir then return "Popout: Automatic (toward the middle of the screen)" end
+    return "Popout: opens " .. UI.DIR_NAMES[dir] .. (auto and " (Automatic)" or " (set by you)")
+end
+
+-- On an icon of the Buttons page: a tab on the edge its popout opens from, as
+-- on your bars (in the popout indicator's color), and an "A" while it is on
+-- Automatic. The tab is fainter on Automatic.
+function UI.DirMark(b, e, size)
+    if not b.dirTab then
+        b.dirTab = b:CreateTexture(nil, "OVERLAY", nil, 7)
+        b.dirAuto = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        b.dirAuto:SetPoint("TOPLEFT", b, "TOPLEFT", 3, -2)
+        b.dirAuto:SetText("A")
+        for _, r in ipairs({ b.dirTab, b.dirAuto }) do
+            if r.SetIgnoreParentAlpha then pcall(r.SetIgnoreParentAlpha, r, true) end
+        end
+    end
+    local dir, auto = UI.DirShown(e)
+    b.dirAuto:SetShown(auto)
+    local t = b.dirTab
+    t:ClearAllPoints()
+    if not dir then t:Hide() return end
+    local c = StyleColor("tabColor")
+    t:SetColorTexture(c[1], c[2], c[3], auto and 0.6 or 1)
+    local len, thick = math.floor(size * 0.5), 3
+    local point = { up = "TOP", down = "BOTTOM", left = "LEFT", right = "RIGHT" }
+    t:SetPoint(point[dir], b, point[dir], 0, 0)
+    if dir == "up" or dir == "down" then t:SetSize(len, thick) else t:SetSize(thick, len) end
+    t:Show()
+end
+
 -- Buttons: every button's icon, grey when it is off; clicking one turns it on or
--- off. Last a + to make a button of your own (drop an item or spell on it);
+-- off, right-clicking changes which way its popout opens. Last a + to make a button of your own (drop an item or spell on it);
 -- dropping one on your own button's icon adds it there.
 UI.HEADERS.buttons = function(f, width)
     local size, gap = 36, 6
@@ -423,7 +429,15 @@ UI.HEADERS.buttons = function(f, width)
         local b = f.icons[i]
         if not b then
             b = UI.SampleButton(f, size)
-            b:SetScript("OnClick", function(self)
+            b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+            b:SetScript("OnClick", function(self, button)
+                if button == "RightButton" then   -- the next popout direction
+                    POPOUT.Next(self.entry)
+                    Refresh()          -- (the tabs on your bars move)
+                    RefreshHeaders()
+                    if GameTooltip:GetOwner() == self then self:GetScript("OnEnter")(self) end   -- (its Popout line)
+                    return
+                end
                 if self.entry.custom and UI.CursorThing() then return UI.AddToIcon(self) end
                 UI.SetEnabled(self.entry, not Enabled(self.entry))
             end)
@@ -439,7 +453,9 @@ UI.HEADERS.buttons = function(f, width)
                     if ok then GameTooltip:AddLine(UI.AvailableText(n, parts), 0.25, 1, 0.25) end
                 end
                 if UI.NotOnBars(self.entry) then UI.AddNotOnBarsLine(GameTooltip) end
+                GameTooltip:AddLine(UI.DirText(self.entry), 1, 1, 1)
                 GameTooltip:AddLine("Drag onto an action bar to place it", 0.7, 0.7, 0.7)
+                GameTooltip:AddLine("Right-click to change which way its popout opens", 0.7, 0.7, 0.7)
                 if self.entry.custom then
                     GameTooltip:AddLine("Drop an item or spell on it to add it", 0.7, 0.7, 0.7)
                 end
@@ -470,6 +486,7 @@ UI.HEADERS.buttons = function(f, width)
         local loose = UI.NotOnBars(e)
         g:SetShown(loose)
         if loose and not g.anim:IsPlaying() then g.anim:Play() elseif not loose then g.anim:Stop() end
+        UI.DirMark(b, e, size)
         b:Show()
     end
     for i = #list + 1, #f.icons do f.icons[i]:Hide() end
@@ -479,7 +496,7 @@ UI.HEADERS.buttons = function(f, width)
     UI.StyleSample(f.newSlot)
     place(f.newSlot, slots)
     f.newSlot:Show()
-    f.hint = f.hint or UI.SmallText(f, "Click an icon to turn it on or off for this character, or drag it onto an action bar. The green number is how many you have or can make. A glowing icon has items but isn't on any of your bars yet.")
+    f.hint = f.hint or UI.SmallText(f, "Click an icon to turn it on or off for this character, or drag it onto an action bar. Right-click to change which way its popout opens: the tab shows it, A means automatic. The green number is how many you have or can make. A glowing icon has items but isn't on any of your bars yet.")
     f.hint:ClearAllPoints()
     f.hint:SetWidth(width - 20)
     f.hint:SetPoint("TOP", f, "TOP", 0, -16 - rows * (size + gap) - 4)
