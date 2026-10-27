@@ -4,7 +4,7 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
-## 0.127.2 - 2026-10-27 (not yet tested in game)
+## 0.127.2 - 2026-10-27 (soft glow checked on retail)
 
 ### Fixed
 - Retail, Soft glow: back to the soft red glow from 0.123.0 (no more white), now with the

@@ -32,7 +32,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   in the .toc and in Core.lua's first line.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
   `releases/AutoMacros-<version>.zip` containing an `AutoMacros/` folder with only the
-  addon files (`AutoMacros.toc` and the `.lua` files it lists, **with their `Games/<game>/` subfolders
+  addon files (`AutoMacros.toc` and the `.lua` files it lists, **with their `Games/<game>/`
   subfolders**) — no CLAUDE.md, `tools/`, `previous/`, or `.git`. Entry names use forward
   slashes.
 - **GitHub:** public repo https://github.com/goldenpipes/AutoMacros, branch `master`.
@@ -120,6 +120,8 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   0.117.1's settings-after-combat, the welcome window's look.
 
 ## 0.127.2 — back to 0.123.0's soft glow, frame drawn again on top
+- **Confirmed in retail** (Lewis: "looks perfect"): red fade, rounded corners, the grey
+  frame shows over it all round. This settles the retail soft glow after 0.123.x-0.127.1.
 - 0.127.1 still white. Lewis: go back to the original glow (before Blizzard's texture) and
   put it behind the border. The on-button BORDER-layer fill (GlowFill, amFollow) is gone;
   **textures created on the action button itself drew white whatever we did** (cause not
@@ -130,7 +132,8 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   size, TOPLEFT point, vertex color) on g at OVERLAY 7, above the fade, so the grey ring
   shows over the glow like over the icon. It pulses with g (the real ring is underneath).
 
-## 0.127.1- 0.127.0 in retail: fill still **flat white, opacity ignored**, so 0.126.1's mask theory
+## 0.127.1
+- 0.127.0 in retail: fill still **flat white, opacity ignored**, so 0.126.1's mask theory
   was wrong. Remaining difference from g.edges (which fade fine): those are Show()n before
   FadeEdge; the fill pieces were still hidden when FadeEdge ran. Now StyleGlow only stores
   g.amFillColor; amFollow applies FadeEdge to each piece right after showing it (every
@@ -168,7 +171,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 ## 0.125.0 — retail soft glow = Blizzard's glow only
 - Lewis's side-by-side (Blizzard's yellow hover glow vs our red at 0.124.0): ours still
   covered the grey border (the fill). He wants it **exactly** like Blizzard's. Retail rounded
-  buttons (no EUI look) now draw only Blizzard's Mouseover glow, 	 copies added on
+  buttons (no EUI look) now draw only Blizzard's Mouseover glow, `t` copies added on
   (BLIZZ_ART.GlowRing(g, i), g.amRings): thickness = strength, 1 = Blizzard's own. The
   fill, its mask (BLIZZ_ART.GlowMask, MASK_ATLAS) and MaskSoft are gone. Classic/EUI keep
   the gradient fill (20..100%).
