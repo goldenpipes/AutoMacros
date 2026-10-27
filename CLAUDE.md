@@ -123,7 +123,10 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   StyleButtonArt's SetChecked pcall'd; RefreshArrows only hides the flyout out of combat.
 - Dropped: hover tracking (SetOver/AnyOver/idle OnUpdate), opening from the tab (arrow
   EnableMouse false), Escape closing (UISpecialFrames with a protected frame taints).
-- To test: hover/click out of combat in each mode; same in combat (target dummy); a
+- **Lewis, Classic Era: works** out of combat (Bandage popout, Cannibalize cast at once and
+  became the button's spell) and in combat (item used, popout closed, button changed after
+  combat). Classic Era target dummies are Engineering items: test combat on a mob.
+- Still to test: hover/click out of combat in each mode; same in combat; a
   spell entry (Bandage + Cannibalize, Hearth/Teleport); unworn teleport ring; popout
   closes on leave; bars moved / buttons dragged then hover; EllesmereUI bars; any
   "action blocked" / taint error (BugSack).
