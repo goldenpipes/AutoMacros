@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.117.1.**
+- **Current version: 0.117.2.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -91,6 +91,17 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.117.2
+- Lewis (Classic Era): Agility on, Scroll of Agility in bags, not on a bar, but no glow on
+  the Buttons page. `/amac debug`: "Agility Buff: 1 item(s), on a bar 0x" (Other Buffs the
+  same), so UI.NotOnBars was right; the glow texture was empty. UnplacedGlow trusted
+  `SetAtlas` returning false for a missing atlas; Classic Era returns nothing, so the
+  CheckButtonHilight fallback never ran. Now: C_Texture.GetAtlasInfo first, and the
+  fallback also when GetAtlas() is empty afterwards. **Rule: don't trust SetAtlas's return
+  value on Classic; check the atlas exists first** (other SetAtlas uses: BarArt checks
+  GetAtlas from a live texture, fine).
+- `/amac debug` was the right tool again: per category "N item(s), on a bar Nx".
 
 ## 0.117.1
 - Lewis's BugGrabber (Classic Era, in combat): ADDON_ACTION_BLOCKED, AutoMacros called

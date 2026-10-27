@@ -230,8 +230,15 @@ end
 function UI.UnplacedGlow(b)
     if b.unplaced then return b.unplaced end
     local g = b:CreateTexture(nil, "OVERLAY", nil, 7)
-    local ok, found = pcall(g.SetAtlas, g, "spellbook-item-unassigned-glow")
-    if not ok or found == false then g:SetTexture("Interface\\Buttons\\CheckButtonHilight") end
+    -- (asked first: Classic Era's SetAtlas says nothing for an atlas it lacks,
+    -- which left an empty, invisible glow there before 0.117.2)
+    local atlas = "spellbook-item-unassigned-glow"
+    local okInfo, info = pcall(function() return C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(atlas) end)
+    local ok, found = false, false
+    if okInfo and info then ok, found = pcall(g.SetAtlas, g, atlas) end
+    if not ok or found == false or not (g.GetAtlas and g:GetAtlas()) then
+        g:SetTexture("Interface\\Buttons\\CheckButtonHilight")
+    end
     g:SetBlendMode("ADD")
     g:SetPoint("TOPLEFT", b, "TOPLEFT", -4, 3)
     g:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", 3, -3)

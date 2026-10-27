@@ -4,6 +4,11 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.117.2 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Fixed
+- Classic: on the Buttons page, a button with items that isn't on any bar didn't glow.
+
 ## 0.117.1 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Fixed
