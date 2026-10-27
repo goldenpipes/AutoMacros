@@ -106,6 +106,19 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
 
+## CurseForge (2026-10-27)
+- Lewis is releasing on CurseForge as **Forever only** for now, as a pre-release (CurseForge
+  release type Beta). **WoW Forever's beta is over** (the game is out): don't call the
+  game or the addon a Forever beta in shown text.
+- Forever-only build: `releases\AutoMacros-<v>-forever.zip` = the normal files with the
+  .toc's Interface line cut to `16001` and only `Games\Forever\` listed/included (built
+  by a one-off PowerShell step; the repo .toc stays all-clients). CurseForge text (summary,
+  description, file changelog) in `releases\curseforge-<v>.md`; logo
+  `releases\AutoMacros-logo.png` from `tools\make_logo.ps1` (System.Drawing: button with a
+  red potion, popout above with mana potion and green elixir, the selected one ringed in
+  gold). releases/ is gitignored; Lewis creates the project and uploads himself.
+- Unknown: whether CurseForge lists a WoW Forever game version yet.
+
 ## Where things stand (2026-10-27, end of session)
 - **0.128.0 released as a pre-release** (v0.128.0, zip in releases/, notes = every changelog
   section since 0.120.0). Lewis: "looks great, done for now" after checking the learned
