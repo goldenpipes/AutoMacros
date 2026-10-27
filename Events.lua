@@ -359,6 +359,7 @@ for _, event in ipairs({
     "ACTIONBAR_SLOT_CHANGED", "ACTIONBAR_PAGE_CHANGED",
     "UPDATE_BONUS_ACTIONBAR", "UPDATE_SHAPESHIFT_FORM",
     "TRADE_SKILL_SHOW", "TRADE_SKILL_UPDATE", "TRADE_SKILL_LIST_UPDATE",   -- a profession window (recipes)
+    "MINIMAP_UPDATE_TRACKING",   -- tracking switched (the Tracking button follows it)
 }) do
     pcall(frame.RegisterEvent, frame, event)   -- skip events this client lacks
 end

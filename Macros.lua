@@ -115,6 +115,47 @@ function Chosen(m, list)
     return list[1].id, list[1]
 end
 
+-- The tracking switched on now, as its entry in list (the Tracking button's
+-- spells), or nil. Asked the minimap's way where the client has it (by spell
+-- ID, else name), else by the active tracking's icon (GetTrackingTexture,
+-- Classic).
+function ActiveTracking(list)
+    if C_Minimap and C_Minimap.GetNumTrackingTypes and C_Minimap.GetTrackingInfo then
+        local okN, n = pcall(C_Minimap.GetNumTrackingTypes)
+        for i = 1, (okN and tonumber(n)) or 0 do
+            local ok, a, _, c, _, _, f = pcall(C_Minimap.GetTrackingInfo, i)
+            local name, active, spellID
+            if ok and type(a) == "table" then
+                name, active, spellID = a.name, a.active, a.spellID
+            elseif ok then
+                name, active, spellID = a, c, f   -- (name, texture, active, category, nested, spellID)
+            end
+            if active then
+                for _, e in ipairs(list) do
+                    if (spellID and e.id == spellID) or (name and SpellName(e.id) == name) then return e.id, e end
+                end
+            end
+        end
+    end
+    local okT, tex = pcall(function() return GetTrackingTexture and GetTrackingTexture() end)
+    if okT and tex then
+        for _, e in ipairs(list) do
+            if SpellIcon(e.id) == tex then return e.id, e end
+        end
+    end
+    return nil
+end
+
+-- What button m uses from list: Chosen, except that on the Tracking button
+-- the tracking switched on now is always the one (however it was switched).
+function ChosenFor(m, list)
+    if m.tracking then
+        local id, e = ActiveTracking(list)
+        if id then return id, e end
+    end
+    return Chosen(m, list)
+end
+
 -- a spell's name (or nil), on clients with either spell API
 function SpellName(id)
     local name

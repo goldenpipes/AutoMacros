@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.119.0.**
+- **Current version: 0.120.0.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -102,8 +102,18 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   unverified.** Hunter and Druid Track Humanoids share a name: byName keeps one (a
   character only has one). The Druid one needs Cat Form (the game says so if not).
   Retail tracks from the minimap menu: the button may be empty there.
-- Idea not done: mark the active tracking in the popout (GetTrackingTexture /
-  C_Minimap.GetTrackingInfo).
+
+## 0.120.0 — active tracking is the chosen one
+- Lewis: the active tracking should always be the Tracking button's chosen one. CATALOG
+  flag `tracking = true`; `ActiveTracking(list)` (Macros.lua): C_Minimap.GetNumTrackingTypes
+  / GetTrackingInfo (table form, or the older name, texture, active, category, nested,
+  spellID returns) matched by spellID or name, else GetTrackingTexture() vs SpellIcon.
+  `ChosenFor(m, list)` = ActiveTracking for tracking buttons, else Chosen; used by
+  UpdateCore's spells branch and OpenFlyout (the selected border). Event
+  MINIMAP_UPDATE_TRACKING -> Schedule. **Unverified which API Classic Era answers**, and
+  whether GetTrackingTexture's value equals the spell's texture (both should be file IDs).
+- Not known: whether pressing the bar button (which /casts the active tracking) does
+  nothing or turns tracking off on Classic.
 
 ## 0.118.0 — Professions button
 - Lewis: a button for the tradeskill windows; first tried as a custom button, but **Classic

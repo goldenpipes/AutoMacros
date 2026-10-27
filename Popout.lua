@@ -418,7 +418,7 @@ function OpenFlyout(button)
     if not p or not flyout then return end
     flyout.macro, flyout.button, flyout.dir = p.m, button, p.dir
     local list, m = p.list, p.m
-    local _, chosenEntry = Chosen(m, list)
+    local _, chosenEntry = ChosenFor(m, list)
     local chosen = chosenEntry and (chosenEntry.pick or chosenEntry.id)
     for i = 1, p.n do
         local e = entries[i]

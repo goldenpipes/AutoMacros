@@ -4,6 +4,13 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.120.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Changed
+- Tracking button: the tracking you have on is always the button's own, and is marked in
+  its popout, however you switched it (the popout, the minimap, the spellbook). In combat
+  the button on your bar catches up when combat ends.
+
 ## 0.119.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Added

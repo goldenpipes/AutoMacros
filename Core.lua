@@ -1,4 +1,4 @@
--- AutoMacros 0.119.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.120.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -579,9 +579,10 @@ CATALOG = {
       scope = "character" },
     -- every tracking spell you know (your class's, your race's, gathering);
     -- clicking one in the popout switches to it. On by itself once you know one.
+    -- tracking: the one switched on is always the button's (ChosenFor).
     { key = "tracking", name = "AM_Tracking", title = "Tracking", empty = "Tracking",
       label = "tracking", kind = "spells", spells = TRACKING_SPELLS, byName = true, autoSpells = true,
-      scope = "character" },
+      tracking = true, scope = "character" },
 }
 
 MACROS = {}            -- the categories in use for this character (rebuilt by RebuildMacros)

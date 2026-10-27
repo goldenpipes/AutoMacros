@@ -99,7 +99,7 @@ function UpdateCore()
         elseif m.kind == "spells" then
             local list = KnownSpells(m)
             flyoutItems[m.name] = list
-            id = Chosen(m, list)
+            id = ChosenFor(m, list)   -- (Tracking: the one switched on)
             body = id and SpellBody(id) or nil
         elseif m.order then
             -- a button of your own: what you carry or know of it, in your order
