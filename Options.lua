@@ -330,18 +330,21 @@ function UI.DirectionStamp()
 end
 
 -- The Popout page's Direction section: a note, then a dropdown per button that
--- is on (Automatic, Up, Down, Left, Right), saved in db.popDir (Automatic = not saved).
+-- is on (Automatic, Up, Down, Left, Right), two to a row, saved in db.popDir
+-- (Automatic = not saved).
 function UI.DirectionItems()
-    local items = { { type = "text", height = 30, text = function()
-        return "Automatic opens each popout toward the middle of the screen."
+    local items = { { type = "text", height = 36, text = function()
+        return "Automatic opens each popout toward the middle of the screen. Only buttons that are on are listed here."
     end } }
     local list = UI.EnabledButtons()
     if #list == 0 then
         items[#items + 1] = { type = "text", height = 24,
             text = function() return "No buttons are on yet (see the Buttons page)." end }
     end
+    local pairs2 = { type = "choicepairs", items = {} }
+    items[#items + 1] = pairs2
     for _, e in ipairs(list) do
-        items[#items + 1] = { type = "choice", label = e.title, list = function() return POPOUT.DIRS end,
+        pairs2.items[#pairs2.items + 1] = { type = "choice", label = e.title, list = function() return POPOUT.DIRS end,
             get = function()
                 local d = DB().popDir
                 return type(d) == "table" and d[e.key] or "auto"

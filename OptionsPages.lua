@@ -301,9 +301,9 @@ function BuildPage(parent, group, x0, y0, native)
     for _, item in ipairs(groupItems) do
         if item.when and not item.when() then
             -- not shown with the current look
-        elseif item.type == "eui" or (item.type == "row" and W) then
-            -- (EllesmereUI's page pairs a row's items by itself)
-            if item.type == "row" or EllesmereUI then
+        elseif item.type == "eui" or ((item.type == "row" or item.type == "choicepairs") and W) then
+            -- (EllesmereUI's page pairs a row's items, and dropdowns, by itself)
+            if item.type ~= "eui" or EllesmereUI then
                 for _, sub in ipairs(item.items) do items[#items + 1] = sub end
             end
         else
@@ -392,6 +392,22 @@ function BuildPage(parent, group, x0, y0, native)
             refreshers[#refreshers + 1] = function() fs:SetText(Loc(item.text())) end
             fs:SetText(Loc(item.text()))
             rowH = item.height or 70
+        elseif item.type == "choicepairs" then
+            -- dropdowns two to a row: "Label <dropdown>   Label <dropdown>"
+            local pw = (parent:GetWidth() or 0) > 0 and parent:GetWidth() or UI.CONTENT_W
+            local colW = math.floor((pw - lx - 10) / 2)
+            local labelW = math.floor(colW * 0.48)
+            local h = 0
+            for i, sub in ipairs(item.items) do
+                local col = (i - 1) % 2
+                local cx = lx + col * colW
+                MakeLabel(parent, sub.label, cx, y - h - 2, labelW)
+                local c = UI.NativeCfg(sub)
+                refreshers[#refreshers + 1] = MakeChoice(parent, cx + labelW + 4, y - h,
+                    colW - labelW - 44, sub.list, c.getValue, c.setValue).refresh
+                if col == 1 or i == #item.items then h = h + ROW end
+            end
+            rowH = h
         elseif item.type == "customrows" then
             -- your own buttons, one row each (Custom.lua)
             local w = (parent:GetWidth() or 0) > 0 and parent:GetWidth() or UI.CONTENT_W

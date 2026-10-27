@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.113.0.**
+- **Current version: 0.114.0.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -91,6 +91,14 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.114.0 — Direction in two columns
+- Lewis (Classic Era screenshot of the Popout page): note that only buttons that are on are
+  listed; more compact, 2 columns. DirectionItems: note text (height 36) + one item of new
+  type **`choicepairs`** (`items` = the choices, full titles kept: there is no group
+  heading). BuildPage: on EUI it is flattened (adjacent dropdowns pair into DualRows by
+  themselves); on Blizzard's page two per row: column = (width - lx - 10) / 2, label 48% of
+  it, MakeChoice width = column - label - 44 (room for UIDropDownMenu's side art).
 
 ## 0.113.0 — welcome window
 - New file **Welcome.lua** (after Custom in the .toc). Lewis chose: what the addon does,
