@@ -293,7 +293,8 @@ function UI.Name(e)
     return UI.SHORT[e.key] or e.title
 end
 
--- How the Buttons tab sorts them. Anything not listed goes under Other.
+-- How the Buttons tab groups them (each group is shown A-Z, see
+-- UI.ButtonSections). Anything not listed goes under Other.
 UI.BUTTON_GROUPS = {
     { name = "Recovery", keys = { "healthpot", "manapot", "ragepot", "bandage", "cure" } },
     { name = "Food & Drink", keys = { "food", "water", "bufffood" } },
@@ -356,12 +357,16 @@ function UI.DirectionItems()
     return items
 end
 
--- The Buttons tab: one section per group, each a grid of checkboxes.
+-- The Buttons tab: one section per group, each a grid of checkboxes in
+-- alphabetical order of the names shown.
 function UI.ButtonSections()
     local byKey, placed = {}, {}
     for _, e in ipairs(UI.AvailableButtons()) do byKey[e.key] = e end
     local sections = {}
     local function add(name, list)
+        table.sort(list, function(a, b)
+            return tostring(Loc(UI.Name(a))):lower() < tostring(Loc(UI.Name(b))):lower()
+        end)
         if #list > 0 then sections[#sections + 1] = { name = name, items = { { type = "buttongrid", entries = list } } } end
     end
     for _, g in ipairs(UI.BUTTON_GROUPS) do

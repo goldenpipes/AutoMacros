@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.108.4.**
+- **Current version: 0.109.0.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -90,6 +90,14 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.109.0 — Buttons page A-Z
+- Lewis: sort each group on the Buttons page alphabetically. `UI.ButtonSections`' `add`
+  sorts every list (groups, Custom, Other) by `Loc(UI.Name(e))`, case-blind; BUTTON_GROUPS
+  now only decides which group a button is in. Grid fills row by row (A B C / D E F).
+  The icon strip (HEADERS.buttons) keeps AvailableButtons' order.
+- 0.108.4 released as a pre-release (v0.108.4, first release since 0.85.0); Lewis checked
+  every button in game on Classic Era except Weapon Buff (no sharpening stones yet).
 
 ## 0.108.4 — fourth Classic Era test (addon 0.108.3)
 - 912 sorted, 623 Use-but-none, 142 missing, 0 noanswer, 44 notext. All 0.108.3 targets

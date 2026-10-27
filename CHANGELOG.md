@@ -4,6 +4,12 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.109.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Changed
+- The settings page lists the buttons in each group (Recovery, Buffs, ...) in alphabetical
+  order.
+
 ## 0.108.4 - 2026-10-26 (pre-release, tested in Classic Era)
 
 ### Fixed
