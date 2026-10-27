@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.108.0.**
+- **Current version: 0.108.1.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -90,6 +90,27 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.108.1 — fixes from the second Classic Era test
+- Second test (probably 0.107.0: event-driven, no flow control): 374 sorted, 219 Use-but-none,
+  139 missing, **1983 no data, incl. nearly every common consumable** (Lesser..Major Healing,
+  mana potions, Flask of the Titans, Mongoose, Juju Power, Linen Bandage, sharpening stones,
+  conjured water) -> asked too fast. Sorted ones were right: bandages, scrolls/elixirs,
+  Blasted Lands, Juju, armor, resistance, explosives (incl. thrown items), 150 food, 50 buff
+  food, 39 water (Arathi rations on both), hpot/mpot, travel (AV insignias), rogue poisons ->
+  weapon buff (fine).
+- Fixed (CLASSIFIER 13): `permanent` ("permanently" / "permanent enchant" in a Use line) ->
+  no button (QAEnchant test items, ZG head/leg enchants, Fortitude of the Scourge, armor
+  kits); restore also on "heals" (Greater Dreamless Sleep; bandages checked earlier); buff
+  also on "regenerate" (Troll's Blood, Mageblood -> other); seated food/drink for any class
+  incl. quest/misc, before buff food is excluded (`not wellFed`); the own-only food branch
+  removed.
+- Test: `res.addon` (C_AddOns.GetAddOnMetadata / GetAddOnMetadata), nodata split into
+  `noanswer` / `notext`.
+- Left for later: class-0 quest-use items with no "Quest Item" line on Classic (Nimboya's
+  Laden Pike "Place at a Witherbark village", Dark Keeper Key "Use on the Dark Coffer"):
+  check after the next test whether the quest rule catches them. Ideas seen: mounts, pets,
+  fireworks, combat tools (Bag of Marbles, Sticky Glue, Hunting Net) could get buttons.
 
 ## 0.108.0 — Quest Item button
 - Lewis: a button for usable quest items. CATALOG `questitem` ("Quest Item", AM_QuestItem,

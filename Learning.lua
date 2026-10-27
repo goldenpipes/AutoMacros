@@ -121,6 +121,8 @@ function Classify(id)
     local bandaged, flask = false, false
     -- a quest item: the quest class, or "Quest Item" in its tooltip
     local quest = class == 12
+    -- applied to gear for good: "Permanently enchant ...", "Permanently adds ..." (no button)
+    local permanent = false
     for _, text in ipairs(lines) do
         local low = text:lower()
         if text:find(use, 1, true) then hasUse = true end
@@ -147,17 +149,21 @@ function Classify(id)
             if HasWord(low, "seated", "while eating", "while drinking") then seated = true end
             -- "You can only have the effect of one flask at a time. This effect persists through death."
             if HasWord(low, "one flask", "persists through death") then flask = true end
+            if HasWord(low, "permanently", "permanent enchant") then permanent = true end
             if text:find("%d") then
                 if HasWord(low, "health", HEALTH) then health = true end
                 if HasWord(low, "mana", MANA) then mana = true end
                 if low:find("%f[%a]rage%f[%A]") then rage = true end   -- the word, not "average"
                 if HasWord(low, "damage") then damage = true end
-                if HasWord(low, "restore") then restore = true end   -- a potion that heals, not one that raises health
+                -- a potion that heals, not one that raises health ("heals 2100 health and
+                -- 2100 mana": Greater Dreamless Sleep; bandages, "heals 301 damage", go first)
+                if HasWord(low, "restore", "heals") then restore = true end
                 -- a bandage: "Heals 301 damage over 7 sec."
                 if HasWord(low, "heals") and HasWord(low, "damage") then bandaged = true end
                 -- raises something for a while (not "permanently", like an armor kit)
                 -- (and not a fishing lure: "increases fishing by 25")
-                if HasWord(low, "increase", "improve", "grant", "raise")
+                -- ("regenerate 20 health every 5 sec for 1 hour": Troll's Blood, Mageblood)
+                if HasWord(low, "increase", "improve", "grant", "raise", "regenerate")
                     and not HasWord(low, "permanent", "fishing") then buff = true end
                 if buff and HasWord(low, "armor", ARMOR, "defense") then armor = true end
                 -- raises a resistance, or a protection potion: "Absorbs 1950 to 3250 fire damage"
@@ -183,6 +189,7 @@ function Classify(id)
     end
     if travel then return { "travel" }, sig end
     if class == 4 then return {}, sig end   -- gear (rings, cloaks, trinkets): only teleports count
+    if permanent then return {}, sig end    -- enchants and kits put on gear
     -- a cure, from anything you carry: potions, First Aid's poultices and
     -- tourniquets (trade goods), quest rewards
     if cure then return { "cure" }, sig end
@@ -201,16 +208,17 @@ function Classify(id)
     local own = sub ~= -1   -- a consumable (not a quest or misc item)
     if not own and not (restoring or next(stats) or armor or resist or buff or questUse) then
         -- a quest or misc item that does none of that
+    elseif seated and (health or mana) and not wellFed then
+        -- food and drink, also from quests (Clara's Fresh Apple): you sit to eat
+        -- it ("Must remain seated while eating"); buff food is below
+        if health then sets[#sets + 1] = "food" end
+        if mana then sets[#sets + 1] = "water" end
     elseif own and bandaged then
         sets[#sets + 1] = "bandage"
     elseif own and flask then
         sets[#sets + 1] = "flask"
     elseif own and wellFed then
         sets[#sets + 1] = "food_buff"
-    elseif own and seated and (health or mana) then
-        -- food and drink: you sit to eat it ("Must remain seated while eating")
-        if health then sets[#sets + 1] = "food" end
-        if mana then sets[#sets + 1] = "water" end
     elseif own and rage then
         sets[#sets + 1] = "rage"
     elseif sub ~= 6 and restoring then
@@ -327,7 +335,9 @@ end
 --   unsorted[id] = the same with "-"   a consumable or misc item with a "Use:"
 --                                     line that fits no button (possible misses)
 --   missing     = IDs the server says do not exist (unused items in the game files)
---   nodata      = IDs the server never answered for, or whose "Use:" text never came
+--   noanswer    = IDs the server never answered for (TEST_TRIES questions)
+--   notext      = IDs it answered for, but whose "Use:" text never came
+--   addon       = the AutoMacros version that ran it
 -- Steps: find the IDs worth a look (WorthALook, no server needed); ask the
 -- server for them with at most TEST_INFLIGHT questions out at once (asked too
 -- fast, the server drops them: the first run got 31 of 11,476), and sort each
@@ -488,7 +498,13 @@ function RulesTest(first, last)
     first, last = first or 1, last or 25000
     local version, build, _, iface = GetBuildInfo()
     local res = { build = tostring(version) .. " " .. tostring(build), interface = iface, first = first, last = last,
-        counts = {}, items = {}, unsorted = {}, missing = {}, nodata = {} }
+        counts = {}, items = {}, unsorted = {}, missing = {}, noanswer = {}, notext = {} }
+    -- (which AutoMacros ran it: results from different versions are compared)
+    local meta = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+    if meta then
+        local okMeta, v = pcall(meta, ADDON, "Version")
+        if okMeta then res.addon = v end
+    end
     -- waiting: not finished; pending: a question out (time asked), tries; spell:
     -- in, but its "Use:" text not yet (since when)
     local run = { res = res, first = first, last = last, next = first, found = {}, asked = 0, answered = 0,
@@ -516,23 +532,29 @@ function RulesTest(first, last)
         run.tries[id] = (run.tries[id] or 0) + 1
         pcall(request, id)
     end
-    local function giveUp(id)
+    -- why: "noanswer" (the server never answered) or "notext" (it did, but the
+    -- "Use:" text never came)
+    local function giveUp(id, why)
         TestDone(run, id)
-        res.nodata[#res.nodata + 1] = id
+        res[why][#res[why] + 1] = id
     end
     Print(string.format("rules test: items %d-%d on %s. Stay logged in; it takes a few minutes (/amac test stop)",
         first, last, res.build))
     local function finish(note)
         testRun = nil
-        for id in pairs(run.waiting) do res.nodata[#res.nodata + 1] = id end
-        table.sort(res.nodata)
+        for id in pairs(run.waiting) do
+            local why = run.spell[id] and "notext" or "noanswer"
+            res[why][#res[why] + 1] = id
+        end
+        table.sort(res.noanswer)
+        table.sort(res.notext)
         DB().test = res
         local sorted, unsorted = 0, 0
         for _ in pairs(res.items) do sorted = sorted + 1 end
         for _ in pairs(res.unsorted) do unsorted = unsorted + 1 end
         Print(string.format("rules test %s: %d items looked at, %d sorted onto buttons, %d with a Use: line on none,"
-            .. " %d do not exist, %d without data. /reload to save it to disk.", note, #run.found, sorted, unsorted,
-            #res.missing, #res.nodata))
+            .. " %d do not exist, %d never answered, %d without their Use: text. /reload to save it to disk.", note,
+            #run.found, sorted, unsorted, #res.missing, #res.noanswer, #res.notext))
         TestBarDone(string.format("%s: %d sorted, %d on none - /reload to save", note == "done" and "Done" or "Stopped",
             sorted, unsorted))
     end
@@ -558,7 +580,7 @@ function RulesTest(first, last)
         for id, at in pairs(run.pending) do
             if now - at > TEST_RETRY then
                 if cached(id) then TestSort(run, id)
-                elseif run.tries[id] >= TEST_TRIES then giveUp(id)
+                elseif run.tries[id] >= TEST_TRIES then giveUp(id, "noanswer")
                 else ask(id) end
             end
         end
@@ -573,7 +595,7 @@ function RulesTest(first, last)
         -- 4. items in, but their "Use:" text still on its way: look again, give up after TEST_QUIET
         local n = 0
         for id, since in pairs(run.spell) do
-            if not TestSort(run, id) and now - since > TEST_QUIET then giveUp(id) end
+            if not TestSort(run, id) and now - since > TEST_QUIET then giveUp(id, "notext") end
             n = n + 1
             if n >= TEST_STEP then break end
         end

@@ -4,6 +4,17 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.108.1 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Fixed
+- Permanent enchants and armor kits ("Permanently enchant ...", "Permanently adds ...") no
+  longer land on buff, Restore Mana or Explosive buttons.
+- Quest food you sit to eat (Clara's Fresh Apple) goes on Food, not Restore Health.
+- Troll's Blood and Mageblood Potions (health or mana regenerated over an hour) go on Other
+  Buffs; Greater Dreamless Sleep Potion on Restore Health and Mana.
+- `/amac test` now records which AutoMacros version ran it, and splits items without data
+  into "never answered" and "no Use: text".
+
 ## 0.108.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Added
