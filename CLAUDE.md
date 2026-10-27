@@ -96,6 +96,11 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - **0.120.0 released as a pre-release** (v0.120.0, zip in releases/); Lewis is handing it
   out to Classic Era testers. Other clients (retail, TBC Anniversary, MoP, Forever) come
   later. He'll come back with more ideas and tester feedback.
+- **Possible rename** (Lewis is asking testers first; nothing renamed yet): favourites
+  **AutoPop**, AutoPopouts, Popouts. Macros stay (they work on any bar addon; own buttons
+  would mean rebuilding a bar system). A rename touches: folder + .toc, SavedVariables
+  (copy AutoMacrosDB once), slash commands (keep /amac as an alias), GitHub repo (rename
+  redirects old links; ask before doing it) and release names.
 - Still unchecked in game: Weapon Buff with sharpening stones, an unworn teleport ring,
   EllesmereUI bars, the Professions / Tracking spell IDs, ActiveTracking on Classic Era,
   0.117.1's settings-after-combat, the welcome window's look.
