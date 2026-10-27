@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.121.2.**
+- **Current version: 0.122.0.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   iteration** (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -118,6 +118,27 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Still unchecked in game: Weapon Buff with sharpening stones, an unworn teleport ring,
   EllesmereUI bars, the Professions / Tracking spell IDs, ActiveTracking on Classic Era,
   0.117.1's settings-after-combat, the welcome window's look.
+
+## 0.122.0 — fixes from the first retail (Midnight) test
+- Lewis ran `/amac test 1 25000` on retail (addon 0.120.0, build 12.1.5 70575, interface
+  **120105 confirmed**): 965 sorted, 775 missing, 123 noanswer, 14 notext, 532 unsorted.
+  Compared item by item with the Classic Era test (0.108.4, same range): 773 sorted on both,
+  729 the same. Reading tools (scratchpad, one-off): svread.py (SavedVariables -> JSON),
+  cmptest.py (summary / diff / eraonly / retailonly / unsorted).
+- Retail differences: raw fish are **7.8** (Trade Goods) with "must remain seated" (were
+  hpot); retail's wizard oils "Applies ... oil to your weapon, increasing Intellect" (were
+  buff_intellect); explosives are **0.8** (Other) with "Inflicts N Fire damage" (were
+  unsorted); "increases X ... decreases Y" counted Y (Stormstout, Trogg Ale, Kreeg's);
+  utility elixirs say "Allows you to breathe/walk". Spirit is gone on retail (Versatility
+  items -> buff_other, fine).
+- Fixed (CLASSIFIER 17): class 5/7 seated + health/mana -> food/water first; onWeapon
+  ("to your weapon", "target weapon", "applied to", "coats a") -> weapon_buff before stat
+  buffs; stats only counted before "decreas"; sub 8 + hurts (damage with inflict / does /
+  causes / burning / deals, or "blasts open") -> explosives; buff words + "allows you to
+  breathe" / "allows you to walk". **Not re-tested**: run the test again on retail and Era.
+- Left alone: retail Gift of Arthas / Potion of Petrification wording, Arcane Bomb (0.0,
+  "drains mana"), fun items, fishing lures, alcohol ("A typical alcoholic beverage").
+- Lewis doesn't play retail and doesn't know what buttons retail players want.
 
 ## 0.121.2
 - Lewis changed his mind: the game folders go back under Games\, and retail's folder is

@@ -128,6 +128,12 @@ function Classify(id)
     local health, mana, rage, damage, weapon, travel, wellFed = false, false, false, false, false, false, false
     local stats, hasUse, restore, buff, armor, resist, seated = {}, false, false, false, false, false, false
     local cure = false   -- removes a debuff
+    -- put on your weapon ("Applies wizard oil to your weapon, increasing
+    -- Intellect": retail's oils name a stat, so this goes before stat buffs)
+    local onWeapon = false
+    -- hurts enemies ("Inflicts 14 Fire damage", "burning all enemies"), or
+    -- "Blasts open" a lock: retail files explosives under Other (0.8)
+    local hurts = false
     -- Classic Era files nearly every consumable as plain "Consumable" (subclass
     -- 0), not Food & Drink, Potion, Bandage, Flask: those are known by their text
     local bandaged, flask = false, false
@@ -151,6 +157,8 @@ function Classify(id)
             -- ("Coats a sword or dagger with poison"; not a Steel Weapon Chain, which
             -- "attaches a chain to your weapon" for good)
             if HasWord(low, "weapon", "coats a") and not HasWord(low, "attach") then weapon = true end
+            if weapon and HasWord(low, "to your weapon", "target weapon", "applied to", "coats a") then onWeapon = true end
+            if HasWord(low, "blasts open") then hurts = true end
             -- "Cures 1 poison effect", "Target is cured of diseases", "Removes 1 magic,
             -- curse, poison or disease effect", "cured of bleeds" (Forever's tourniquets),
             -- stuns and snares ("removes existing stun and movement impairing effects")
@@ -172,6 +180,7 @@ function Classify(id)
                 if HasWord(low, "mana", MANA) then mana = true end
                 if low:find("%f[%a]rage%f[%A]") then rage = true end   -- the word, not "average"
                 if HasWord(low, "damage") then damage = true end
+                if damage and HasWord(low, "inflict", "does ", "causes", "burning", "deals") then hurts = true end
                 -- a potion that heals, not one that raises health ("heals 2100 health and
                 -- 2100 mana": Greater Dreamless Sleep; bandages, "heals 301 damage", go first)
                 -- (not a Mechanical Repair Kit: "restores 700 health to a friendly mechanical target")
@@ -184,15 +193,22 @@ function Classify(id)
                 -- (and utility potions: "Gives the imbiber lesser invisibility", "Allows the
                 -- Imbiber to breathe water", "Lets you walk on water", "Imbiber is immune
                 -- to physical attacks", "Shows the location of all nearby undead")
+                -- (retail: "Allows you to breathe water", "Allows you to walk across water")
                 if HasWord(low, "increase", "improve", "grant", "raise", "regenerate", "gives the imbiber",
-                        "gives you", "allows the imbiber", "lets you", "is immune", "shows the location")
+                        "gives you", "allows the imbiber", "lets you", "is immune", "shows the location",
+                        "allows you to breathe", "allows you to walk")
                     and not HasWord(low, "perman", "fishing") then buff = true end
                 if buff and HasWord(low, "armor", ARMOR, "defense") then armor = true end
                 -- raises a resistance, or a protection potion: "Absorbs 1950 to 3250 fire damage"
                 if (buff and HasWord(low, "resist")) or (HasWord(low, "absorb") and damage) then resist = true end
+                -- only the stats it raises: "increases your Strength by 1 and decreases
+                -- your Intellect by 1" (Stormstout) is a Strength buff, not Intellect
+                local raised = text
+                local cut = low:find("decreas", 1, true)
+                if cut then raised = text:sub(1, cut - 1) end
                 for i, key in ipairs(STAT_KEYS) do
                     local name = _G["SPELL_STAT" .. i .. "_NAME"] or (key:sub(1, 1):upper() .. key:sub(2))
-                    if text:find(name, 1, true) then stats[key] = true end
+                    if raised:find(name, 1, true) then stats[key] = true end
                 end
                 -- Fortitude elixirs raise maximum health, not Stamina: the nearest button
                 if low:find("maximum health", 1, true) then stats.stamina = true end
@@ -225,6 +241,10 @@ function Classify(id)
     -- weapon damage"), Frozen Rune and Engineering's deflectors ("Absorbs 500
     -- fire damage"). Not devices (7.3) for weapons: Goblin Dragon Gun.
     if class == 7 or class == 5 then
+        -- retail files raw fish as Trade Goods (7.8) though you sit to eat them
+        if seated and (health or mana) and not wellFed then
+            return (health and mana) and { "food", "water" } or { health and "food" or "water" }, sig
+        end
         if restoring then
             return (health and mana) and { "hpot", "mpot" } or { health and "hpot" or "mpot" }, sig
         end
@@ -257,6 +277,9 @@ function Classify(id)
         -- Root Tuber (filed with food) ... (Rejuvenation Potions go on both)
         if health then sets[#sets + 1] = "hpot" end
         if mana then sets[#sets + 1] = "mpot" end
+    elseif own and onWeapon then
+        -- a weapon oil or stone, also one that names a stat (retail's wizard oils)
+        sets[#sets + 1] = "weapon_buff"
     elseif sub ~= 6 and next(stats) then   -- (6: item enhancements, worn on gear)
         for _, key in ipairs(STAT_KEYS) do
             if stats[key] then sets[#sets + 1] = "buff_" .. key end
@@ -270,6 +293,9 @@ function Classify(id)
     elseif weapon and own then
         sets[#sets + 1] = "weapon_buff"
     elseif sub == 0 and damage and not buff then
+        sets[#sets + 1] = "explosives"
+    elseif sub == 8 and hurts and not buff then
+        -- retail's Other consumables (0.8): Explosive Rocket, M73 Frag Grenade
         sets[#sets + 1] = "explosives"
     elseif sub ~= 6 and buff then
         sets[#sets + 1] = "buff_other"

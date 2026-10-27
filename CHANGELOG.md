@@ -4,6 +4,16 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.122.0 - 2026-10-27 (not yet tested in game)
+
+### Fixed
+- Retail: raw fish go on Food again (not Restore Health), wizard oils on Weapon Buff (not
+  Intellect), grenades and rockets on Explosives, and water breathing / water walking
+  elixirs on Other Buffs.
+- Drinks that raise one stat and lower another ("increases Strength, decreases Intellect")
+  only count for the stat they raise.
+- Items are sorted again once after updating, so these fixes apply to what you already carry.
+
 ## 0.121.2 - 2026-10-27 (not yet tested in game)
 
 ### Changed
