@@ -454,7 +454,7 @@ UI.HEADERS.buttons = function(f, width)
         b:Show()
     end
     for i = #list + 1, #f.icons do f.icons[i]:Hide() end
-    f.hint = f.hint or UI.SmallText(f, "Click an icon to turn it on or off for this character; drag it onto an action bar. Green number: how many are available (in bags, spells, or yours to create or craft). Glow: you carry some, but it is on none of your bars.")
+    f.hint = f.hint or UI.SmallText(f, "Click an icon to turn it on or off for this character, or drag it onto an action bar. The green number is how many you have or can make. A glowing icon has items but isn't on any of your bars yet.")
     f.hint:ClearAllPoints()
     f.hint:SetWidth(width - 20)
     f.hint:SetPoint("TOP", f, "TOP", 0, -16 - rows * (size + gap) - 4)

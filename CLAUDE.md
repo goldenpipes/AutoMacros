@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.109.1.**
+- **Current version: 0.109.2.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -91,7 +91,12 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
 
-## 0.109.1
+## 0.109.2
+- Lewis: rework the Buttons page's icon-strip hint (HEADERS.buttons `f.hint`). Now plain
+  sentences: click / drag, "The green number is how many you have or can make", "A glowing
+  icon has items but isn't on any of your bars yet." Lewis prefers short, plain help text.
+
+## 0.109.1 (Lewis: "perfect")
 - Lewis found the Direction note confusing (it spelt out every edge). Now one line:
   "Automatic opens each popout toward the middle of the screen." (text item height 30).
 

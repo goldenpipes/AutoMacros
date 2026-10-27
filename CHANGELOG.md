@@ -4,7 +4,12 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
-## 0.109.1 - 2026-10-26 (pre-release, not yet tested in game)
+## 0.109.2 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Fixed
+- Clearer help text under the button icons on the settings page.
+
+## 0.109.1 - 2026-10-26 (pre-release, tested in Classic Era)
 
 ### Fixed
 - The Popout page's Direction note is short and clear now.
