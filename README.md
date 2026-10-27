@@ -1,12 +1,22 @@
-<img src="docs/logo.png" alt="AutoMacros" width="128" align="right">
+<p align="center">
+  <img src="docs/logo.png" alt="AutoMacros logo" width="140">
+</p>
 
-# AutoMacros
+<h1 align="center">AutoMacros</h1>
 
-A World of Warcraft addon that keeps a macro for each kind of consumable (health and mana
-items, food, water, bandages, buffs and more) pointed at the best item in your bags. Drag the
-macros onto any action bar you like: no extra bar to place, unlike AutoBar.
+<p align="center">
+  Draggable macros for your consumables that always use the best item in your bags.<br>
+  Made for <b>WoW Forever</b>; also loads in Classic Era, TBC Anniversary, MoP Classic and retail.
+</p>
 
-Made for **WoW Forever**. It also loads in Classic Era, TBC Anniversary, MoP Classic and retail.
+<p align="center">
+  <a href="../../releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/goldenpipes/AutoMacros?include_prereleases&label=download"></a>
+  <a href="CHANGELOG.md"><img alt="Changelog" src="https://img.shields.io/badge/changelog-read-blue"></a>
+</p>
+
+AutoMacros keeps one macro for each kind of consumable (health and mana items, food, water,
+bandages, buffs and more) pointed at the best item you carry. Put the macros on any action bar
+you like: no extra bar to place, unlike AutoBar.
 
 > Versions starting with `0.` are still in development, so expect changes. See
 > [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
@@ -31,14 +41,7 @@ Made for **WoW Forever**. It also loads in Classic Era, TBC Anniversary, MoP Cla
   installed), with live previews.
 - Lightweight: no libraries needed. Work happens when your bags or bars change, not on a timer.
 
-## Screenshots
-
-| | |
-|---|---|
-| ![General settings](docs/screenshots/general.png) | ![Buttons](docs/screenshots/buttons.png) |
-| ![Highlight](docs/screenshots/highlight.png) | ![Popout](docs/screenshots/popout.png) |
-
-### Buttons
+## Buttons
 
 | Recovery | Food & drink | Buffs | Utility | Class |
 |---|---|---|---|---|
@@ -50,6 +53,19 @@ Made for **WoW Forever**. It also loads in Classic Era, TBC Anniversary, MoP Cla
 
 A button turns itself on the first time you carry (or know) something for it, and stays on
 after that. Switch buttons on or off on the Buttons page, or with `/amac add` / `/amac remove`.
+
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/buttons.png" alt="Buttons page" width="420"><br><sub><b>Buttons:</b> turn buttons on, drag them onto your bars, make your own</sub></td>
+    <td align="center"><img src="docs/screenshots/popout.png" alt="Popout page" width="420"><br><sub><b>Popout:</b> how it opens, what a click does, how it looks</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/highlight.png" alt="Highlight page" width="420"><br><sub><b>Highlight:</b> how empty buttons stand out</sub></td>
+    <td align="center"><img src="docs/screenshots/general.png" alt="General page" width="420"><br><sub><b>General:</b> tooltips, chat messages, learned items</sub></td>
+  </tr>
+</table>
 
 ## Installing
 

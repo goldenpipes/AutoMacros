@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.128.0.**
+- **Current version: 0.128.1.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   iteration** (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -152,6 +152,16 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   EllesmereUI bars, the Professions / Tracking spell IDs, ActiveTracking on Classic Era,
   0.117.1's settings-after-combat, the welcome window's look.
 
+## 0.128.1
+- Lewis's Popout screenshot (Blizzard page, EllesmereUI off): the Color / Selected border
+  mode dropdowns were blank: their saved mode was "accent", which ColorModeChoices leaves
+  out without EllesmereUI. `ColorMode` now returns "default" for a saved "accent" while
+  `EUIAccent()` is nil (StyleColor already drew Default); the saved value stays, so it is
+  accent again with EllesmereUI back. PinMode only saves when no mode is saved, so it
+  doesn't overwrite it.
+- README rewritten (logo, badge, screenshots in `docs/screenshots/`, 850 px wide copies of
+  Lewis's settings shots; current buttons and commands). Originals moved to
+  `releases\screenshots-original\` (a delete was refused by the permission check).
 ## 0.128.0 — learned list; EllesmereUI Popout page with the demo on the right
 - Lewis (EllesmereUI page, retail): the Item learning text wasn't indented like the rest, and
   should be a scrollable list he can copy out of the game. New settings item type

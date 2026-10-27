@@ -1,4 +1,4 @@
--- AutoMacros 0.128.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.128.1 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -200,6 +200,10 @@ COLOR_MODES = {
 function ColorMode(key)
     local s = DB().style
     local m = type(s) == "table" and s[key .. "Mode"] or nil
+    -- EllesmereUI accent without EllesmereUI: drawn as Default, so it reads
+    -- Default too (the dropdown has no accent choice then, and showed nothing);
+    -- the saved choice stays for when EllesmereUI is back
+    if m == "accent" and not EUIAccent() then return "default" end
     if m then return m end
     if type(s) == "table" and s[key] ~= nil then return "custom" end   -- picked before modes existed
     return "default"

@@ -4,6 +4,12 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.128.1 - 2026-10-27 (not yet tested in game)
+
+### Fixed
+- A color setting left on "EllesmereUI accent" showed a blank dropdown once EllesmereUI was
+  turned off. It now reads Default (which is what it draws), and goes back to the accent
+  color if EllesmereUI is turned on again.
 ## 0.128.0 - 2026-10-27 (not yet tested in game)
 
 ### Changed
