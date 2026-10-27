@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.116.0.**
+- **Current version: 0.116.1.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -91,6 +91,14 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.116.1
+- Lewis: the "A" isn't needed (Automatic is the default, the tooltip says the direction).
+  UI.DirMark draws only the tab (still alpha 0.6 on Automatic).
+- Lewis also asked for a popout click behaviour option (use and set / set only / use
+  without setting): picking Cannibalize from Bandage's popout only set it. Popout entries
+  are insecure (ActionButtonTemplate CheckButtons), so they cannot use an item or cast;
+  see the next entry for what was decided.
 
 ## 0.116.0 — four columns (a test)
 - Lewis liked 0.115.0 ("beautiful!"); asked for the Buttons page checkboxes in 4 columns

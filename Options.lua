@@ -383,20 +383,14 @@ function UI.DirText(e)
 end
 
 -- On an icon of the Buttons page: a tab on the edge its popout opens from, as
--- on your bars (in the popout indicator's color), and an "A" while it is on
--- Automatic. The tab is fainter on Automatic.
+-- on your bars (in the popout indicator's color), a little fainter while it is
+-- on Automatic (the tooltip says which).
 function UI.DirMark(b, e, size)
     if not b.dirTab then
         b.dirTab = b:CreateTexture(nil, "OVERLAY", nil, 7)
-        b.dirAuto = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        b.dirAuto:SetPoint("TOPLEFT", b, "TOPLEFT", 3, -2)
-        b.dirAuto:SetText("A")
-        for _, r in ipairs({ b.dirTab, b.dirAuto }) do
-            if r.SetIgnoreParentAlpha then pcall(r.SetIgnoreParentAlpha, r, true) end
-        end
+        if b.dirTab.SetIgnoreParentAlpha then pcall(b.dirTab.SetIgnoreParentAlpha, b.dirTab, true) end
     end
     local dir, auto = UI.DirShown(e)
-    b.dirAuto:SetShown(auto)
     local t = b.dirTab
     t:ClearAllPoints()
     if not dir then t:Hide() return end
@@ -496,7 +490,7 @@ UI.HEADERS.buttons = function(f, width)
     UI.StyleSample(f.newSlot)
     place(f.newSlot, slots)
     f.newSlot:Show()
-    f.hint = f.hint or UI.SmallText(f, "Click an icon to turn it on or off for this character, or drag it onto an action bar. Right-click to change which way its popout opens: the tab shows it, A means automatic. The green number is how many you have or can make. A glowing icon has items but isn't on any of your bars yet.")
+    f.hint = f.hint or UI.SmallText(f, "Click an icon to turn it on or off for this character, or drag it onto an action bar. Right-click to change which way its popout opens (the tab on its edge shows it). The green number is how many you have or can make. A glowing icon has items but isn't on any of your bars yet.")
     f.hint:ClearAllPoints()
     f.hint:SetWidth(width - 20)
     f.hint:SetPoint("TOP", f, "TOP", 0, -16 - rows * (size + gap) - 4)
