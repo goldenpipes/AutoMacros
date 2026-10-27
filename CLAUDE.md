@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.125.0.**
+- **Current version: 0.126.0.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   iteration** (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -118,6 +118,18 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Still unchecked in game: Weapon Buff with sharpening stones, an unworn teleport ring,
   EllesmereUI bars, the Professions / Tracking spell IDs, ActiveTracking on Classic Era,
   0.117.1's settings-after-combat, the welcome window's look.
+
+## 0.126.0 — retail soft glow: Blizzard's glow + a fill under the frame
+- Lewis: users should still be able to fill the whole button, "just fill inward". The fill
+  covered the border because the glow frame g sits above the whole button (frame art too).
+  Now the fill is **four FadeEdge textures on the button itself, layer BORDER sublevel 7**
+  (above the icon in BACKGROUND, below the NormalTexture frame art in ARTWORK), masked by
+  the button's own IconMask (same frame), anchored to the button: the frame ring is always
+  on top. BLIZZ_ART.GlowFill(g, button) makes them once (g.amFill) with their own Alpha
+  pulse groups (g's alpha doesn't reach the button's textures) and hooks g OnShow/OnHide
+  (g.amFollow, g.amFillOn) so they show, hide and pulse with the glow.
+- Thickness on retail: 1 = Blizzard's Mouseover glow alone (one copy), 2..5 = + fill
+  25/50/75/100% of the button. Unverified in game, incl. that the NormalTexture is ARTWORK.
 
 ## 0.125.0 — retail soft glow = Blizzard's glow only
 - Lewis's side-by-side (Blizzard's yellow hover glow vs our red at 0.124.0): ours still

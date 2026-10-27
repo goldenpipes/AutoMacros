@@ -270,6 +270,50 @@ function BLIZZ_ART.GlowRing(g, i)
     return r
 end
 
+-- The fill under retail's glow: four fading edges drawn on the button itself
+-- in its BORDER layer, i.e. over the icon (BACKGROUND) and under the frame art
+-- (the NormalTexture, ARTWORK), clipped by the button's own IconMask: so it
+-- fills inward from the grey ring and the ring always stays on top. They
+-- belong to glow g: shown, hidden and pulsing with it (their own animations,
+-- as g's alpha does not reach the button's textures).
+function BLIZZ_ART.GlowFill(g, button)
+    if g.amFill then return g.amFill end
+    local fill = {}
+    for i = 1, 4 do
+        local tex = button:CreateTexture(nil, "BORDER", nil, 7)
+        if button.IconMask and tex.AddMaskTexture then pcall(tex.AddMaskTexture, tex, button.IconMask) end
+        tex:Hide()
+        pcall(function()
+            local ag = tex:CreateAnimationGroup()
+            local anim = ag:CreateAnimation("Alpha")
+            anim:SetFromAlpha(1)
+            anim:SetToAlpha(0.25)
+            anim:SetDuration(0.7)
+            ag:SetLooping("BOUNCE")
+            tex.amPulse, tex.amAnim = ag, anim
+        end)
+        fill[i] = tex
+    end
+    g.amFill = fill
+    local function follow(self)
+        local on = self:IsShown() and self.amFillOn
+        for _, tex in ipairs(fill) do
+            tex:SetShown(on and true or false)
+            if tex.amPulse then
+                if on and Style("glowPulse") then
+                    if not tex.amPulse:IsPlaying() then tex.amPulse:Play() end
+                else
+                    tex.amPulse:Stop()
+                end
+            end
+        end
+    end
+    g.amFollow = follow
+    g:HookScript("OnShow", follow)
+    g:HookScript("OnHide", follow)
+    return fill
+end
+
 function StyleGlow(g, button)
     local c = StyleColor("glowColor")
     local t = math.max(1, math.min(5, tonumber(Style("glowThickness")) or 3))   -- 1 to 5
@@ -286,22 +330,39 @@ function StyleGlow(g, button)
     for _, cell in ipairs(g.cells or {}) do cell:Hide() end
     for _, r in ipairs(g.amRings or {}) do if r then r:Hide() end end
     -- retail's rounded buttons (no EllesmereUI look): Blizzard's glow exactly,
-    -- inside the frame's grey ring, never over it; thickness = how many copies
-    -- are added on (1 = Blizzard's own strength)
+    -- inside the frame's grey ring, never over it, plus a fill that grows
+    -- inward from the ring under the frame art: thickness 1 = Blizzard's glow
+    -- alone, 2 to 5 = the fill reaching 25%, 50%, 75%, all the icon
     local blizz = soft and rounded and not look and BLIZZ_ART.GlowRing(g, 1)
+    g.amFillOn = false
     if blizz then
         local bw, bh = button:GetWidth(), button:GetHeight()
         if type(bw) ~= "number" or bw <= 0 then bw = 45 end
         if type(bh) ~= "number" or bh <= 0 then bh = bw end
         local a = c[4] or 1   -- (added on: opacity has to dim the color itself)
-        for i = 1, t do
-            local r = BLIZZ_ART.GlowRing(g, i)
-            r:ClearAllPoints()
-            r:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
-            r:SetSize(Snap(g, bw * 46 / 45), Snap(g, bh))
-            r:SetVertexColor(c[1] * a, c[2] * a, c[3] * a, 1)
-            r:Show()
+        blizz:ClearAllPoints()
+        blizz:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
+        blizz:SetSize(Snap(g, bw * 46 / 45), Snap(g, bh))
+        blizz:SetVertexColor(c[1] * a, c[2] * a, c[3] * a, 1)
+        blizz:Show()
+        local fill = BLIZZ_ART.GlowFill(g, button)
+        local d = Snap(g, bw * (t - 1) / 4)
+        g.amFillOn = d > 0
+        if d > 0 then
+            for _, tex in ipairs(fill) do
+                tex:ClearAllPoints()
+                if tex.amAnim then pcall(tex.amAnim.SetDuration, tex.amAnim, Style("glowSpeed")) end
+            end
+            fill[1]:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0); fill[1]:SetPoint("TOPRIGHT", button, "TOPRIGHT", 0, 0); fill[1]:SetHeight(d)
+            fill[2]:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 0, 0); fill[2]:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, 0); fill[2]:SetHeight(d)
+            fill[3]:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0); fill[3]:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 0, 0); fill[3]:SetWidth(d)
+            fill[4]:SetPoint("TOPRIGHT", button, "TOPRIGHT", 0, 0); fill[4]:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, 0); fill[4]:SetWidth(d)
+            for i, side in ipairs({ "top", "bottom", "left", "right" }) do FadeEdge(fill[i], side, c) end
         end
+    end
+    if g.amFollow then g.amFollow(g) end
+    if blizz then
+        -- (drawn above)
     elseif soft then
         -- fading in from the edges over the icon. Thickness
         -- 1 to 5 = each edge's fade reaches 20%, 40% ... 100% of the way across
