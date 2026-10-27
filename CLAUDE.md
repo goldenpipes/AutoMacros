@@ -92,6 +92,14 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
 
+## Where things stand (2026-10-26, end of session)
+- **0.120.0 released as a pre-release** (v0.120.0, zip in releases/); Lewis is handing it
+  out to Classic Era testers. Other clients (retail, TBC Anniversary, MoP, Forever) come
+  later. He'll come back with more ideas and tester feedback.
+- Still unchecked in game: Weapon Buff with sharpening stones, an unworn teleport ring,
+  EllesmereUI bars, the Professions / Tracking spell IDs, ActiveTracking on Classic Era,
+  0.117.1's settings-after-combat, the welcome window's look.
+
 ## 0.120.0 — active tracking is the chosen one
 - Lewis: the active tracking should always be the Tracking button's chosen one. CATALOG
   flag `tracking = true`; `ActiveTracking(list)` (Macros.lua): C_Minimap.GetNumTrackingTypes
