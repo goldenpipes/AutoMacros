@@ -4,6 +4,15 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.107.0 - 2026-10-26 (pre-release, not yet tested in game)
+
+### Changed
+- `/amac test` waits for the server's answer for each item instead of retrying in rounds:
+  items are sorted as their data arrives, items the server says do not exist are set aside
+  at once, and it finishes when everything is answered.
+- Gear is only looked at when it could teleport you (rings, trinkets, cloaks, necklaces,
+  tabards), in the test and when learning: far fewer items to read.
+
 ## 0.106.0 - 2026-10-26 (pre-release, not yet tested in game)
 
 ### Added

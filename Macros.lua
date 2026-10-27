@@ -21,16 +21,18 @@ function ItemInfo(id)
 end
 
 -- What the game knows about an item without loading it: class, subclass,
--- icon, and the class and subclass names. nil when there is no data.
+-- icon, the class and subclass names, and where it is worn ("INVTYPE_FINGER",
+-- "" for things not worn). nil when there is no data.
 function ItemInstant(id)
     local fn = (C_Item and C_Item.GetItemInfoInstant) or GetItemInfoInstant
     if not fn then return nil end
     local ok, a, b, c, d, e, f, g = pcall(fn, id)
     if not ok or a == nil then return nil end
     if type(a) == "table" then
-        return a.classID, a.subclassID or a.subClassID, a.iconFileID or a.icon, a.itemType, a.itemSubType
+        return a.classID, a.subclassID or a.subClassID, a.iconFileID or a.icon, a.itemType, a.itemSubType,
+            a.itemEquipLoc or a.equipLoc
     end
-    return f, g, e, b, c
+    return f, g, e, b, c, d
 end
 
 function ItemRef(id)

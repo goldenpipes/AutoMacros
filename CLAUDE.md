@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.106.0.**
+- **Current version: 0.107.0.**
 - **Copy the current files (`AutoMacros.toc` + every `*.lua` at the top level) into
   `previous/<version>/` BEFORE the first edit of a new iteration** (missed twice; 0.32.0 had
   to be rebuilt by reversing edits). Bump the version in the .toc and in Core.lua's first line.
@@ -90,6 +90,20 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   listing pages (e.g. /forever/items/consumables/potions) return 403 to scripts: don't
   scrape those. ForeverDB (foreverdb.net) is datamined from the Forever client but has no
   API or download.
+
+## 0.107.0 — event-driven test; gear slot filter
+- Lewis: why so many "no data" (first test was on retry round 4 of 6); wait for each item's
+  data and drop items of no use. Likely causes: IDs in the client files the server never
+  serves (unused items), spell text never arriving, server pace.
+- `ItemInstant` also returns the equip slot (6th). `WorthALook(id)` (Learning.lua): class in
+  LOOKED_AT, and class 4 only in TELEPORT_SLOTS (finger, trinket, cloak, neck, tabard); nil =
+  unknown item. Used by Classify, LearnNew and the test (Atiesh, a weapon, is not covered).
+- RulesTest: asks TEST_STEP per tick, `run.waiting[id]`; answers via its own frame on
+  GET_ITEM_INFO_RECEIVED / ITEM_DATA_LOAD_RESULT (id, success) -> `TestAnswer`: success ==
+  false -> res.missing; else `TestSort` (Classify; nil = Use text pending -> run.spell, retried
+  each tick). Cached items (C_Item.IsItemDataCachedByID / GetItemInfo) sorted at once. Done
+  when nothing waits, or TEST_QUIET (30 s) without progress -> leftovers res.nodata. Progress
+  bar: answered / found.
 
 ## 0.106.0 — Custom page (drag and drop)
 - Lewis: make custom buttons in the settings by dragging items from bags / spells from the

@@ -48,6 +48,20 @@ setfenv(1, ns)
 -- item classes worth a look: consumable, armour, trade goods, quest (Juju and
 -- E'ko are quest items), miscellaneous
 LOOKED_AT = { [0] = true, [4] = true, [7] = true, [12] = true, [15] = true }
+-- gear only counts when it teleports you, and only these slots ever do
+TELEPORT_SLOTS = { INVTYPE_FINGER = true, INVTYPE_TRINKET = true, INVTYPE_CLOAK = true, INVTYPE_NECK = true,
+    INVTYPE_TABARD = true }
+
+-- Worth reading the tooltip of? Known without asking the server: its class is
+-- one of LOOKED_AT, and gear only in a slot that can teleport (not chest,
+-- legs, boots, ...). nil when the game does not know the item at all.
+function WorthALook(id)
+    local class, _, _, _, _, slot = ItemInstant(id)
+    if class == nil then return nil end
+    if not LOOKED_AT[class] then return false end
+    if class == 4 and not TELEPORT_SLOTS[slot] then return false end
+    return true
+end
 STAT_KEYS = { "strength", "agility", "stamina", "intellect", "spirit" }   -- SPELL_STAT1..5_NAME
 
 -- (scanTip)
@@ -88,7 +102,7 @@ function Classify(id)
     local class, sub = ItemInstant(id)
     if class == nil then return nil end
     local sig = class * 1000 + (tonumber(sub) or 0)
-    if not LOOKED_AT[class] then return {}, sig end
+    if WorthALook(id) == false then return {}, sig end
     if class == 0 and sub == 7 then return { "bandage" }, sig end
     if class == 0 and sub == 3 then return { "flask" }, sig end
     if class == 7 and sub == 2 then return { "explosives" }, sig end
@@ -247,10 +261,10 @@ function LearnNew(have, loud)
             sessionDone[id] = true
         end
         if not sessionDone[id] then
-            local class = ItemInstant(id)
-            if class ~= nil and not LOOKED_AT[class] then
+            local worth = WorthALook(id)
+            if worth == false then
                 sessionDone[id] = true            -- nothing any button uses
-            elseif class ~= nil then
+            elseif worth ~= nil then
                 budget = budget - 1
                 local sets, sig = Classify(id)
                 if sets == nil then
@@ -300,13 +314,18 @@ end
 --   items[id]   = "sets | class.sub | name | Use: ..."   sorted onto a button
 --   unsorted[id] = the same with "-"   a consumable or misc item with a "Use:"
 --                                     line that fits no button (possible misses)
---   nodata      = IDs the game gave no data for
--- Steps, a few items at a time so the game and server keep up: find the IDs
--- that exist in classes worth a look (no server needed), ask the server for
--- their data, sort them; items still without data are tried again, 6 rounds.
+--   missing     = IDs the server says do not exist (unused items in the game files)
+--   nodata      = IDs the server never answered for, or whose "Use:" text never came
+-- Steps: find the IDs worth a look (WorthALook, no server needed); ask the
+-- server for them, a few at a time, and sort each one as its answer arrives
+-- (GET_ITEM_INFO_RECEIVED / ITEM_DATA_LOAD_RESULT say found or not; items the
+-- game already has are sorted straight away); items whose "Use:" text has not
+-- come yet are looked at again each tick. Done when every item is answered,
+-- or after TEST_QUIET seconds in which nothing more came.
 -- ---------------------------------------------------------------------------
-TEST_STEP = 20      -- items asked for / sorted per tick
+TEST_STEP = 20      -- items asked for per tick
 TEST_TICK = 0.25    -- seconds between ticks
+TEST_QUIET = 30     -- seconds without any progress before the rest count as no data
 
 -- "sets | class.sub | name | Use: ... | well fed ..." for the saved result
 function TestLine(id, sets)
@@ -376,15 +395,14 @@ function TestBarUpdate(run)
     if run.next <= run.last then
         frac = 0.1 * (run.next - run.first) / span
         text = string.format("Finding items: %d / %d", run.next - run.first, span)
-    elseif run.asked < found then
-        frac = 0.1 + 0.3 * run.asked / math.max(1, found)
-        text = string.format("Asking the server: %d / %d", run.asked, found)
-    elseif run.round == 1 then
-        frac = 0.4 + 0.6 * (run.sorting - 1) / math.max(1, found)
-        text = string.format("Sorting: %d / %d", run.sorting - 1, found)
     else
-        frac = 0.99
-        text = string.format("Items without data, try %d of 6: %d / %d", run.round, run.sorting - 1, #run.list)
+        -- answered: sorted, or the server says it does not exist
+        frac = 0.1 + 0.9 * run.answered / math.max(1, found)
+        if run.asked < found then
+            text = string.format("Asking the server: %d answered of %d", run.answered, found)
+        else
+            text = string.format("Waiting for answers: %d / %d", run.answered, found)
+        end
     end
     f.bar:SetValue(math.min(1, frac))
     f.text:SetText(text)
@@ -401,85 +419,126 @@ function TestBarDone(text)
     f:Show()
 end
 
+-- An item whose data is in: sorted into the result. false when its "Use:"
+-- text has not come yet (Classify has asked for it; it is looked at again).
+function TestSort(run, id)
+    local res = run.res
+    local ok, sets = pcall(Classify, id)
+    if not ok then sets = {} end   -- (a rule failed on this item: kept as unsorted, with its text)
+    if sets == nil then
+        run.spell[id] = true
+        return false
+    end
+    run.spell[id] = nil
+    run.waiting[id] = nil
+    run.answered = run.answered + 1
+    run.lastProgress = GetTime()
+    if #sets > 0 then
+        res.items[id] = TestLine(id, sets)
+        for _, s in ipairs(sets) do res.counts[s] = (res.counts[s] or 0) + 1 end
+    else
+        local class = ItemInstant(id)
+        if class == 0 or class == 15 then
+            local line = TestLine(id, sets)
+            if line:find(ITEM_SPELL_TRIGGER_ONUSE or "Use:", 1, true) then res.unsorted[id] = line end
+        end
+    end
+    return true
+end
+
+-- The server's answer for one item (GET_ITEM_INFO_RECEIVED, ITEM_DATA_LOAD_RESULT):
+-- found -> sort it; not found -> it does not exist, nothing to wait for.
+function TestAnswer(id, success)
+    local run = testRun
+    id = tonumber(id)
+    if not run or not id or not run.waiting[id] then return end
+    if success == false then
+        run.waiting[id] = nil
+        run.answered = run.answered + 1
+        run.lastProgress = GetTime()
+        run.res.missing[#run.res.missing + 1] = id
+        return
+    end
+    TestSort(run, id)
+end
+
 function RulesTest(first, last)
     if testRun then Print("the rules test is already running (/amac test stop)") return end
     first, last = first or 1, last or 25000
     local version, build, _, iface = GetBuildInfo()
     local res = { build = tostring(version) .. " " .. tostring(build), interface = iface, first = first, last = last,
-        counts = {}, items = {}, unsorted = {}, nodata = {} }
-    local run = { res = res, first = first, last = last, next = first, found = {}, asked = 0, sorting = 1,
-        retry = {}, round = 1 }
+        counts = {}, items = {}, unsorted = {}, missing = {}, nodata = {} }
+    local run = { res = res, first = first, last = last, next = first, found = {}, asked = 0, answered = 0,
+        waiting = {}, spell = {}, lastProgress = GetTime() }
     testRun = run
+    if not testEvents then   -- the server's answers
+        testEvents = CreateFrame("Frame")
+        for _, event in ipairs({ "GET_ITEM_INFO_RECEIVED", "ITEM_DATA_LOAD_RESULT" }) do
+            pcall(testEvents.RegisterEvent, testEvents, event)   -- (a client may lack one)
+        end
+        testEvents:SetScript("OnEvent", function(_, _, id, success) TestAnswer(id, success) end)
+    end
     local request = (C_Item and C_Item.RequestLoadItemDataByID) or GetItemInfo
+    -- the game has the item already: no answer will come, so it is sorted at once
+    local function cached(id)
+        if C_Item and C_Item.IsItemDataCachedByID then
+            local ok, r = pcall(C_Item.IsItemDataCachedByID, id)
+            if ok then return r end
+        end
+        return GetItemInfo(id) ~= nil
+    end
     Print(string.format("rules test: items %d-%d on %s. Stay logged in; it takes a few minutes (/amac test stop)",
         first, last, res.build))
     local function finish(note)
         testRun = nil
-        for _, id in ipairs(run.retry) do res.nodata[#res.nodata + 1] = id end
+        for id in pairs(run.waiting) do res.nodata[#res.nodata + 1] = id end
+        table.sort(res.nodata)
         DB().test = res
         local sorted, unsorted = 0, 0
         for _ in pairs(res.items) do sorted = sorted + 1 end
         for _ in pairs(res.unsorted) do unsorted = unsorted + 1 end
         Print(string.format("rules test %s: %d items looked at, %d sorted onto buttons, %d with a Use: line on none,"
-            .. " %d without data. /reload to save it to disk.", note, #run.found, sorted, unsorted, #res.nodata))
+            .. " %d do not exist, %d without data. /reload to save it to disk.", note, #run.found, sorted, unsorted,
+            #res.missing, #res.nodata))
         TestBarDone(string.format("%s: %d sorted, %d on none - /reload to save", note == "done" and "Done" or "Stopped",
             sorted, unsorted))
     end
     local function step()
         if run.stop then return finish("stopped") end
-        -- 1. which IDs exist in classes worth a look (the client knows without the server)
+        -- 1. which IDs are worth a look (the client knows without the server)
         if run.next <= last then
             for _ = 1, 1000 do
                 local id = run.next
                 if id > last then break end
                 run.next = id + 1
-                local class = ItemInstant(id)
-                if class ~= nil and LOOKED_AT[class] then run.found[#run.found + 1] = id end
+                if WorthALook(id) then run.found[#run.found + 1] = id end
             end
             if run.next > last then
                 Print(string.format("rules test: %d items to look at, asking the server for them...", #run.found))
+                run.lastProgress = GetTime()
             end
             return TEST_TICK
         end
-        -- 2. ask the server for their data, a few at a time
-        if run.asked < #run.found then
-            for _ = 1, TEST_STEP do
-                run.asked = run.asked + 1
-                local id = run.found[run.asked]
-                if not id then break end
-                pcall(request, id)
-            end
-            return TEST_TICK
-        end
-        -- 3. sort them; those without data yet go round again
-        local list = run.round == 1 and run.found or run.list
+        -- 2. ask the server for them, a few at a time (answers come as events)
         for _ = 1, TEST_STEP do
-            local id = list[run.sorting]
+            local id = run.found[run.asked + 1]
             if not id then break end
-            run.sorting = run.sorting + 1
-            local ok, sets = pcall(Classify, id)
-            if not ok then
-                sets = {}   -- (a rule failed on this item: kept as unsorted, with its text)
-            end
-            if sets == nil then
-                run.retry[#run.retry + 1] = id
-            elseif #sets > 0 then
-                res.items[id] = TestLine(id, sets)
-                for _, s in ipairs(sets) do res.counts[s] = (res.counts[s] or 0) + 1 end
-            else
-                local class = ItemInstant(id)
-                if class == 0 or class == 15 then
-                    local line = TestLine(id, sets)
-                    if line:find(ITEM_SPELL_TRIGGER_ONUSE or "Use:", 1, true) then res.unsorted[id] = line end
-                end
-            end
+            run.asked = run.asked + 1
+            run.waiting[id] = true
+            if cached(id) then TestSort(run, id) else pcall(request, id) end
         end
-        if list[run.sorting] then return TEST_TICK end
-        if #run.retry == 0 or run.round >= 6 then return finish("done") end
-        -- a round over the items that had no data yet, after giving the server a moment
-        run.list, run.retry, run.sorting, run.round = run.retry, {}, 1, run.round + 1
-        for _, id in ipairs(run.list) do pcall(request, id) end
-        return 3
+        -- 3. items whose "Use:" text was still on its way: look again
+        local n = 0
+        for id in pairs(run.spell) do
+            TestSort(run, id)
+            n = n + 1
+            if n >= TEST_STEP then break end
+        end
+        if run.asked >= #run.found then
+            if not next(run.waiting) then return finish("done") end
+            if GetTime() - run.lastProgress > TEST_QUIET then return finish("done") end
+        end
+        return TEST_TICK
     end
     local function tick()
         local ok, wait = pcall(step)
