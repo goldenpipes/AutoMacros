@@ -102,3 +102,7 @@ after that. Switch buttons on or off on the Buttons page, or with `/amac add` / 
 
 Open an [issue](../../issues) with what you did, what happened, and what `/amac debug` printed.
 Lua errors are printed once in chat with the part of the addon they came from.
+
+## License
+
+[MIT](LICENSE): free to use, change and share, as long as the copyright notice comes along.
