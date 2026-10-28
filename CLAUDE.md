@@ -189,6 +189,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   every zip, so the zip is no longer only the .toc + .lua files. Checked: both the
   all-games and the Forever zip contain `AutoMacros/Media/AutoMacros.tga`.
 - The AddOn List reads .toc files at game start: needs a full restart, not /reload.
+- **Confirmed in game** (Lewis, 2026-10-28): the icon shows in the AddOn List.
 
 ## 0.128.1
 - Lewis's Popout screenshot (Blizzard page, EllesmereUI off): the Color / Selected border

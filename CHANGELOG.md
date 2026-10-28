@@ -4,7 +4,7 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
-## 0.129.0 - 2026-10-27 (not yet tested in game)
+## 0.129.0 - 2026-10-27
 
 ### Added
 - AutoMacros has its own icon in the in-game AddOn List (the action button with the
