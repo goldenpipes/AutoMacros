@@ -1,25 +1,19 @@
-<p align="center">
-  <img src="docs/logo.png" alt="AutoMacros logo" width="140">
-</p>
+![AutoMacros logo](https://raw.githubusercontent.com/goldenpipes/AutoMacros/master/docs/logo.png)
 
-<h1 align="center">AutoMacros</h1>
+# AutoMacros
 
-<p align="center">
-  Draggable macros for your consumables that always use the best item in your bags.<br>
-  Made for <b>WoW Forever</b>; also loads in Classic Era, TBC Anniversary, MoP Classic and retail.
-</p>
+Draggable macros for your consumables that always use the best item in your bags.
+Made for **WoW Forever**; also loads in Classic Era, TBC Anniversary, MoP Classic and retail.
 
-<p align="center">
-  <a href="../../releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/goldenpipes/AutoMacros?include_prereleases&label=download"></a>
-  <a href="CHANGELOG.md"><img alt="Changelog" src="https://img.shields.io/badge/changelog-read-blue"></a>
-</p>
+[![Latest release](https://img.shields.io/github/v/release/goldenpipes/AutoMacros?include_prereleases&label=download)](https://github.com/goldenpipes/AutoMacros/releases) [![Changelog](https://img.shields.io/badge/changelog-read-blue)](https://github.com/goldenpipes/AutoMacros/blob/master/CHANGELOG.md)
 
 AutoMacros keeps one macro for each kind of consumable (health and mana items, food, water,
 bandages, buffs and more) pointed at the best item you carry. Put the macros on any action bar
 you like: no extra bar to place, unlike AutoBar.
 
-> Versions starting with `0.` are still in development, so expect changes. See
-> [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
+> Versions starting with `0.` are still in development, so expect changes. See the
+> [changelog](https://github.com/goldenpipes/AutoMacros/blob/master/CHANGELOG.md) for what
+> changed in each version.
 
 ## Features
 
@@ -60,20 +54,28 @@ after that. Switch buttons on or off on the Buttons page, or with `/amac add` / 
 
 ## Screenshots
 
-<table>
-  <tr>
-    <td align="center"><img src="docs/screenshots/buttons.png" alt="Buttons page" width="420"><br><sub><b>Buttons:</b> turn buttons on, drag them onto your bars, make your own</sub></td>
-    <td align="center"><img src="docs/screenshots/popout.png" alt="Popout page" width="420"><br><sub><b>Popout:</b> how it opens, what a click does, how it looks</sub></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/screenshots/highlight.png" alt="Highlight page" width="420"><br><sub><b>Highlight:</b> how empty buttons stand out</sub></td>
-    <td align="center"><img src="docs/screenshots/general.png" alt="General page" width="420"><br><sub><b>General:</b> tooltips, chat messages, learned items</sub></td>
-  </tr>
-</table>
+**Buttons:** turn buttons on, drag them onto your bars, make your own
+
+![Buttons page](https://raw.githubusercontent.com/goldenpipes/AutoMacros/master/docs/screenshots/buttons.png)
+
+**Popout:** how it opens, what a click does, how it looks
+
+![Popout page](https://raw.githubusercontent.com/goldenpipes/AutoMacros/master/docs/screenshots/popout.png)
+
+**Highlight:** how empty buttons stand out
+
+![Highlight page](https://raw.githubusercontent.com/goldenpipes/AutoMacros/master/docs/screenshots/highlight.png)
+
+**General:** tooltips, chat messages, learned items
+
+![General page](https://raw.githubusercontent.com/goldenpipes/AutoMacros/master/docs/screenshots/general.png)
 
 ## Installing
 
-1. Download `AutoMacros-<version>.zip` from the [Releases](../../releases) page.
+Install it with the CurseForge app, or by hand:
+
+1. Download `AutoMacros-<version>.zip` from the Files tab on its CurseForge page or from
+   [GitHub Releases](https://github.com/goldenpipes/AutoMacros/releases).
 2. Extract it into your AddOns folder, so you end up with
    `World of Warcraft\_forever_\Interface\AddOns\AutoMacros\AutoMacros.toc`.
 3. Log in. A welcome window shows the buttons found for you: drag them onto your bars, or
@@ -104,9 +106,10 @@ after that. Switch buttons on or off on the Buttons page, or with `/amac add` / 
 
 ## Reporting problems
 
-Open an [issue](../../issues) with what you did, what happened, and what `/amac debug` printed.
+Open an [issue on GitHub](https://github.com/goldenpipes/AutoMacros/issues) with what you
+did, what happened, and what `/amac debug` printed.
 Lua errors are printed once in chat with the part of the addon they came from.
 
 ## License
 
-[MIT](LICENSE): free to use, change and share, as long as the copyright notice comes along.
+[MIT](https://github.com/goldenpipes/AutoMacros/blob/master/LICENSE): free to use, change and share, as long as the copyright notice comes along.

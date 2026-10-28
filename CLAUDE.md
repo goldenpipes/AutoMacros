@@ -118,6 +118,15 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   red potion, popout above with mana potion and green elixir, the selected one ringed in
   gold). releases/ is gitignored; Lewis creates the project and uploads himself.
 - Unknown: whether CurseForge lists a WoW Forever game version yet.
+- **README.md is also the CurseForge description** (Lewis, 2026-10-28). CurseForge has no
+  API for the description (only file uploads), so Lewis pastes README.md into CurseForge's
+  editor (Markdown mode) by hand. Keep the README **plain Markdown, no HTML, every link
+  and image a full https:// address** (images from
+  `https://raw.githubusercontent.com/goldenpipes/AutoMacros/master/docs/...`; no relative
+  paths like `../../releases` or `CHANGELOG.md`). Whenever a version changes the README,
+  tell Lewis to paste it into CurseForge again. The project's public CurseForge address is
+  not known yet (`/wow/addons/automacros` and `/projects/1769719` gave 404 on 2026-10-28):
+  don't link a guessed one.
 - **Automatic upload** (`.github/workflows/curseforge.yml`): on every published GitHub
   release (or by hand for a tag) it runs luacheck, builds the Forever zip with
   `tools/build_zip.py --game forever` and POSTs it to
