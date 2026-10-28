@@ -25,16 +25,16 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.128.1.**
+- **Current version: 0.129.0.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   iteration** (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
   in the .toc and in Core.lua's first line.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
   `releases/AutoMacros-<version>.zip` containing an `AutoMacros/` folder with only the
-  addon files (`AutoMacros.toc` and the `.lua` files it lists, **with their `Games/<game>/`
-  subfolders**) — no CLAUDE.md, `tools/`, `previous/`, or `.git`. Entry names use forward
-  slashes.
+  addon files (`AutoMacros.toc`, the `.lua` files it lists **with their `Games/<game>/`
+  subfolders**, and the `Media\AutoMacros.tga` icon since 0.129.0) — no CLAUDE.md,
+  `tools/`, `previous/`, or `.git`. Entry names use forward slashes.
 - **GitHub:** public repo https://github.com/goldenpipes/AutoMacros, branch `master`.
   git = GitHub Desktop's `%LOCALAPPDATA%\GitHubDesktop\app-*\resources\app\git\cmd\git.exe`
   (not on PATH; resolve the wildcard, the folder changes when Desktop updates). Push auth is
@@ -166,6 +166,19 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Still unchecked in game: Weapon Buff with sharpening stones, an unworn teleport ring,
   EllesmereUI bars, the Professions / Tracking spell IDs, ActiveTracking on Classic Era,
   0.117.1's settings-after-combat, the welcome window's look.
+
+## 0.129.0 — AddOn List icon
+- Lewis: the AddOn List showed a red "?" for AutoMacros; use the logo (he liked
+  NauticusClassic's gold "N" there). `.toc`: `## IconTexture: Interface\AddOns\AutoMacros\
+  Media\AutoMacros` (no extension). `Media\AutoMacros.tga` = 64x64 uncompressed 32-bit TGA
+  with alpha, drawn natively at 64 by `& .\tools\make_logo.ps1 Media\AutoMacros.tga 64`
+  (the script now writes a TGA when the name ends in .tga; WoW's Classic clients don't
+  take PNG icons). Run it with `&`, not `powershell -ExecutionPolicy Bypass` (the
+  permission check refuses that).
+- `tools/build_zip.py` adds the IconTexture file (.tga/.blp found next to the path) to
+  every zip, so the zip is no longer only the .toc + .lua files. Checked: both the
+  all-games and the Forever zip contain `AutoMacros/Media/AutoMacros.tga`.
+- The AddOn List reads .toc files at game start: needs a full restart, not /reload.
 
 ## 0.128.1
 - Lewis's Popout screenshot (Blizzard page, EllesmereUI off): the Color / Selected border

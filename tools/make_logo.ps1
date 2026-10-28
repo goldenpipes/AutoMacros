@@ -1,6 +1,8 @@
 # Draws the AutoMacros logo (CurseForge avatar): an action button with a red
 # potion and its popout above it (mana potion, green elixir, the selected one
-# ringed in gold). Usage: powershell -File tools\make_logo.ps1 [out.png] [size]
+# ringed in gold). Usage: powershell -File tools\make_logo.ps1 [out.png|out.tga] [size]
+# A .tga is saved as uncompressed 32-bit with alpha, which WoW reads: the AddOn
+# List icon is `powershell -File tools\make_logo.ps1 Media\AutoMacros.tga 64`.
 param([string]$Out = "releases\AutoMacros-logo.png", [int]$Size = 512)
 
 Add-Type -AssemblyName System.Drawing
@@ -104,6 +106,26 @@ Potion $mx $my $main (C 255 255 140 120) (C 255 170 20 30)       # health
 $dir = Split-Path -Parent $Out
 if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory -Force $dir | Out-Null }
 $full = [System.IO.Path]::GetFullPath((Join-Path (Get-Location) $Out))
-$bmp.Save($full, [System.Drawing.Imaging.ImageFormat]::Png)
-$g.Dispose(); $bmp.Dispose()
+$g.Dispose()
+if ($full -match '\.tga$') {
+    # TGA type 2: 18-byte header, then BGRA rows from the bottom up (descriptor 8 = 8 alpha bits)
+    $rect = New-Object System.Drawing.Rectangle 0, 0, $Size, $Size
+    $data = $bmp.LockBits($rect, 'ReadOnly', [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+    $row = $Size * 4
+    $px = New-Object byte[] ($row * $Size)
+    [System.Runtime.InteropServices.Marshal]::Copy($data.Scan0, $px, 0, $px.Length)
+    $bmp.UnlockBits($data)
+    $tga = New-Object System.IO.MemoryStream   # not $out: PowerShell names ignore case ($Out)
+    $hdr = New-Object byte[] 18
+    $hdr[2] = 2
+    $hdr[12] = $Size -band 255; $hdr[13] = $Size -shr 8
+    $hdr[14] = $Size -band 255; $hdr[15] = $Size -shr 8
+    $hdr[16] = 32; $hdr[17] = 8
+    $tga.Write($hdr, 0, 18)
+    for ($y = $Size - 1; $y -ge 0; $y--) { $tga.Write($px, $y * $row, $row) }
+    [System.IO.File]::WriteAllBytes($full, $tga.ToArray())
+} else {
+    $bmp.Save($full, [System.Drawing.Imaging.ImageFormat]::Png)
+}
+$bmp.Dispose()
 "saved $full ($Size x $Size)"

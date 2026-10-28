@@ -1,5 +1,5 @@
-"""Builds the release zip: an AutoMacros/ folder with the .toc and the .lua
-files it lists, nothing else.
+"""Builds the release zip: an AutoMacros/ folder with the .toc, the .lua
+files it lists and its ## IconTexture picture, nothing else.
 
 Usage: python -I tools/build_zip.py [--game forever|classicera|tbc|mists|mainline] [--out DIR]
 
@@ -59,6 +59,17 @@ files = [l.strip() for l in lines if l.strip() and not l.startswith("#")]
 def disk(f):
     """the .toc's path (Windows separators) as a path on this machine"""
     return os.path.join(here, *re.split(r"[\\/]", f))
+
+
+# the AddOn List icon: a game path without extension (Interface\AddOns\AutoMacros\...)
+for line in lines:
+    m = re.match(r"## IconTexture:\s*Interface[\\/]AddOns[\\/]AutoMacros[\\/](.+)", line, re.I)
+    if m:
+        icon = m.group(1).strip()
+        found = [icon + ext for ext in ("", ".tga", ".blp") if os.path.isfile(disk(icon + ext))]
+        if not found:
+            sys.exit("## IconTexture: no .tga/.blp found for " + icon)
+        files.append(found[0])
 
 
 missing = [f for f in files if not os.path.exists(disk(f))]
