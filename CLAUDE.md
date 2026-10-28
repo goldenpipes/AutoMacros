@@ -190,6 +190,10 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   all-games and the Forever zip contain `AutoMacros/Media/AutoMacros.tga`.
 - The AddOn List reads .toc files at game start: needs a full restart, not /reload.
 - **Confirmed in game** (Lewis, 2026-10-28): the icon shows in the AddOn List.
+- **Released** 2026-10-28 as pre-release v0.129.0 (notes: every changelog section since
+  0.120.0, like v0.128.1's); the CurseForge upload ran by itself (run 40619992966, file id
+  9348878, AutoMacros-0.129.0-forever, beta). v0.128.1's release and tag deleted, so
+  v0.129.0 is the only GitHub release.
 
 ## 0.128.1
 - Lewis's Popout screenshot (Blizzard page, EllesmereUI off): the Color / Selected border
