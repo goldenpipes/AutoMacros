@@ -124,9 +124,10 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   and image a full https:// address** (images from
   `https://raw.githubusercontent.com/goldenpipes/AutoMacros/master/docs/...`; no relative
   paths like `../../releases` or `CHANGELOG.md`). Whenever a version changes the README,
-  tell Lewis to paste it into CurseForge again. The project's public CurseForge address is
-  not known yet (`/wow/addons/automacros` and `/projects/1769719` gave 404 on 2026-10-28):
-  don't link a guessed one.
+  tell Lewis to paste it into CurseForge again. Lewis pasted it in on 2026-10-28.
+- The CurseForge project **isn't approved yet** (Lewis, 2026-10-28), so its public pages
+  404 (`/wow/addons/automacros`, `/projects/1769719`). Once approved, add its address to
+  the README's Installing step (check it loads first).
 - **Automatic upload** (`.github/workflows/curseforge.yml`): on every published GitHub
   release (or by hand for a tag) it runs luacheck, builds the Forever zip with
   `tools/build_zip.py --game forever` and POSTs it to
