@@ -4,6 +4,63 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.132.0 - 2026-10-29
+
+### Changed
+- EllesmereUI settings, General > Item learning now looks like EllesmereUI's Patch Notes:
+  each button's name in white with its learned items in gray below it, on the page itself
+  (no box or scroll bar of its own). A "Copy list" button opens the full list in a small
+  window to copy out of the game with Ctrl+C.
+- Blizzard's settings page keeps the copyable list as before.
+
+## 0.131.4 - 2026-10-29 (not yet tested in game)
+
+### Fixed
+- EllesmereUI settings, General > Item learning: the list now has EllesmereUI's own thin
+  scroll bar inside it (with its smooth scrolling) instead of Blizzard's.
+
+## 0.131.3 - 2026-10-29
+
+### Fixed
+- EllesmereUI settings, General > Item learning: the list uses EllesmereUI's scroll bar,
+  panel and font, and the text has room around it so the top line isn't cut off.
+- The list has a little more space between lines on every settings page.
+
+## 0.131.2 - 2026-10-29
+
+### Fixed
+- EllesmereUI settings: your own buttons' rows now line up with the settings above them,
+  on both the left (on/off box) and the right (Delete).
+
+## 0.131.1 - 2026-10-29
+
+### Fixed
+- EllesmereUI settings: deleting one of your own buttons left its row on the page, and a new
+  button didn't show up there until you changed pages. The page now updates right away.
+- EllesmereUI settings: your own buttons' on/off box, name box and Delete button now look
+  like the rest of EllesmereUI.
+- The picker uses EllesmereUI's look (window, buttons, scroll bar, accent color for the
+  chosen tab) when EllesmereUI styling is on, and closes when EllesmereUI's window closes.
+
+## 0.131.0 - 2026-10-29
+
+### Changed
+- Making your own buttons no longer closes the settings or needs the spellbook. Clicking a +
+  opens a picker over the settings: what the button holds so far, then a Bags tab (every item
+  you carry) and a Spells tab (every spell you can cast, highest rank only). Click one to add
+  it; ones already on the button are grayed out. You can still drag things onto its +.
+  Closing the settings closes the picker too.
+
+## 0.130.0 - 2026-10-29 (not yet tested in game)
+
+### Fixed
+- You couldn't add anything to your own buttons: the game won't open your bags or spellbook
+  while the settings are open, so there was nothing to drag onto the +. Now clicking a + (the
+  new-button one or a button's add slot) with nothing on your cursor closes the settings,
+  opens your bags and shows a small window to drop items and spells on. It has Bags and
+  Spellbook buttons, shows what the button holds (right-click one to take it out), and
+  "Back to settings" returns you to the Buttons page.
+
 ## 0.129.0 - 2026-10-27
 
 ### Added

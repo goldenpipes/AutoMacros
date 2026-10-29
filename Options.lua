@@ -14,12 +14,13 @@ setfenv(1, ns)
 -- ---------------------------------------------------------------------------
 UI = {}   -- the settings code's own helpers, kept together in one table
 
--- Re-reads the values shown on our EllesmereUI page while it is on screen.
-function RefreshEUIPage()
+-- Re-reads the values shown on our EllesmereUI page while it is on screen;
+-- rebuild: builds the page again (rows added or gone, e.g. your own buttons).
+function RefreshEUIPage(rebuild)
     local E = EllesmereUI
     if not (E and E.RefreshPage and E.GetActiveModule and E.GetPluginModuleKey) then return end
     pcall(function()
-        if E:GetActiveModule() == E.GetPluginModuleKey("AutoMacros", "options") then E:RefreshPage() end
+        if E:GetActiveModule() == E.GetPluginModuleKey("AutoMacros", "options") then E:RefreshPage(rebuild) end
     end)
 end
 
@@ -494,7 +495,8 @@ UI.HEADERS.buttons = function(f, width)
     end
     for i = #list + 1, #f.icons do f.icons[i]:Hide() end
     if not f.newSlot then
-        f.newSlot = UI.DropSlot(f, size, function(kind, id) UI.CustomCreate(kind, id) end, UI.NEW_BUTTON_TIP)
+        f.newSlot = UI.DropSlot(f, size, function(kind, id) UI.CustomCreate(kind, id) end, UI.NEW_BUTTON_TIP,
+            function() UI.ShowDrop(nil) end)
     end
     UI.StyleSample(f.newSlot)
     place(f.newSlot, slots)

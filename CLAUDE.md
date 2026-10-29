@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.129.0.**
+- **Current version: 0.132.0.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   iteration** (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -176,6 +176,102 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Still unchecked in game: Weapon Buff with sharpening stones, an unworn teleport ring,
   EllesmereUI bars, the Professions / Tracking spell IDs, ActiveTracking on Classic Era,
   0.117.1's settings-after-combat, the welcome window's look.
+
+## 0.132.0 — learned list like EllesmereUI's Patch Notes
+- Lewis (retail, EUI): EUI's scroll bars are thin page bars; asked for the learned list to
+  look like EUI's Patch Notes page (white title + gray description rows). 0.131.4's
+  AttachSmoothScrollbar list was never seen in game (superseded).
+- EUI page: `UI.BuildLearnedNotes(parent, x, y, w, refreshers)` (BuildPage's `learned`
+  branch when W): heading (skin font) + "Copy list" MakeButton (skinned) on the right, then
+  per `UI.LearnedGroups()` group (button title A-Z, items A-Z, "(by hand)" marked, "No
+  button" last) a white GameFontHighlight title "Water  (8)" and a gray (0.6)
+  GameFontHighlightSmall line of item names joined ", ", wrapped to w; no box, no inner
+  scroll. Built once; its refresher calls `RefreshEUIPage(true)` when UI.LearnedText's body
+  differs from the one it was built with (and the page is visible).
+- `UI.ShowCopy(title, text)`: frame `AutoMacrosCopy` (BasicFrameTemplateWithInset or plain,
+  FULLSCREEN_DIALOG, movable, Escape), template scroll frame + read-only multi-line
+  EditBox focused and selected, hint, Close; skinned at creation when SkinActive().
+- Blizzard's page: `UI.BuildLearnedList` back to the template list only (eui path,
+  AttachSmoothScrollbar and skin.Panel removed; insets/spacing kept).
+- **Confirmed** (Lewis, 2026-10-29: "looks good like this"); committed and pushed.
+
+## 0.131.4
+- 0.131.3 in game (Forever, EUI page): panel and font fine, scroll bar still Blizzard's:
+  **`skin.ScrollBar` does nothing to the classic UIPanelScrollFrameTemplate bar.** On EUI's
+  page the list is now a plain ScrollFrame with `EllesmereUI.AttachSmoothScrollbar(sf,
+  { passWheel = true })` (EllesmereUI.lua; public on the EllesmereUI table but not in
+  PLUGINS_API.md; pcall'd, returns UpdateThumb, called after each SetText and a frame
+  later). The bar sits inside the list (sf w - 8, EditBox listW - 12). If the call fails:
+  plain frame + our mouse wheel. Blizzard's page keeps the template.
+- Process slip: the first edit came before saving previous/0.131.3; restored it from
+  releases/AutoMacros-0.131.3.zip (the build Lewis had).
+
+## 0.131.3
+- Lewis (EUI General page): the Item learning list looked wonky (cramped small font, lines
+  cut at the box's top edge, Blizzard scroll bar). `UI.BuildLearnedList(..., eui)`
+  (BuildPage passes `W ~= nil`): backing is now its own frame `box` (level below sf):
+  EUI = `skin.Panel(box, { inset = true })`, else the old 0.35 black; EditBox gets
+  SetTextInsets(6, 6, 4, 4) and SetSpacing(2) on every page; EUI also skins sf.ScrollBar,
+  the heading font, and the list font (skin.GetFont, 11). Untested in game.
+
+## 0.131.2
+- 0.131.1's EUI styling of the Custom rows confirmed (Lewis's screenshot: themed checkbox,
+  name box, Delete). The row started at x0 (20), left of everything, and Delete ended near
+  the page edge. BuildPage's customrows branch on EUI now passes x = `tx` (labels, pad + 20)
+  and width `w - tx + 10`, so Delete's right edge (width - 10) is `w - tx`, mirroring the
+  left. Blizzard's page unchanged. **Confirmed in game** (Lewis, EUI page: lines up).
+
+## 0.131.1 — custom buttons on EllesmereUI's page
+- 0.131.0 confirmed working (Lewis, Forever, Blizzard and EUI pages). His EUI screenshot:
+  Delete left the row (and a new button's row was missing), Delete was a red Blizzard-skin
+  button, picker unthemed.
+- `RefreshEUIPage(rebuild)` passes it to `E:RefreshPage`; UI.CustomChanged uses
+  `RefreshEUIPage(true)` (rows change). Before, only values were re-read.
+- `UI.Skin(kind, frame, ...)` = pcall'd `skin[kind]` (EllesmereUI's SKINNING_API: Shell,
+  Inset, CloseButton, Button, WhiteButtonLabel, Checkbox, EditBox, ScrollBar, Font).
+  BuildCustomRows got `eui` (BuildPage passes `W ~= nil`): Checkbox, EditBox {padInput},
+  Button on its widgets. Picker: skinned once at creation when `SkinActive()` (f.skinned;
+  turning EUI styling off later needs a /reload for it); `UI.MarkPickTabs` colors the active
+  tab's label AccentRGB when skinned, else LockHighlight.
+- Picker closing: `UI.dropHost` = the visible SettingsPanel / InterfaceOptionsFrame /
+  EllesmereUIFrame when opened; OnUpdate (every 0.25 s) hides the picker once it isn't
+  visible. Replaces the OnHide hooks (EUI's PLUGINS_API forbids hooking its things).
+- **Confirmed in game** (Lewis, EUI page): Delete clears the row straight away. Still
+  unknown whether the EUI page keeps its scroll position on rebuild.
+
+## 0.131.0 — picker instead of closing the settings
+- Lewis tried 0.130.0 on Classic Era (Forever-style spellbook): the drop window worked for
+  bags, but its Spellbook button made the window disappear (cause not found), and the
+  spellbook takes half the screen. He asked to keep the settings open.
+- The drop window (`AutoMacrosDrop`, same name) is now a picker at FULLSCREEN_DIALOG over the
+  settings; nothing is closed or opened. Rows: the button's things + DropSlot (drops still
+  work), tabs Bags / Spells (`UI.pickTab`, MakeButtons, active one LockHighlight), a
+  UIPanelScrollFrameTemplate list (`f.list`, pooled `UI.PickIcon`s, 32 px, 5 rows visible),
+  Done. `UI.BagThings()` = ScanBags A-Z (worn gear included); `UI.BookSpells()` = retail
+  C_SpellBook skill lines (no passive / off-spec), else GetSpellTabInfo + GetSpellBookItemInfo
+  "SPELL" minus IsPassiveSpell; one entry per spell name, the last (highest) rank. Already
+  added = desaturated, alpha 0.5. Hooks SettingsPanel / InterfaceOptionsFrame OnHide to close.
+- Removed: UI.CloseSettings, UI.OpenBags, UI.OpenSpellbook, Back to settings.
+  `OpenOptions(blizzard, page)` stays (nothing passes a page now).
+- **Untested in game**, incl. the strata over SettingsPanel and the spell lists per client.
+
+## 0.130.0 — drop window for custom buttons
+- Lewis: can't open bags or spellbook while the settings page is open, so nothing can be
+  dragged onto the custom +s (0.118.0 already saw this for the spellbook on Classic Era).
+- `UI.DropSlot(parent, size, drop, tip, empty)`: `empty` runs on a click with nothing on the
+  cursor (GetCursorInfo nil). The Buttons strip's + and each Custom row's add slot pass
+  `UI.ShowDrop(key)` (nil = new button). ShowDrop (Custom.lua, refused in combat):
+  `UI.CloseSettings()` (SettingsPanel:Close(true) / HideUIPanel, InterfaceOptionsFrame,
+  GameMenuFrame), frame `AutoMacrosDrop` (BasicFrameTemplateWithInset like Welcome, DIALOG,
+  movable, Escape), `UI.OpenBags()` (OpenAllBags). Window: title "New button" / "Add to X",
+  the button's things (right-click removes), a DropSlot -> `UI.DropTake` (first drop on a new
+  one: `UI.CustomCreate` now returns the key, kept in `UI.dropKey`), buttons Bags,
+  Spellbook (`UI.OpenSpellbook`: PlayerSpellsUtil.OpenToSpellBookTab, else
+  ToggleSpellBook), Back to settings = `OpenOptions(nil, "Buttons")`.
+- `OpenOptions(blizzard, page)`: opens that page; RegisterBlizzPanel keeps each page's
+  category in `UI.panels[i].category`. EllesmereUI's page can't be opened at a page (opens
+  as before), and its window is not closed by CloseSettings (unknown whether it blocks bags).
+- **Untested in game.**
 
 ## 0.129.0 — AddOn List icon
 - Lewis: the AddOn List showed a red "?" for AutoMacros; use the logo (he liked

@@ -7,8 +7,9 @@ local ADDON, ns = ...
 if not getmetatable(ns) then setmetatable(ns, { __index = _G }) end
 setfenv(1, ns)
 
--- EllesmereUI's page when it is installed, unless blizzard (/amac options blizzard)
-function OpenOptions(blizzard)
+-- EllesmereUI's page when it is installed, unless blizzard (/amac options blizzard).
+-- page: the name of the page to open on the game's window (default the first).
+function OpenOptions(blizzard, page)
     if not blizzard and UI.pluginRegistered and EllesmereUI and EllesmereUI.OpenPlugin then
         local ok, opened = pcall(EllesmereUI.OpenPlugin, "AutoMacros")
         if ok and opened then return end
@@ -17,19 +18,23 @@ function OpenOptions(blizzard)
     -- open it in combat (ADDON_ACTION_BLOCKED), so then it opens when combat ends
     if InCombatLockdown() then
         if not optionsAfterCombat then Print("the settings will open when combat ends") end
-        optionsAfterCombat = { blizzard = blizzard }
+        optionsAfterCombat = { blizzard = blizzard, page = page }
         return
     end
     UI.RegisterBlizzPanel()
-    local cat = UI.blizzCategory
+    local pn = UI.panels[1]
+    for i, p in ipairs(PAGES) do
+        if p.name == page and UI.panels[i] then pn = UI.panels[i] end
+    end
+    local cat = pn.category or UI.blizzCategory
     if cat and Settings and Settings.OpenToCategory then
         local ok = pcall(Settings.OpenToCategory, cat.GetID and cat:GetID() or cat)
         if ok then return end
     end
     if InterfaceOptionsFrame_OpenToCategory then
         -- (called twice: the first call can stop at the AddOns list)
-        pcall(InterfaceOptionsFrame_OpenToCategory, UI.panels[1].frame)
-        pcall(InterfaceOptionsFrame_OpenToCategory, UI.panels[1].frame)
+        pcall(InterfaceOptionsFrame_OpenToCategory, pn.frame)
+        pcall(InterfaceOptionsFrame_OpenToCategory, pn.frame)
         return
     end
     Print("this client has no options window to open")
@@ -324,7 +329,7 @@ frame:SetScript("OnEvent", function(_, event)
         if optionsAfterCombat then   -- /amac options in combat (see OpenOptions)
             local want = optionsAfterCombat
             optionsAfterCombat = nil
-            local ok, err = pcall(OpenOptions, want.blizzard)
+            local ok, err = pcall(OpenOptions, want.blizzard, want.page)
             if not ok then Fail("options window", err) end
         end
     elseif BAR_EVENTS[event] then
