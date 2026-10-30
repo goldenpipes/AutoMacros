@@ -196,9 +196,9 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - **CurseForge now every client** (Lewis, 2026-10-29, after TBC + MoP worked): the workflow
   builds the all-clients zip (`build_zip.py --root src --out out`, no `--game`; file name
   AutoMacros-<v>, no -forever) and `CF_GAME_VERSIONS` = "1.60.1, 1.15.9, 2.5.6, 5.5.4,
-  12.1.5" (set with gh variable set). **Unverified that CurseForge spells those names
-  that way**: an unknown one stops the upload and prints CurseForge's names; fix the
-  variable and run the workflow by hand for the tag. README line 6 now says it works in
+  12.1.5" (set with gh variable set). **Works:** CurseForge knew all five names; v0.132.0's
+  upload (run 40978632998) put up AutoMacros-0.132.0 as beta, file id 9367363. (An unknown
+  name would stop the upload and print CurseForge's names.) README line 6 now says it works in
   all five; Lewis must paste the README into CurseForge again. The "Forever only for now"
   notes in the CurseForge section are out of date.
 - .build.info now (2026-10-29): Forever 1.60.1.70685, retail 12.1.5.70575, Era
@@ -221,6 +221,11 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Blizzard's page: `UI.BuildLearnedList` back to the template list only (eui path,
   AttachSmoothScrollbar and skin.Panel removed; insets/spacing kept).
 - **Confirmed** (Lewis, 2026-10-29: "looks good like this"); committed and pushed.
+- **Released** 2026-10-30 as pre-release v0.132.0 (notes: every changelog section since
+  0.120.0), after TBC Anniversary and MoP Classic tests; first all-clients CurseForge
+  upload (file id 9367363). v0.129.0's release and tag deleted: v0.132.0 is the only one.
+  Commit messages: write them with the Write tool (Set-Content -Encoding utf8 put a BOM
+  at the start of 50b82aa's message).
 
 ## 0.131.4
 - 0.131.3 in game (Forever, EUI page): panel and font fine, scroll bar still Blizzard's:
