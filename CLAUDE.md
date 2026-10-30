@@ -177,6 +177,33 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   EllesmereUI bars, the Professions / Tracking spell IDs, ActiveTracking on Classic Era,
   0.117.1's settings-after-combat, the welcome window's look.
 
+## TBC Anniversary test setup (2026-10-29)
+- Lewis is installing/testing **TBC Anniversary** (folder `_anniversary_`, product
+  wow_anniversary, build 2.5.6.70577). `_anniversary_\Interface\AddOns\AutoMacros` is a
+  **junction to this project folder** (made 2026-10-29), like retail's and Classic Era's.
+  The .toc already lists 20506 (unconfirmed: check `/dump select(4, GetBuildInfo())`);
+  Game.lua maps 20000-49999 to GAME "tbc" (Games\TBC\Lists.lua). Release on hold until
+  this test (Lewis, after pushing 0.132.0).
+- **TBC Anniversary: works** (Lewis, 2026-10-29: "tbc works perfectly", 0.132.0). Not
+  itemised what he checked; the .toc's 20506 evidently loads.
+- **MoP Classic** too: folder `_classic_` (product wow_classic, build 5.5.4.70631, .toc
+  50504, GAME "mists"). It had never been started (no Interface folder): made
+  `_classic_\Interface\AddOns` and the junction there, 2026-10-29. **Works, no errors**
+  (Lewis, 2026-10-29, 0.132.0).
+- Lewis also asked for **Wrath**: no Wrath client exists here, and Blizzard has no live
+  Wrath Classic (it progressed to Cata, then MoP). Not set up; a Wrath client would get
+  TBC's lists (Game.lua maps 20000-49999 to "tbc").
+- **CurseForge now every client** (Lewis, 2026-10-29, after TBC + MoP worked): the workflow
+  builds the all-clients zip (`build_zip.py --root src --out out`, no `--game`; file name
+  AutoMacros-<v>, no -forever) and `CF_GAME_VERSIONS` = "1.60.1, 1.15.9, 2.5.6, 5.5.4,
+  12.1.5" (set with gh variable set). **Unverified that CurseForge spells those names
+  that way**: an unknown one stops the upload and prints CurseForge's names; fix the
+  variable and run the workflow by hand for the tag. README line 6 now says it works in
+  all five; Lewis must paste the README into CurseForge again. The "Forever only for now"
+  notes in the CurseForge section are out of date.
+- .build.info now (2026-10-29): Forever 1.60.1.70685, retail 12.1.5.70575, Era
+  1.15.9.70576, Anniversary 2.5.6.70577, MoP 5.5.4.70631.
+
 ## 0.132.0 — learned list like EllesmereUI's Patch Notes
 - Lewis (retail, EUI): EUI's scroll bars are thin page bars; asked for the learned list to
   look like EUI's Patch Notes page (white title + gray description rows). 0.131.4's

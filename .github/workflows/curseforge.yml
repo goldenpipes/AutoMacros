@@ -1,8 +1,8 @@
 # Uploads AutoMacros to CurseForge whenever a GitHub release is published.
 #
-# CurseForge gets the WoW Forever build only (tools/build_zip.py --game forever):
-# a pre-release on GitHub goes up as "beta", a normal release as "release", with
-# the release's notes as its changelog.
+# CurseForge gets the build for every client (tools/build_zip.py, as the GitHub
+# release zip): a pre-release on GitHub goes up as "beta", a normal release as
+# "release", with the release's notes as its changelog.
 #
 # Needs, in the repo's Settings > Secrets and variables > Actions:
 #   secret   CF_API_TOKEN        a CurseForge API token (curseforge.com, account
@@ -11,8 +11,8 @@
 #                                Project")
 #   variable CF_GAME_VERSIONS    the game version name(s) to file it under, as
 #                                CurseForge spells them, comma-separated (e.g.
-#                                "1.60.1"); the run lists the names it knows if
-#                                one is not found
+#                                "1.60.1, 1.15.9, 2.5.6, 5.5.4, 12.1.5"); the run
+#                                lists the names it knows if one is not found
 # Can also be run by hand (Actions tab > CurseForge > Run workflow) for a tag.
 
 name: CurseForge
@@ -57,11 +57,11 @@ jobs:
         with:
           path: ci
 
-      - name: Check and build the Forever zip
+      - name: Check and build the zip
         id: build
         run: |
           python3 -I ci/tools/luacheck.py src/AutoMacros.toc
-          zip="$(python3 -I ci/tools/build_zip.py --root src --game forever --out out)"
+          zip="$(python3 -I ci/tools/build_zip.py --root src --out out)"
           echo "zip=$zip" >> "$GITHUB_OUTPUT"
           echo "name=$(basename "$zip" .zip)" >> "$GITHUB_OUTPUT"
 

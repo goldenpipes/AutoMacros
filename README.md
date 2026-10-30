@@ -3,7 +3,7 @@
 # AutoMacros
 
 Draggable macros for your consumables that always use the best item in your bags.
-Made for **WoW Forever**; also loads in Classic Era, TBC Anniversary, MoP Classic and retail.
+Works in **WoW Forever**, **Classic Era**, **TBC Anniversary**, **MoP Classic** and **retail**.
 
 [![Latest release](https://img.shields.io/github/v/release/goldenpipes/AutoMacros?include_prereleases&label=download)](https://github.com/goldenpipes/AutoMacros/releases) [![Changelog](https://img.shields.io/badge/changelog-read-blue)](https://github.com/goldenpipes/AutoMacros/blob/master/CHANGELOG.md)
 
