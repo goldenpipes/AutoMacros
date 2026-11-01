@@ -5,7 +5,7 @@
 Draggable macros for your consumables that always use the best item in your bags.
 Works in **WoW Forever**, **Classic Era**, **TBC Anniversary**, **MoP Classic** and **retail**.
 
-[![Latest release](https://img.shields.io/github/v/release/goldenpipes/AutoMacros?include_prereleases&label=download)](https://github.com/goldenpipes/AutoMacros/releases) [![Changelog](https://img.shields.io/badge/changelog-read-blue)](https://github.com/goldenpipes/AutoMacros/blob/master/CHANGELOG.md)
+[![Latest release](https://img.shields.io/github/v/release/goldenpipes/AutoMacros?include_prereleases&label=download)](https://github.com/goldenpipes/AutoMacros/releases) [![Changelog](https://img.shields.io/badge/changelog-read-blue)](https://github.com/goldenpipes/AutoMacros/blob/master/CHANGELOG.md) [![Built with Claude](https://img.shields.io/badge/built%20with-Claude-D97757?logo=claude&logoColor=white)](https://www.anthropic.com/claude-code)
 
 AutoMacros keeps one macro for each kind of consumable (health and mana items, food, water,
 bandages, buffs and more) pointed at the best item you carry. Put the macros on any action bar

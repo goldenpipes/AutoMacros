@@ -45,6 +45,11 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   (add `--prerelease` if untested).
 - Lewis edits the Lua himself. Before building a new version, diff against the last one you
   produced and **merge his edits** — never overwrite them.
+- **Every commit message ends with** a blank line and `Co-Authored-By: Claude
+  <noreply@anthropic.com>` (Lewis, 2026-11-01: credit Claude on the repo; GitHub builds
+  contributors from commits, there is no list to add someone to). Write the message with
+  the Write tool and `git commit -F <file>` (no BOM). The README has a "Built with Claude"
+  shields.io badge (logo=claude, D97757) linking to anthropic.com/claude-code.
 
 ## Before handing over any build — always
 - Run `python -I tools\luacheck.py AutoMacros.toc`. For every file the .toc lists it checks
