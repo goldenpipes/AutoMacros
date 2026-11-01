@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.132.0.**
+- **Current version: 0.135.0.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   iteration** (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -203,6 +203,49 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   notes in the CurseForge section are out of date.
 - .build.info now (2026-10-29): Forever 1.60.1.70685, retail 12.1.5.70575, Era
   1.15.9.70576, Anniversary 2.5.6.70577, MoP 5.5.4.70631.
+
+## 0.135.0 — right-click conjures (Water, Food)
+- Lewis: right-clicking the Water or Food macro should always conjure. MADE entries get
+  `rightClick = true` (water, food only). UpdateCore's set branch, when the spell is known:
+  carrying some -> `#showtooltip <item>` / `/cast [btn:2] <spell>` / `/use [nobtn:2]
+  item:<id>`; carrying none -> `/cast [btn:2][nomod] <spell>` / `/use [mod:shift,nobtn:2]
+  item:<id>`. A picked spell (spellUsed) already casts it. Healthstone / mana gem buttons
+  unchanged.
+- **0.133.0-0.135.0 confirmed working on Forever** (Lewis, 2026-10-31: "its all working"):
+  conjuring when out, the spell in the popout, right-click conjures.
+
+## 0.134.0 — the making spell in the popout
+- Lewis: Conjure Water should always show in the Water popout for a mage, highest rank only.
+  `MadeCreate` now returns `name, carried, spellID` (best known rank: the lists are best
+  first; name fallback takes the ID `KnowsSpellName` gets back, GetSpellInfo's 7th return
+  or C_Spell info.spellID). UpdateCore's set branch appends `{ id = createID, spell =
+  true, pick = create }` after KnownSpells: last in the popout, pick keyed by **name** so a
+  new rank keeps it chosen. Applies to every MADE button (water, food, hpot, mpot).
+  Casting is by name (SpellBody / the secure popout's spell attribute), i.e. best rank.
+- "Highest rank" read as the spell; carried conjured water of several ranks still all
+  show (asked Lewis). Untested in game.
+
+## 0.133.0 — conjured water and food (2026-10-31)
+- Lewis got **WoW Forever running**; a mage who knows Conjure Water had the Water button
+  out and it didn't offer Conjure Water. It never had: only hpot/mpot were in MADE.
+- **Forever is now a junction too** (2026-10-31, Lewis asked): `_forever_\Interface\AddOns\
+  AutoMacros` was a real copy of 0.132.0 (same as previous/0.132.0 apart from CRLF);
+  moved to `releases\forever-copy-0.132.0` (gitignored, kept), junction in its place.
+  All five clients now load this project folder directly.
+- MADE gains `water` / `food` (only when the game's Lists set WATER_RANK / FOOD_RANK):
+  same path as healthstones (UpdateCore's set branch, MadeCreate, AutoEnable, UI.Available):
+  none carried + spell known -> `#showtooltip Conjure Water` / `/cast [nomod]` / `/use
+  [mod:shift] item:<chosen>`; conjured items sort first by rank.
+- Lists (**IDs from memory, unverified**): vanilla (Forever, Era) water 5350, 2288, 2136,
+  3772, 8077, 8078, 8079, spells 10140..5504; food 5349, 1113, 1114, 1487, 8075, 8076,
+  22895, spells 28612, 10145..587. TBC adds Glacier Water 22018 / 27090 and Croissant
+  22019 / 33717. MoP: Conjure Refreshment 42955 makes mana foods (65517, 65516, 65515,
+  65500, 43518, 43523, 65499, 80610, 80618), water and food share the table; retail adds
+  Mana Bun 113509 and spell 190336.
+- `MadeCreate` falls back to **spell name**: if no listed ID is known, a listed spell's
+  name that `KnowsSpellName` (C_Spell.GetSpellInfo / GetSpellInfo by name, which only
+  answers for spells in your spellbook) finds; /cast by name uses the best rank. Covers
+  Forever spell IDs differing from vanilla, for healthstones and gems too.
 
 ## 0.132.0 — learned list like EllesmereUI's Patch Notes
 - Lewis (retail, EUI): EUI's scroll bars are thin page bars; asked for the learned list to

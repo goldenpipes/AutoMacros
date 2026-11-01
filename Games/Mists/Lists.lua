@@ -65,3 +65,11 @@ CREATE_HS = { 27230, 11730, 11729, 5699, 6202, 6201 }
 -- Conjure spells, best first.
 MANA_GEM_RANK = { [5514] = 1, [5513] = 2, [8007] = 3, [8008] = 4, [22044] = 5, [36799] = 6 }
 CONJURE_GEM = { 42985, 27101, 10054, 10053, 3552, 759 }
+-- Conjure Refreshment (Conjure Water and Food are gone since Cataclysm) makes
+-- mana food that is food and drink at once, so both buttons share it: Mana
+-- Cookie, Brownie, Cupcake, Lollipop, Pie, Strudel, Cake, Pudding, Fritter.
+WATER_RANK = { [65517] = 1, [65516] = 2, [65515] = 3, [65500] = 4, [43518] = 5, [43523] = 6,
+    [65499] = 7, [80610] = 8, [80618] = 9 }
+CONJURE_WATER = { 42955 }
+FOOD_RANK = WATER_RANK
+CONJURE_FOOD = CONJURE_WATER

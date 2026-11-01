@@ -138,9 +138,10 @@ function UpdateCore()
         else
             local list = Candidates(have, m.set)
             local made = MADE[m.set]
-            local create, carried = MadeCreate(m.set, have)
+            local create, carried, createID = MadeCreate(m.set, have)
             if made then
-                -- a healthstone / mana gem first (best rank first), then the rest best first
+                -- what you make (healthstone, mana gem, conjured water / food) first,
+                -- best rank first, then the rest best first
                 table.sort(list, function(x, y)
                     local rx, ry = made.rank[x.id] or 0, made.rank[y.id] or 0
                     if rx ~= ry then return rx > ry end
@@ -151,16 +152,29 @@ function UpdateCore()
             for _, s in ipairs(KnownSpells(m)) do
                 list[#list + 1] = { id = s.id, spell = true, pick = -s.id }
             end
+            -- the spell that makes them (Conjure Water, Create Healthstone, ...)
+            -- whenever you know it, your best rank only, last; picked by name,
+            -- so learning a new rank keeps it picked
+            if create and createID then
+                list[#list + 1] = { id = createID, spell = true, pick = create }
+            end
             flyoutItems[m.name] = list
             local entry
             id, entry = Chosen(m, list)
             spellUsed = entry ~= nil and entry.spell == true
+            -- Water and Food (made.rightClick): a right-click always makes more
+            local right = create and made and made.rightClick
             if create and not carried then
                 -- you can make one and carry none: the button makes one, Shift+click
                 -- uses the item chosen from what you do carry
                 making = true
-                body = "#showtooltip " .. create .. "\n/cast [nomod] " .. create
-                if id and not spellUsed then body = body .. "\n/use [mod:shift] item:" .. id end
+                body = "#showtooltip " .. create .. "\n/cast " .. (right and "[btn:2][nomod] " or "[nomod] ") .. create
+                if id and not spellUsed then
+                    body = body .. "\n/use " .. (right and "[mod:shift,nobtn:2] " or "[mod:shift] ") .. "item:" .. id
+                end
+            elseif right and id and not spellUsed then
+                -- left-click uses the chosen item, right-click makes more
+                body = "#showtooltip " .. ItemRef(id) .. "\n/cast [btn:2] " .. create .. "\n/use [nobtn:2] item:" .. id
             elseif not id then
                 body = EmptyBody(m.label)
             elseif spellUsed then
@@ -172,7 +186,7 @@ function UpdateCore()
             end
         end
         -- spell and scroll buttons show the spell when there is nothing to use, so they are never "empty"
-        -- (nor is one that makes a healthstone or mana gem)
+        -- (nor is one that makes a healthstone, mana gem or conjured water / food)
         emptyState[m.name] = (id == nil) and not making and m.kind ~= "spells" and m.special ~= "scroll"
         if not inCombat then
             -- "?" and the real name while #showtooltip drives the icon; the

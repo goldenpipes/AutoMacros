@@ -177,9 +177,10 @@ function KnowsSpell(id)
     return ok and k and true or false
 end
 
--- For the Restore Health / Restore Mana buttons (set hpot / mpot): the name of
--- the Create Healthstone / Conjure Mana Gem spell this character knows (best
--- rank), or nil; and whether you carry one already.
+-- For a button that can make its items (see MADE: Restore Health / Mana, Water,
+-- Food): the name of the Create Healthstone / Conjure ... spell this character
+-- knows, or nil; whether you carry one already; and the spell ID of your best
+-- rank (the lists are best first).
 function MadeCreate(set, have)
     local made = MADE[set]
     if not made then return nil, false end
@@ -189,9 +190,28 @@ function MadeCreate(set, have)
     end
     for _, spellID in ipairs(made.spells) do
         local name = KnowsSpell(spellID) and SpellName(spellID)
-        if name then return name, carried end
+        if name then return name, carried, spellID end
+    end
+    -- a client whose spell IDs differ from our list: a spell you know by the
+    -- same name (/cast by name takes your best rank)
+    for _, spellID in ipairs(made.spells) do
+        local name = SpellName(spellID)
+        local known, knownID = false, nil
+        if name then known, knownID = KnowsSpellName(name) end
+        if known then return name, carried, knownID or spellID end
     end
     return nil, carried
+end
+
+-- true when a spell of that name is in your spellbook (the game only answers
+-- a name for spells you know), and the ID it answers with (your best rank)
+function KnowsSpellName(name)
+    local get = (C_Spell and C_Spell.GetSpellInfo) or GetSpellInfo
+    if not get then return false end
+    local ok, a, _, _, _, _, _, b = pcall(get, name)
+    if not ok or a == nil then return false end
+    local id = type(a) == "table" and a.spellID or b
+    return true, tonumber(id)
 end
 
 function UseBody(id)

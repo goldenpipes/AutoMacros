@@ -1,4 +1,4 @@
--- AutoMacros 0.132.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.135.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -37,14 +37,18 @@ end
 HEARTHSTONE = 6948
 -- The spell and item ID lists that differ between games (TRAVEL_SPELLS,
 -- PROFESSION_SPELLS, TRACKING_SPELLS, PORTAL_SPELLS, HS_RANK, CREATE_HS,
--- MANA_GEM_RANK, CONJURE_GEM) are in Games\<game>\Lists.lua; only the running
--- game's file sets them (Game.lua).
+-- MANA_GEM_RANK, CONJURE_GEM, WATER_RANK, CONJURE_WATER, FOOD_RANK,
+-- CONJURE_FOOD) are in Games\<game>\Lists.lua; only the running game's file
+-- sets them (Game.lua).
 
--- What the Restore Health and Restore Mana buttons can make for you, and so
--- make when you carry none: healthstones (Warlock) and mana gems (Mage).
+-- What a button can make for you, and so makes when you carry none:
+-- healthstones (Warlock), mana gems and conjured water and food (Mage).
+-- rightClick: a right-click on the button always makes more.
 MADE = {
     hpot = { rank = HS_RANK, spells = CREATE_HS },
     mpot = { rank = MANA_GEM_RANK, spells = CONJURE_GEM },
+    water = WATER_RANK and { rank = WATER_RANK, spells = CONJURE_WATER, rightClick = true } or nil,
+    food = FOOD_RANK and { rank = FOOD_RANK, spells = CONJURE_FOOD, rightClick = true } or nil,
 }
 
 QUESTION_MARK = 134400

@@ -51,3 +51,11 @@ CREATE_HS = { 11730, 11729, 5699, 6202, 6201 }
 -- Mana gems: 1 Agate, 2 Jade, 3 Citrine, 4 Ruby; Conjure spells, best first.
 MANA_GEM_RANK = { [5514] = 1, [5513] = 2, [8007] = 3, [8008] = 4 }
 CONJURE_GEM = { 10054, 10053, 3552, 759 }
+-- Conjured water: 1 Water, 2 Fresh, 3 Purified, 4 Spring, 5 Mineral, 6 Sparkling,
+-- 7 Crystal; Conjure Water spells, best first.
+WATER_RANK = { [5350] = 1, [2288] = 2, [2136] = 3, [3772] = 4, [8077] = 5, [8078] = 6, [8079] = 7 }
+CONJURE_WATER = { 10140, 10139, 10138, 6127, 5506, 5505, 5504 }
+-- Conjured food: 1 Muffin, 2 Bread, 3 Rye, 4 Pumpernickel, 5 Sourdough, 6 Sweet
+-- Roll, 7 Cinnamon Roll; Conjure Food spells, best first.
+FOOD_RANK = { [5349] = 1, [1113] = 2, [1114] = 3, [1487] = 4, [8075] = 5, [8076] = 6, [22895] = 7 }
+CONJURE_FOOD = { 28612, 10145, 10144, 6129, 990, 597, 587 }

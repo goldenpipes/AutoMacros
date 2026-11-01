@@ -4,6 +4,29 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.135.0 - 2026-10-31
+
+### Added
+- Mages: right-click the Water or Food button to conjure more (your highest rank of Conjure
+  Water / Conjure Food), whatever you carry. Left-click still drinks or eats as before.
+
+## 0.134.0 - 2026-10-31
+
+### Changed
+- The spell that makes a button's items is always in its popout when you know it, at the
+  end: Conjure Water on Water, Conjure Food on Food, Conjure Mana Gem on Restore Mana,
+  Create Healthstone on Restore Health. Only your highest rank is shown, and it always
+  casts your highest rank. Pick it to make the button cast it even while you carry some.
+
+## 0.133.0 - 2026-10-31
+
+### Added
+- Mages: when you carry no conjured water, the Water button casts Conjure Water (your best
+  rank); Shift-click drinks the water you picked from what you do carry. The Food button
+  does the same with Conjure Food. On MoP Classic and retail both use Conjure Refreshment.
+- Conjured water and food come first on those buttons and in their popouts, best rank
+  first, so you drink your free water before what you bought.
+
 ## 0.132.0 - 2026-10-29
 
 ### Changed
