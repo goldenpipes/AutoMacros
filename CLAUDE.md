@@ -34,8 +34,8 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   - `1.0.0` = first stable release (works on Forever, Lewis happy to recommend it). Stay on 0.x until then.
 - **CHANGELOG.md**: every version gets an entry at the top (date, Added / Changed / Fixed /
   Removed), written for players, not code notes (those stay in this file).
-- **GitHub Releases** are only for builds worth downloading: tested in game = normal release;
-  not yet tested = `--prerelease`. Every iteration is still committed and pushed.
+- **GitHub Releases** are only for builds worth downloading. Every iteration is still
+  committed and pushed.
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
@@ -56,9 +56,10 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   git's credential helper for github.com in the global gitconfig). When a version is
   committed: `git push origin master`; for a release, also build the zip and
   `gh release create v<version> releases/AutoMacros-<version>.zip --title "AutoMacros <version>" --notes-file <that version's CHANGELOG section>`
-  (add `--prerelease` if untested).
-- **Always `--prerelease` (beta on CurseForge) until WoW Forever launches on 2026-11-04**
-  (Lewis, 2026-11-01), tested in game or not.
+  `--prerelease`.
+- **Every release is `--prerelease` (beta on CurseForge) unless Lewis says otherwise for
+  that release** (Lewis, 2026-11-01: "always prerelease unless i specify otherwise"),
+  tested in game or not. Don't ask which type; just use pre-release.
 - Lewis edits the Lua himself. Before building a new version, diff against the last one you
   produced and **merge his edits** — never overwrite them.
 - **Every commit message ends with** a blank line and `Co-Authored-By: Claude
