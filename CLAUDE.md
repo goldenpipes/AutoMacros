@@ -245,6 +245,11 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   author API only uploads files (no description endpoint). Offered: keep pasting, or a
   short stable CurseForge description that links to the GitHub README. **Lewis chose to
   keep pasting the full README** (2026-11-01): keep telling him when it changes.
+- **Whenever the README needs pasting into CurseForge** (Lewis, 2026-11-01): open
+  `README.md` in the app's file pane (show_pane file, line 1) **and** open the description
+  editor in Waterfox: `Start-Process "C:\Program Files\Waterfox\waterfox.exe" -ArgumentList
+  "https://authors.curseforge.com/#/projects/1769719/description"`. He copies from the
+  pane and pastes there himself (Markdown mode).
 
 ## 0.137.0 — /amac opens the Buttons page
 - Lewis (2026-11-01): `/amac` with nothing after it = `OpenOptions(nil, "Buttons")`
