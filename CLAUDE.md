@@ -238,6 +238,12 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   false. The note below ("OpenPlugin takes no page") was wrong.
 - **Confirmed in game** (Lewis, 2026-11-01): /amac opens Buttons on EllesmereUI and on
   Blizzard's window (EllesmereUI off).
+- **Released** 2026-11-01 as pre-release v0.137.1 (notes: changelog 0.136.0-0.137.1);
+  CurseForge upload run 41333586878, file id 9397372, beta. v0.135.1's release and tag
+  deleted.
+- Lewis asked whether the README can reach CurseForge automatically: **no**, CurseForge's
+  author API only uploads files (no description endpoint). Offered: keep pasting, or a
+  short stable CurseForge description that links to the GitHub README; not decided.
 
 ## 0.137.0 — /amac opens the Buttons page
 - Lewis (2026-11-01): `/amac` with nothing after it = `OpenOptions(nil, "Buttons")`
