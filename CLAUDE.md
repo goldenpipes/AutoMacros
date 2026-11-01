@@ -25,7 +25,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.135.0.**
+- **Current version: 0.135.1.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   iteration** (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -210,6 +210,22 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   notes in the CurseForge section are out of date.
 - .build.info now (2026-10-29): Forever 1.60.1.70685, retail 12.1.5.70575, Era
   1.15.9.70576, Anniversary 2.5.6.70577, MoP 5.5.4.70631.
+
+## 0.135.1 — retail secret values
+- CurseForge bug comment (retail 12.x, 0.135.0): `Bars.lua:262: attempted to index a table
+  that cannot be indexed with secret keys` in CleanTooltip, from TooltipDataProcessor's
+  post-call on an action button tooltip (ActionButton SetTooltip -> SetAction). Locals:
+  `text=<secret string>` (GameTooltipTextLeft1). **Retail's secret values**: an addon may
+  not compare them, index with them, or use them as table keys; `type()` still says
+  "string". Check with `issecretvalue(v)` (absent before 12.0).
+- `Readable(v)` (Core.lua) = not issecretvalue(v). Guarded: CleanTooltip's line lookup
+  and its first-line compare; MacroOnButton (GetActionInfo kind/id, GetActionText ->
+  not ours); BarChanged (secret kind/id/text stored as "?"); the scan tooltip's lines
+  (Learning); `/amac debug` prints "(secret)". The three tooltip hooks now call
+  `pcall(CleanTooltip, tip)`, so the tidy-up can never error into Blizzard's tooltip code.
+- **Rule: any game value an addon compares or uses as a key on retail may be secret
+  (tooltip text, action info, unit/aura/cooldown data in combat): pass it through
+  Readable first.** Untested in game (no retail test of combat tooltips yet).
 
 ## 0.135.0 — right-click conjures (Water, Food)
 - Lewis: right-clicking the Water or Food macro should always conjure. MADE entries get

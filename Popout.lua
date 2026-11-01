@@ -453,8 +453,10 @@ MacroOnButton = function(b)
     local ok, slot = pcall(ButtonSlot, b)
     if not (ok and slot) then return nil end
     local kind, id = GetActionInfo(slot)
-    if kind ~= "macro" then return nil end
+    -- (retail's secret values can't be compared: such a button isn't ours to find)
+    if not (Readable(kind) and Readable(id)) or kind ~= "macro" then return nil end
     local text = GetActionText and GetActionText(slot)
+    if not Readable(text) then return nil end
     if type(text) == "string" and text ~= "" then
         for idx, mm in pairs(macroAt) do
             if GetMacroInfo(idx) == text then return mm end

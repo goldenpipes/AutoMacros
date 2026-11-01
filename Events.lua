@@ -82,6 +82,10 @@ function BarChanged()
         if ok and slot then
             local kind, id = GetActionInfo(slot)
             local text = GetActionText and GetActionText(slot) or false
+            -- (retail's secret values can't be compared: kept as a plain marker)
+            if not Readable(kind) then kind = "?" end
+            if not Readable(id) then id = "?" end
+            if not Readable(text) then text = "?" end
             local i = n * 3
             if barSeen[i + 1] ~= (kind or false) or barSeen[i + 2] ~= (id or false) or barSeen[i + 3] ~= text then
                 barSeen[i + 1], barSeen[i + 2], barSeen[i + 3] = kind or false, id or false, text
@@ -589,9 +593,12 @@ SlashCmdList["AUTOMACROS"] = function(msg)
             local ok, slot = pcall(ButtonSlot, b)
             local kind, id
             if ok and slot then kind, id = GetActionInfo(slot) end
+            if not Readable(kind) then kind = "(secret)" end
+            if not Readable(id) then id = "(secret)" end
             if kind == "macro" or shown < 3 then
                 local name = b.GetName and b:GetName() or "unnamed"
                 local text = (kind == "macro" and GetActionText) and GetActionText(slot) or nil
+                if not Readable(text) then text = "(secret)" end
                 local mine = kind == "macro" and MacroOnButton(b) or nil
                 Print(string.format("  button %s: slot %s holds %s %s%s%s", tostring(name), tostring(slot),
                     tostring(kind), tostring(id), text and (' named "' .. tostring(text) .. '"') or "",

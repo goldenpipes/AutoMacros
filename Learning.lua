@@ -91,7 +91,7 @@ function TooltipLines(id)
     for i = 1, scanTip:NumLines() do
         local fs = _G["AutoMacrosScanTipTextLeft" .. i]
         local text = fs and fs:GetText()
-        if type(text) == "string" then lines[#lines + 1] = text end
+        if type(text) == "string" and Readable(text) then lines[#lines + 1] = text end
     end
     return lines
 end

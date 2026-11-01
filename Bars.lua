@@ -259,7 +259,8 @@ function CleanTooltip(tip)
     for i = 1, lines do
         local fs = _G[name .. "TextLeft" .. i]
         local text = fs and fs:GetText()
-        if type(text) == "string" and EMPTY_MESSAGE[text] then
+        -- (a secret line can't be looked up, and isn't one of ours anyway)
+        if type(text) == "string" and Readable(text) and EMPTY_MESSAGE[text] then
             message = EMPTY_MESSAGE[text]
             break
         end
@@ -276,7 +277,8 @@ function CleanTooltip(tip)
     end
     if not message then return end
     local first = _G[name .. "TextLeft1"]
-    if lines == 1 and first and first:GetText() == message then return end
+    local firstText = first and first:GetText()
+    if lines == 1 and Readable(firstText) and firstText == message then return end
     tip:ClearLines()
     local tc = StyleColor("tooltipColor")
     tip:AddLine(message, tc[1], tc[2], tc[3])
@@ -285,14 +287,17 @@ end
 
 if GameTooltip then
     -- every time the tooltip is (re)built from data
+    -- (each call pcall'd: whatever the game puts in a tooltip, our tidy-up must
+    -- never throw an error into the game's own tooltip code)
+    local function clean(tip) pcall(CleanTooltip, tip) end
     if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
         pcall(TooltipDataProcessor.AddTooltipPostCall, TooltipDataProcessor.AllTypes,
-            function(tip) if tip == GameTooltip then CleanTooltip(tip) end end)
+            function(tip) if tip == GameTooltip then clean(tip) end end)
     end
     -- older style tooltip building
     if hooksecurefunc then
-        pcall(hooksecurefunc, GameTooltip, "SetAction", CleanTooltip)
+        pcall(hooksecurefunc, GameTooltip, "SetAction", clean)
     end
     -- backstop: undo it if the stock text comes back between rebuilds
-    pcall(GameTooltip.HookScript, GameTooltip, "OnUpdate", CleanTooltip)
+    pcall(GameTooltip.HookScript, GameTooltip, "OnUpdate", clean)
 end

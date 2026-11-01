@@ -1,4 +1,4 @@
--- AutoMacros 0.135.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.135.1 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -52,6 +52,14 @@ MADE = {
 }
 
 QUESTION_MARK = 134400
+
+-- false for a "secret" value: retail (12.0+) may hand addons text or numbers
+-- they can't read, compare or use as a table key (tooltip lines, in combat
+-- say). Older clients have no such values.
+function Readable(v)
+    if issecretvalue and issecretvalue(v) then return false end
+    return true
+end
 
 -- Shown text is written in US English; a British English (enGB) client gets
 -- the British spelling instead.

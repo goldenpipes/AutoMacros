@@ -4,6 +4,14 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.135.1 - 2026-11-01 (not yet tested in game)
+
+### Fixed
+- Retail: a Lua error ("attempted to index a table that cannot be indexed with secret
+  keys") when hovering action buttons, mostly in combat. Retail now hides some tooltip and
+  action button text from addons, and AutoMacros tried to read it. It now skips anything
+  it isn't allowed to read, and its tooltip tidy-up can no longer cause an error at all.
+
 ## 0.135.0 - 2026-10-31
 
 ### Added
