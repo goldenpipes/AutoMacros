@@ -130,9 +130,11 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   `https://raw.githubusercontent.com/goldenpipes/AutoMacros/master/docs/...`; no relative
   paths like `../../releases` or `CHANGELOG.md`). Whenever a version changes the README,
   tell Lewis to paste it into CurseForge again. Lewis pasted it in on 2026-10-28.
-- The CurseForge project **isn't approved yet** (Lewis, 2026-10-28), so its public pages
-  404 (`/wow/addons/automacros`, `/projects/1769719`). Once approved, add its address to
-  the README's Installing step (check it loads first).
+- The CurseForge project **is approved and public** (checked 2026-11-01 in the browser
+  pane: https://www.curseforge.com/wow/addons/automacros, by SchwansCS, 27 downloads).
+  Scripts get 403 from curseforge.com (bot check); use the browser pane to look. The
+  README links it in the Installing step and has a badge first in the badge row:
+  shields.io `curseforge/dt/1769719` (logo=curseforge, color F16436, live download count).
 - **Automatic upload** (`.github/workflows/curseforge.yml`): on every published GitHub
   release (or by hand for a tag) it runs luacheck, builds the Forever zip with
   `tools/build_zip.py --game forever` and POSTs it to

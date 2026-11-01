@@ -5,7 +5,7 @@
 Draggable macros for your consumables that always use the best item in your bags.
 Works in **WoW Forever**, **Classic Era**, **TBC Anniversary**, **MoP Classic** and **retail**.
 
-[![Latest release](https://img.shields.io/github/v/release/goldenpipes/AutoMacros?include_prereleases&label=download)](https://github.com/goldenpipes/AutoMacros/releases) [![Changelog](https://img.shields.io/badge/changelog-read-blue)](https://github.com/goldenpipes/AutoMacros/blob/master/CHANGELOG.md) [![Built with Claude](https://img.shields.io/badge/built%20with-Claude-D97757?logo=claude&logoColor=white)](https://www.anthropic.com/claude-code)
+[![CurseForge](https://img.shields.io/curseforge/dt/1769719?logo=curseforge&label=CurseForge&color=F16436)](https://www.curseforge.com/wow/addons/automacros) [![Latest release](https://img.shields.io/github/v/release/goldenpipes/AutoMacros?include_prereleases&label=download)](https://github.com/goldenpipes/AutoMacros/releases) [![Changelog](https://img.shields.io/badge/changelog-read-blue)](https://github.com/goldenpipes/AutoMacros/blob/master/CHANGELOG.md) [![Built with Claude](https://img.shields.io/badge/built%20with-Claude-D97757?logo=claude&logoColor=white)](https://www.anthropic.com/claude-code)
 
 AutoMacros keeps one macro for each kind of consumable (health and mana items, food, water,
 bandages, buffs and more) pointed at the best item you carry. Put the macros on any action bar
@@ -72,12 +72,14 @@ after that. Switch buttons on or off on the Buttons page, or with `/amac add` / 
 
 ## Installing
 
-Install it with the CurseForge app, or by hand:
+Install it with the CurseForge app ([AutoMacros on CurseForge](https://www.curseforge.com/wow/addons/automacros)), or by hand:
 
-1. Download `AutoMacros-<version>.zip` from the Files tab on its CurseForge page or from
+1. Download `AutoMacros-<version>.zip` from the Files tab on its
+   [CurseForge page](https://www.curseforge.com/wow/addons/automacros) or from
    [GitHub Releases](https://github.com/goldenpipes/AutoMacros/releases).
 2. Extract it into your AddOns folder, so you end up with
-   `World of Warcraft\_forever_\Interface\AddOns\AutoMacros\AutoMacros.toc`.
+   `World of Warcraft\_forever_\Interface\AddOns\AutoMacros\AutoMacros.toc` (or the same
+   under `_classic_era_`, `_anniversary_`, `_classic_` or `_retail_` for the other games).
 3. Log in. A welcome window shows the buttons found for you: drag them onto your bars, or
    later from the Buttons page in the settings.
 
