@@ -226,6 +226,11 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - **Rule: any game value an addon compares or uses as a key on retail may be secret
   (tooltip text, action info, unit/aura/cooldown data in combat): pass it through
   Readable first.** Untested in game (no retail test of combat tooltips yet).
+- **Released** 2026-11-01 as pre-release v0.135.1 for the reporter (notes: only its own
+  changelog section this time); CurseForge upload run 41270991059, file id 9391475, beta.
+  v0.135.0's release and tag deleted. Lewis never saw the error in Midnight: secrets show
+  up mostly in combat / instances, and retail hides Lua errors unless scriptErrors is on
+  or an error catcher (BugSack) is installed.
 
 ## 0.135.0 — right-click conjures (Water, Food)
 - Lewis: right-clicking the Water or Food macro should always conjure. MADE entries get
