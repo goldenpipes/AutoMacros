@@ -213,6 +213,10 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   unchanged.
 - **0.133.0-0.135.0 confirmed working on Forever** (Lewis, 2026-10-31: "its all working"):
   conjuring when out, the spell in the popout, right-click conjures.
+- **Released** 2026-11-01 as pre-release v0.135.0 (Lewis chose pre-release again; notes:
+  changelog since 0.120.0); CurseForge upload ran by itself (run 41270380806, file id
+  9391445, AutoMacros-0.135.0, beta). v0.132.0's release and tag deleted: v0.135.0 is
+  the only GitHub release.
 
 ## 0.134.0 — the making spell in the popout
 - Lewis: Conjure Water should always show in the Water popout for a mage, highest rank only.
