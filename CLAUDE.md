@@ -39,7 +39,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.137.1.**
+- **Current version: 0.138.0.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   iteration** (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -227,6 +227,16 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   notes in the CurseForge section are out of date.
 - .build.info now (2026-10-29): Forever 1.60.1.70685, retail 12.1.5.70575, Era
   1.15.9.70576, Anniversary 2.5.6.70577, MoP 5.5.4.70631.
+
+## 0.138.0 — "Right-click: Conjure Water" in the tooltip
+- Lewis: the Water and Food buttons' tooltips should say right-click conjures.
+  `rightCast` (Update.lua, top-level: macro name -> spell name) is set in UpdateCore's set
+  branch whenever `right` (MADE rightClick + create known), i.e. whenever the body has
+  the `[btn:2]` cast. `RightClickHint(tip)` (Bars.lua): MacroOnButton(owner) -> rightCast
+  -> AddLine("Right-click: <spell>", green 0.25/1/0.25) + Show, skipped if that exact
+  line is already there (Readable-guarded). Called with CleanTooltip on each **build**
+  (TooltipDataProcessor post-call, SetAction hook: `built`), not from the OnUpdate
+  backstop. **Confirmed in game** (Lewis, 2026-11-01: "it works").
 
 ## 0.137.1 — /amac opens Buttons on EllesmereUI too
 - Lewis: 0.137.0's /amac opened EllesmereUI's settings, but not at Buttons. EllesmereUI's

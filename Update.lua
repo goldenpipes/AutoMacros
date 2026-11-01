@@ -7,6 +7,8 @@ if not getmetatable(ns) then setmetatable(ns, { __index = _G }) end
 setfenv(1, ns)
 
 pending, timerSet, glowTimerSet = false, false, false
+-- macro name -> the spell a right-click on it casts (Water, Food: Conjure ...)
+rightCast = {}
 
 -- How many different items you carry for a button (travel: also the teleport
 -- spells you know; Professions: the profession windows you know); 0 = none.
@@ -171,6 +173,7 @@ function UpdateCore()
             spellUsed = entry ~= nil and entry.spell == true
             -- Water and Food (made.rightClick): a right-click always makes more
             local right = create and made and made.rightClick
+            rightCast[m.name] = right and create or nil   -- (for its tooltip, see RightClickHint)
             if create and not carried then
                 -- you can make one and carry none: the button makes one, Shift+click
                 -- uses the item chosen from what you do carry

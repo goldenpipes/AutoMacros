@@ -4,6 +4,12 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.138.0 - 2026-11-01
+
+### Added
+- Mages: the Water and Food buttons' tooltips end with "Right-click: Conjure Water" (or
+  Conjure Food / Conjure Refreshment), so you can see that right-click conjures more.
+
 ## 0.137.1 - 2026-11-01
 
 ### Fixed

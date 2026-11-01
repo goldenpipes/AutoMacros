@@ -285,18 +285,43 @@ function CleanTooltip(tip)
     tip:Show()
 end
 
+-- Tooltip: on a Water or Food button whose right-click conjures (rightCast, set
+-- by UpdateCore), a last line saying so. Added once per build (the game builds
+-- an action tooltip afresh each time), skipped if it is there already.
+function RightClickHint(tip)
+    local owner = tip.GetOwner and tip:GetOwner()
+    if not owner or owner == UIParent then return end
+    local ok, m = pcall(MacroOnButton, owner)
+    local spell = ok and m and rightCast[m.name]
+    if not spell then return end
+    local line = Loc("Right-click: ") .. spell
+    local name = tip:GetName()
+    for i = 1, tip:NumLines() do
+        local fs = name and _G[name .. "TextLeft" .. i]
+        local text = fs and fs:GetText()
+        if Readable(text) and text == line then return end
+    end
+    tip:AddLine(line, 0.25, 1, 0.25)
+    tip:Show()
+end
+
 if GameTooltip then
     -- every time the tooltip is (re)built from data
     -- (each call pcall'd: whatever the game puts in a tooltip, our tidy-up must
     -- never throw an error into the game's own tooltip code)
     local function clean(tip) pcall(CleanTooltip, tip) end
+    -- (a build: the tidy-up, then the right-click line; not on every frame)
+    local function built(tip)
+        clean(tip)
+        pcall(RightClickHint, tip)
+    end
     if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
         pcall(TooltipDataProcessor.AddTooltipPostCall, TooltipDataProcessor.AllTypes,
-            function(tip) if tip == GameTooltip then clean(tip) end end)
+            function(tip) if tip == GameTooltip then built(tip) end end)
     end
     -- older style tooltip building
     if hooksecurefunc then
-        pcall(hooksecurefunc, GameTooltip, "SetAction", clean)
+        pcall(hooksecurefunc, GameTooltip, "SetAction", built)
     end
     -- backstop: undo it if the stock text comes back between rebuilds
     pcall(GameTooltip.HookScript, GameTooltip, "OnUpdate", clean)
