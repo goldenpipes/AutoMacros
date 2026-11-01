@@ -237,6 +237,9 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   line is already there (Readable-guarded). Called with CleanTooltip on each **build**
   (TooltipDataProcessor post-call, SetAction hook: `built`), not from the OnUpdate
   backstop. **Confirmed in game** (Lewis, 2026-11-01: "it works").
+- **Released** 2026-11-01 as pre-release v0.138.0 (notes: its changelog section);
+  CurseForge upload run 41357082883, file id 9400258, beta. v0.137.1's release and tag
+  deleted.
 
 ## 0.137.1 — /amac opens Buttons on EllesmereUI too
 - Lewis: 0.137.0's /amac opened EllesmereUI's settings, but not at Buttons. EllesmereUI's
