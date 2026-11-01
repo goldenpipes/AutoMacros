@@ -8,10 +8,16 @@ if not getmetatable(ns) then setmetatable(ns, { __index = _G }) end
 setfenv(1, ns)
 
 -- EllesmereUI's page when it is installed, unless blizzard (/amac options blizzard).
--- page: the name of the page to open on the game's window (default the first).
+-- page: the name of the page to open (a PAGES name; default the first), on
+-- EllesmereUI's panel as on the game's window.
 function OpenOptions(blizzard, page)
     if not blizzard and UI.pluginRegistered and EllesmereUI and EllesmereUI.OpenPlugin then
-        local ok, opened = pcall(EllesmereUI.OpenPlugin, "AutoMacros")
+        -- OpenPlugin(id, moduleKey, pageName): our one module is "options" (see
+        -- RegisterEUI); it says false for a page it doesn't know, so then the
+        -- section opens where it opens
+        local ok, opened = false, false
+        if page then ok, opened = pcall(EllesmereUI.OpenPlugin, "AutoMacros", "options", page) end
+        if not (ok and opened) then ok, opened = pcall(EllesmereUI.OpenPlugin, "AutoMacros") end
         if ok and opened then return end
     end
     -- the game's options window, at our page; the game does not let an addon
@@ -386,6 +392,13 @@ SlashCmdList["AUTOMACROS"] = function(msg)
         return
     end
     msg = msg and msg:lower() or ""
+    -- /amac by itself: the settings at the Buttons page (since 0.137.0; before,
+    -- it updated and printed the report, now /amac update)
+    if msg:match("^%s*$") then
+        local ok, err = pcall(OpenOptions, nil, "Buttons")
+        if not ok then Fail("options window", err) end
+        return
+    end
     local function find(key)
         for _, e in ipairs(ALL) do
             if e.key == key or e.alias == key then return e end
@@ -400,7 +413,7 @@ SlashCmdList["AUTOMACROS"] = function(msg)
                 e.custom and " - custom" or ""))
         end
         Print("/amac add <name>, /amac remove <name>, /amac custom <name> <items|spells> <id,id,...>")
-        Print("/amac options, /amac welcome, /amac assign <item> <name>, /amac unassign <item>, /amac learned,"
+        Print("/amac (the Buttons page), /amac update, /amac options, /amac welcome, /amac assign <item> <name>, /amac unassign <item>, /amac learned,"
             .. " /amac status, /amac test")
         return
     elseif msg:match("^%s*add%s+") or msg:match("^%s*remove%s+") then
@@ -637,6 +650,10 @@ SlashCmdList["AUTOMACROS"] = function(msg)
         local db = DB()
         db.stockTooltip = not db.stockTooltip
         Print("empty-button tooltip: " .. (db.stockTooltip and "stock (shows the macro text)" or "clean message"))
+    elseif msg:match("^%s*fallback") then
+        local db = DB()
+        db.noComboFallback = (not db.noComboFallback) or nil
+        Print("Food / Water use Food & Drink when out: " .. (db.noComboFallback and "off" or "on"))
     elseif msg:match("^%s*glow") then
         local db = DB()
         db.glow = (db.glow == false)   -- on by default; this flips it

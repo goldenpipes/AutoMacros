@@ -307,7 +307,7 @@ end
 -- UI.ButtonSections). Anything not listed goes under Other.
 UI.BUTTON_GROUPS = {
     { name = "Recovery", keys = { "healthpot", "manapot", "ragepot", "bandage", "cure" } },
-    { name = "Food & Drink", keys = { "food", "water", "bufffood" } },
+    { name = "Food & Drink", keys = { "food", "water", "combo", "bufffood" } },
     { name = "Buffs", keys = { "agility", "intellect", "stamina", "strength", "spirit", "armor",
         "resistance", "otherbuff", "flask", "weaponbuff" } },
     { name = "Utility", keys = { "travel", "questitem", "explosives", "professions", "tracking" } },

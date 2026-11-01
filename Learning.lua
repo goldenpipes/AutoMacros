@@ -22,7 +22,8 @@ setfenv(1, ns)
 --   consumable, subclass Bandage or "Heals 301 damage over 7 sec."  -> bandage
 --   consumable, subclass Flask or "one flask" / "persists through death" -> flask
 --   consumable, tooltip says "well fed"      -> buff food
---   consumable, "must remain seated", restores health -> food;  mana -> water
+--   consumable, "must remain seated", restores health -> food;  mana -> water;
+--                    both -> food & drink (combo, since 0.136.0)
 --   consumable, "Use:" gives rage            -> rage potion
 --   any other consumable, "Use:" restores health -> restore health; mana -> restore mana
 --                    (potions, healthstones, mana gems, runes; Rejuvenation: both)
@@ -243,7 +244,7 @@ function Classify(id)
     if class == 7 or class == 5 then
         -- retail files raw fish as Trade Goods (7.8) though you sit to eat them
         if seated and (health or mana) and not wellFed then
-            return (health and mana) and { "food", "water" } or { health and "food" or "water" }, sig
+            return { (health and mana) and "combo" or (health and "food" or "water") }, sig
         end
         if restoring then
             return (health and mana) and { "hpot", "mpot" } or { health and "hpot" or "mpot" }, sig
@@ -262,8 +263,8 @@ function Classify(id)
     elseif seated and (health or mana) and not wellFed then
         -- food and drink, also from quests (Clara's Fresh Apple): you sit to eat
         -- it ("Must remain seated while eating"); buff food is below
-        if health then sets[#sets + 1] = "food" end
-        if mana then sets[#sets + 1] = "water" end
+        -- (both: Food & Drink, not Food and Water)
+        sets[#sets + 1] = (health and mana) and "combo" or (health and "food" or "water")
     elseif own and bandaged then
         sets[#sets + 1] = "bandage"
     elseif own and flask then

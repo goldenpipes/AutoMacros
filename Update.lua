@@ -139,6 +139,13 @@ function UpdateCore()
             local list = Candidates(have, m.set)
             local made = MADE[m.set]
             local create, carried, createID = MadeCreate(m.set, have)
+            -- out of food (water): use Food & Drink instead, unless switched off.
+            -- Combo items only ever show on Food / Water this way. A mage who
+            -- could conjure eats the combo item; right-click still conjures.
+            if #list == 0 and (m.set == "food" or m.set == "water") and not DB().noComboFallback then
+                list = Candidates(have, "combo")
+                if #list > 0 then carried = true end
+            end
             if made then
                 -- what you make (healthstone, mana gem, conjured water / food) first,
                 -- best rank first, then the rest best first

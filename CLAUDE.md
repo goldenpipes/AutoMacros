@@ -4,6 +4,20 @@ WoW addon that scans the player's bags and automatically creates/rewrites dragga
 for consumables (Healthstone, potions, food, water, etc.) so they can live on any action bar,
 replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which item a macro uses.
 
+## Folders (Lewis, 2026-11-01: "you can always access these files and folders")
+- Project / git repo: `C:\Users\lewis\OneDrive\Documents\Coding Projects\Claude\WOW ADDONS\AutoMacros`
+- Test client: `C:\Program Files (x86)\World of Warcraft\_classic_beta_\Interface\AddOns\AutoMacros`
+  (Forever is tested here); also `_forever_\Interface\AddOns\AutoMacros`.
+- **Run on Lewis's PC** (Lewis, 2026-11-01: "always run on the PC unless i specify
+  otherwise"): work in a local Claude Code session with a Windows shell, not a cloud
+  session (a cloud session can only read/write files; it can't run mklink, git.exe, gh).
+- **Both clients are junctions to this folder again** (made 2026-11-01 with
+  `tools\link_clients.bat`; Lewis ran it). Old copies are in each client's
+  `Interface\AutoMacros-old-copy`. Re-run the .bat if an addon manager replaces a link.
+- Lewis has given standing OK to read and write these. From a cloud session, ask for
+  access to these exact folders at the start without asking him first (the access prompt
+  still shows once per session).
+
 ## Target client — important
 - **WoW Forever** (Blizzard's Forever client). NOT Turtle WoW, NOT retail, NOT vanilla 1.12.
   All API usage must work on Forever.
@@ -25,7 +39,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.135.1.**
+- **Current version: 0.137.1.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   iteration** (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -43,6 +57,8 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   committed: `git push origin master`; for a release, also build the zip and
   `gh release create v<version> releases/AutoMacros-<version>.zip --title "AutoMacros <version>" --notes-file <that version's CHANGELOG section>`
   (add `--prerelease` if untested).
+- **Always `--prerelease` (beta on CurseForge) until WoW Forever launches on 2026-11-04**
+  (Lewis, 2026-11-01), tested in game or not.
 - Lewis edits the Lua himself. Before building a new version, diff against the last one you
   produced and **merge his edits** — never overwrite them.
 - **Every commit message ends with** a blank line and `Co-Authored-By: Claude
@@ -210,6 +226,50 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   notes in the CurseForge section are out of date.
 - .build.info now (2026-10-29): Forever 1.60.1.70685, retail 12.1.5.70575, Era
   1.15.9.70576, Anniversary 2.5.6.70577, MoP 5.5.4.70631.
+
+## 0.137.1 — /amac opens Buttons on EllesmereUI too
+- Lewis: 0.137.0's /amac opened EllesmereUI's settings, but not at Buttons. EllesmereUI's
+  PLUGINS_API documents `EllesmereUI.OpenPlugin(id [, moduleKey [, pageName]])` -> false
+  for an unknown plugin/module/page (EllesmereUI_Panel.lua 5889: sets the module's last
+  page, ShowModule, SelectPage if already on it). OpenOptions now calls
+  `OpenPlugin("AutoMacros", "options", page)` when a page is given (our module key from
+  RegisterEUI, page = the PAGES name), and plain `OpenPlugin("AutoMacros")` if that says
+  false. The note below ("OpenPlugin takes no page") was wrong.
+- **Confirmed in game** (Lewis, 2026-11-01): /amac opens Buttons on EllesmereUI and on
+  Blizzard's window (EllesmereUI off).
+
+## 0.137.0 — /amac opens the Buttons page
+- Lewis (2026-11-01): `/amac` with nothing after it = `OpenOptions(nil, "Buttons")`
+  (Blizzard's window at the Buttons page; EllesmereUI's page still opens where it opens,
+  OpenPlugin takes no page). The old update + report is `/amac update`: any word the
+  handler doesn't know still falls through to it, so `update` needs no branch of its own.
+  `/amac list` help line and README command table updated (**paste README into
+  CurseForge again**). Untested in game.
+
+## 0.136.0 — Food & Drink (combo) button, fallback
+- Lewis (2026-11-01): combo food (health + mana, seated) gets its own button **AM_Combo,
+  titled "Food & Drink"** (key/set `combo`, empty "No Food & Drink", placeholder item
+  13724 Enriched Manna Biscuit, ID from memory). Food and Water keep only food-only /
+  water-only items. Combo items show on Food / Water **only as the fallback**: when that
+  button's list is empty (UpdateCore's set branch: `#list == 0` for food/water ->
+  `Candidates(have, "combo")`, and `carried = true` so a mage's button eats the combo
+  item with right-click still conjuring instead of the conjure-when-out body).
+- Setting `db.noComboFallback` (nil = fallback on): General > "Food and water" toggle,
+  `/amac fallback`. README command table updated: **paste the README into CurseForge again.**
+- Learning: seated + health + mana -> `{ "combo" }` (both branches). CLASSIFIER 17 -> 18
+  so automatic results are re-sorted. RebuildLearned indexes any record with both food and
+  water (manual, or older) as combo instead.
+- Not handled: MoP/retail Conjure Refreshment items are in MADE water and food (shared rank
+  table), so InSet still puts them on Food and Water as before, as well as Food & Drink.
+- 2026-11-01 housekeeping: `_forever_\Interface\AddOns\AutoMacros` was **no longer a
+  junction** but a plain copy of 0.135.1 (no CLAUDE.md, files dated 2026-11-01 04:44 UTC;
+  likely an addon manager install), and this folder's `Games\` and `Media\` were missing
+  from disk (git showed them deleted). Restored both from HEAD. The junction must be
+  remade from Windows (`mklink /J`); the cloud VM can't.
+- **Tested in game 2026-11-01 (Lewis, `_classic_beta_`): all works**, incl. conjuring
+  water clears the combo fallback item off Water.
+- **Lewis tests Forever in `_classic_beta_`** (2026-11-01), not `_forever_`. Its
+  `Interface\\AddOns\\AutoMacros` was also a plain 0.135.1 copy; 0.136.0 copied into both.
 
 ## 0.135.1 — retail secret values
 - CurseForge bug comment (retail 12.x, 0.135.0): `Bars.lua:262: attempted to index a table

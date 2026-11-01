@@ -4,6 +4,31 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.137.1 - 2026-11-01
+
+### Fixed
+- `/amac` now opens the Buttons page in EllesmereUI's settings too, not its first page.
+
+## 0.137.0 - 2026-11-01
+
+### Changed
+- `/amac` on its own now opens the settings at the Buttons page. What it used to do (update
+  now and print what each macro is using) is now `/amac update`.
+
+## 0.136.0 - 2026-11-01
+
+### Added
+- A **Food & Drink** button for food that restores both health and mana while you sit
+  (Enriched Manna Biscuit and the like). It is always its own button.
+- When you run out of food, the Food button uses a Food & Drink item instead, and the Water
+  button does the same when you run out of water. Otherwise Food & Drink items never show
+  on Food or Water. Switch this off in General > Food and water, or with `/amac fallback`.
+
+### Changed
+- Food and Water now hold only food-only and drink-only items. Items are sorted again once
+  after updating (items you put on a button by hand stay where you put them; one you had
+  put on both Food and Water now counts as Food & Drink).
+
 ## 0.135.1 - 2026-11-01 (not yet tested in game)
 
 ### Fixed

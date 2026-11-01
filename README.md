@@ -45,8 +45,8 @@ you like: no extra bar to place, unlike AutoBar.
 |---|---|---|---|---|
 | Restore Health | Food | Agility, Intellect, Stamina, Strength, Spirit | Hearth/Teleport | Mage portals |
 | Restore Mana | Water | Armor, Resistance | Quest Item | Mage Comprehend scrolls |
-| Rage Potion | Buff Food | Other Buffs | Explosives | |
-| Bandage | | Flask | Professions | |
+| Rage Potion | Food & Drink | Other Buffs | Explosives | |
+| Bandage | Buff Food | Flask | Professions | |
 | Debuff Cure | | Weapon Buff | Tracking | |
 
 A button turns itself on the first time you carry (or know) something for it, and stays on
@@ -89,8 +89,9 @@ Install it with the CurseForge app ([AutoMacros on CurseForge](https://www.curse
 
 | Command | What it does |
 |---|---|
-| `/amac` | Update now and print what each macro is using |
-| `/amac options` | Open the settings |
+| `/amac` | Open the settings at the Buttons page |
+| `/amac update` | Update now and print what each macro is using |
+| `/amac options` | Open the settings (first page) |
 | `/amac welcome` | Show the welcome window again |
 | `/amac list` | List every button and whether it is on |
 | `/amac add <name>` / `/amac remove <name>` | Switch a button on or off (off deletes its macro) |
@@ -100,6 +101,7 @@ Install it with the CurseForge app ([AutoMacros on CurseForge](https://www.curse
 | `/amac next` | Mages: switch to the next untranslated scroll |
 | `/amac popout` | Switch the hover popout on or off |
 | `/amac names` | Show or hide the macro names on buttons |
+| `/amac fallback` | Food / Water use Food & Drink items when you are out (on by default) |
 | `/amac glow` | Switch the empty-button highlight on or off |
 | `/amac tooltip` | Clean or stock tooltip on empty buttons |
 | `/amac style reset` | Put the look back to its defaults |

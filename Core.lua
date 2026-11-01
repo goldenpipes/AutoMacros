@@ -1,4 +1,4 @@
--- AutoMacros 0.135.1 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.137.1 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -139,9 +139,10 @@ end
 --   recipes           per character: what its known recipes make and need (UI.ScanRecipes)
 --   ignored           consumables checked and found to belong nowhere (see LearnNew)
 --   glow, noFlyout, stockTooltip, showNames, quiet, noEmptyMsg   on/off options
+--   noComboFallback   Food / Water do not borrow Food & Drink items when out (0.136.0)
 -- ---------------------------------------------------------------------------
 SCHEMA = 2
-CLASSIFIER = 17 -- raise when the learning rules change, so items are checked again
+CLASSIFIER = 18 -- raise when the learning rules change, so items are checked again
 
 STYLE_DEFAULTS = {
     glowColor = { 1, 0.15, 0.15, 1 }, glowThickness = 3, glowTexture = "solid",
@@ -420,7 +421,14 @@ function RebuildLearned()
     if type(learned) ~= "table" then return end
     for id, rec in pairs(learned) do
         if type(rec) == "table" and type(rec.sets) == "table" then
+            -- an item on both Food and Water (sorted by hand, or saved before
+            -- 0.136.0) restores health and mana: it is Food & Drink's
+            local food, water = false, false
             for _, s in ipairs(rec.sets) do
+                if s == "food" then food = true elseif s == "water" then water = true end
+            end
+            for _, s in ipairs(rec.sets) do
+                if food and water and (s == "food" or s == "water") then s = "combo" end
                 learnedIdx[s] = learnedIdx[s] or {}
                 learnedIdx[s][id] = true
             end
@@ -454,6 +462,12 @@ CATALOG = {
       placeholder = { item = 4540 } },   -- Tough Hunk of Bread
     { key = "water", name = "AM_Water", title = "Water", empty = "No Water", label = "water", set = "water", default = true,
       placeholder = { item = 159 } },    -- Refreshing Spring Water
+    -- food and drink in one, restores health and mana while you sit (Enriched
+    -- Manna Biscuit, ...): its own button, never on Food or Water, except that
+    -- when you carry no food (water) those buttons use it instead (the fallback,
+    -- on unless noComboFallback; see UpdateCore). Since 0.136.0.
+    { key = "combo", name = "AM_Combo", title = "Food & Drink", empty = "No Food & Drink", label = "food & drink",
+      set = "combo", default = true, placeholder = { item = 13724 } },   -- Enriched Manna Biscuit
     { key = "comprehend", name = "AM_Scroll", title = "Comprehend", empty = "Comprehend", label = "scrolls",
       special = "scroll", class = "MAGE", scope = "character", default = true },
     -- spells: after the bandages, for whoever knows them (Undead: Cannibalize)

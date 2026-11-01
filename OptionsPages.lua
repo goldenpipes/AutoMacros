@@ -307,6 +307,12 @@ PAGES = {
                 get = function() return not DB().noEmptyMsg end,
                 set = function(v) DB().noEmptyMsg = (not v) or nil end },
         } },
+        { name = "Food and water", items = {
+            -- out of food (water): the Food / Water button uses a Food & Drink item
+            { type = "toggle", label = "Use Food & Drink when out of food or water",
+                get = function() return not DB().noComboFallback end,
+                set = function(v) DB().noComboFallback = (not v) or nil; Refresh() end },
+        } },
         { name = "Item learning", items = {
             { type = "learned" },
         } },
