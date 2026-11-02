@@ -4,6 +4,62 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.139.0 - 2026-11-01 (not yet tested in game)
+
+### Added
+- **Combine class-related buffs into one button** (Buttons page, per character): one Buffs
+  button takes the place of the separate buff buttons. Its switch is the Buffs button's
+  on/off; switching it off brings the separate buttons back.
+  - **Buff types** picks what it takes: Agility, Intellect, Spirit, Stamina, Strength,
+    Armor, Resistance, Haste, Spell Power, Other. It's a dropdown of checkboxes, on
+    EllesmereUI's page too.
+  - Your class's stats start ticked (Mage, Warlock, Priest: Intellect, Spirit, Stamina;
+    Warrior, Rogue: Strength, Agility, Stamina; Hunter: Agility, Intellect, Stamina;
+    Paladin, Shaman, Druid: all five). Armor, Resistance, Haste and Other start ticked
+    for everyone, Spell Power for casters.
+- **Spell Power** and **Haste Buff** buttons, for items that raise spell damage or
+  healing, or attack or casting speed. They used to go on Other Buffs.
+- **Utility Buff** button (Utility group), for:
+  - movement: Swiftness Potion and other run, swim or mount speed;
+  - immunity: Free Action Potion;
+  - escapes and the rest: invisibility, water breathing and walking, slow fall, and
+    elixirs that show the location of undead or demons.
+  - It is never part of the combined Buffs button.
+- **Enemy Debuff** button, for items you use on an enemy:
+  - nets and Really Sticky Glue;
+  - Bag of Marbles, Energized Sparkplug and Wail of the Banshee;
+  - Magic Dust and Slumber Sand;
+  - Glowing Wax Stick, Crystal Yield, Discombobulator Ray and Severed Voodoo Claw.
+- Items you already carry are sorted onto the new buttons by themselves after `/reload`.
+- **Per-button "Clicking an item"**: set it on the Popout page under Per-Button Overrides,
+  or Shift+right-click a button's icon on the Buttons page. The icon's tooltip shows it.
+- The General page shows which AutoMacros version is running, under About.
+
+### Changed
+- **Cooking ingredients**: if you know Cooking, raw fish stays off the Food, Water, Food &
+  Drink and Buff Food buttons, even before you've learned its recipe, so you can cook it
+  later instead of eating it (Raw Winter Squid included, which the game files as plain
+  food). The same goes for anything a recipe you know still gives
+  skill for. A fish comes back as food once every recipe you know for it has turned gray.
+  The addon reads your recipes each time you open the Cooking window.
+- **Buttons page**:
+  - The Buffs section is now **Buffs and Debuffs**.
+  - A line at its bottom says what Other takes: buffs that fit none of the above, such
+    as attack power, regeneration or crit.
+- **Popout page**:
+  - The top section is **Global Behavior**, followed by the indicator and item settings
+    that apply to every popout.
+  - At the bottom, **Per-Button Overrides**: pick a button, then set its popout's
+    direction, what clicking an item does, its item size and its item spacing. "Global"
+    follows the settings above. Its own size works in combat too.
+- **Use only** popouts no longer mark an item as selected, since clicking never changes
+  the button's item there.
+- **General page**:
+  - The two chat toggles are one **Chat messages** dropdown: All, Only info messages,
+    Only empty-button messages, None.
+  - **Out of food or water** chooses between using Food & Drink and leaving the button
+    empty.
+
 ## 0.138.0 - 2026-11-01
 
 ### Added

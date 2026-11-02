@@ -1,4 +1,4 @@
--- AutoMacros 0.138.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 0.139.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -52,6 +52,14 @@ MADE = {
 }
 
 QUESTION_MARK = 134400
+
+-- this AutoMacros's version, from its .toc ("0.139.0"), or nil
+function AddonVersion()
+    local meta = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+    if not meta then return nil end
+    local ok, v = pcall(meta, ADDON, "Version")
+    return ok and type(v) == "string" and v ~= "" and v or nil
+end
 
 -- false for a "secret" value: retail (12.0+) may hand addons text or numbers
 -- they can't read, compare or use as a table key (tooltip lines, in combat
@@ -142,7 +150,7 @@ end
 --   noComboFallback   Food / Water do not borrow Food & Drink items when out (0.136.0)
 -- ---------------------------------------------------------------------------
 SCHEMA = 2
-CLASSIFIER = 18 -- raise when the learning rules change, so items are checked again
+CLASSIFIER = 21 -- raise when the learning rules change, so items are checked again
 
 STYLE_DEFAULTS = {
     glowColor = { 1, 0.15, 0.15, 1 }, glowThickness = 3, glowTexture = "solid",
@@ -406,7 +414,70 @@ end
 -- plus DATA for your own categories.
 learnedIdx = {}   -- set name -> { [itemID] = true }
 
+-- ---- the one Buffs button ----
+-- Per character (db.oneBuff[char]): one Buffs button instead of the stat,
+-- armor, resistance and other-buff buttons. It takes the stats the character
+-- chose (db.buffStats[char] = { intellect = true, ... }), else its class's.
+BUFF_STATS = { "agility", "intellect", "spirit", "stamina", "strength" }
+CLASS_BUFF_STATS = {
+    MAGE = { "intellect", "spirit", "stamina" },
+    WARLOCK = { "intellect", "spirit", "stamina" },
+    PRIEST = { "intellect", "spirit", "stamina" },
+    WARRIOR = { "strength", "agility", "stamina" },
+    ROGUE = { "strength", "agility", "stamina" },
+    HUNTER = { "agility", "intellect", "stamina" },
+    PALADIN = BUFF_STATS, SHAMAN = BUFF_STATS, DRUID = BUFF_STATS,   -- (either kind)
+    DEATHKNIGHT = { "strength", "stamina" },
+    DEMONHUNTER = { "agility", "stamina" },
+    MONK = { "agility", "stamina" },
+    EVOKER = { "intellect", "stamina" },
+}
+
+function OneBuff()
+    local t = DB().oneBuff
+    return type(t) == "table" and t[CharKey()] == true
+end
+
+-- Every kind of buff the Buffs button can take, in the order of its
+-- checkboxes (a part p is the set buff_<p>, and the separate button with that
+-- part). Besides its stats, every class starts with armor, resistance, haste
+-- and other buffs; spell power only the classes that cast (SPELL_CLASSES).
+BUFF_PARTS = { "agility", "intellect", "spirit", "stamina", "strength",
+    "armor", "resistance", "haste", "spellpower", "other" }
+SPELL_CLASSES = { MAGE = true, WARLOCK = true, PRIEST = true, PALADIN = true, SHAMAN = true,
+    DRUID = true, EVOKER = true }
+
+-- the parts the Buffs button takes for this character: { part = true }. The
+-- class's start, then what this character ticked or unticked
+-- (db.buffStats[char][part] = true / false).
+function BuffParts()
+    local _, class = UnitClass("player")
+    local out = {}
+    for _, s in ipairs(CLASS_BUFF_STATS[class] or BUFF_STATS) do out[s] = true end
+    out.armor, out.resistance, out.haste, out.other = true, true, true, true
+    if SPELL_CLASSES[class] then out.spellpower = true end
+    local t = DB().buffStats
+    local mine = type(t) == "table" and t[CharKey()]
+    if type(mine) == "table" then
+        for part, on in pairs(mine) do out[part] = on and true or nil end
+    end
+    return out
+end
+
+-- not offered while the other kind of buff button is in use
+function HiddenButton(e)
+    if e.buffPart then return OneBuff() end
+    if e.oneBuff then return not OneBuff() end
+    return false
+end
+
 function InSet(setName, id)
+    if setName == "buff_class" then   -- the Buffs button: every part this character takes
+        for part in pairs(BuffParts()) do
+            if InSet("buff_" .. part, id) then return true end
+        end
+        return false
+    end
     local set = DATA[setName]
     if set and set[id] then return true end
     local made = MADE[setName]   -- healthstones and mana gems, whatever learning made of them
@@ -487,32 +558,55 @@ CATALOG = {
     -- had a button each; the elixir buttons' macros carry on as these (same
     -- saved name, renamed: oldNames), the scroll buttons' are deleted (see
     -- UI.MergeBuffButtons).
+    -- buffPart: hidden while the character uses the one Buffs button instead
+    -- (OneBuff, see below); part: its checkbox there (BUFF_PARTS, set buff_<part>)
     { key = "agility", alias = "agielixir", name = "AM_ElxAgi", title = "Agility Buff", empty = "No Agi Buff",
       label = "agility buffs", set = "buff_agility", oldNames = { "Agility Elixir", "No Agi Elixir" },
-      placeholder = { item = 2457 } },
+      buffPart = true, part = "agility", placeholder = { item = 2457 } },
     { key = "intellect", alias = "intelixir", name = "AM_ElxInt", title = "Intellect Buff", empty = "No Int Buff",
       label = "intellect buffs", set = "buff_intellect", oldNames = { "Intellect Elixir", "No Int Elixir" },
-      placeholder = { item = 3383 } },
+      buffPart = true, part = "intellect", placeholder = { item = 3383 } },
     { key = "stamina", alias = "staelixir", name = "AM_ElxSta", title = "Stamina Buff", empty = "No Sta Buff",
       label = "stamina buffs", set = "buff_stamina", oldNames = { "Stamina Elixir", "No Sta Elixir" },
-      placeholder = { item = 13453 } },
+      buffPart = true, part = "stamina", placeholder = { item = 13453 } },
     { key = "strength", alias = "strelixir", name = "AM_ElxStr", title = "Strength Buff", empty = "No Str Buff",
       label = "strength buffs", set = "buff_strength", oldNames = { "Strength Elixir", "No Str Elixir" },
-      placeholder = { item = 2454 } },
+      buffPart = true, part = "strength", placeholder = { item = 2454 } },
     { key = "spirit", name = "AM_Spirit", title = "Spirit Buff", empty = "No Spirit Buff", label = "spirit buffs",
-      set = "buff_spirit", placeholder = { item = 1181 } },   -- Scroll of Spirit
+      set = "buff_spirit", buffPart = true, part = "spirit", placeholder = { item = 1181 } },   -- Scroll of Spirit
     -- raises Armor or Defense (Scroll of Protection, Elixirs of Defense). Was
     -- "Protection" in 0.92.0, with the resistance items in it too.
     { key = "armor", alias = "protection", name = "AM_Protection", title = "Armor Buff", empty = "No Armor Buff",
       label = "armor buffs", set = "buff_armor", oldNames = { "Protection", "No Protection" },
-      placeholder = { item = 3013 } },   -- Scroll of Protection
+      buffPart = true, part = "armor", placeholder = { item = 3013 } },   -- Scroll of Protection
     -- raises a resistance, or absorbs one school's damage (the Fire, Frost,
     -- Nature, Shadow, Arcane and Holy Protection Potions)
     { key = "resistance", name = "AM_Resist", title = "Resistance", empty = "No Resistance",
-      label = "resistance", set = "buff_resistance", placeholder = { item = 6049 } },   -- Fire Protection Potion
-    -- anything else a "Use:" line raises: attack power, spell damage, crit, speed, ...
+      label = "resistance", set = "buff_resistance", buffPart = true, part = "resistance",
+      placeholder = { item = 6049 } },   -- Fire Protection Potion
+    -- raises spell damage or healing (Greater Arcane Elixir, Shadow Power,
+    -- Firepower), and haste (attack or casting speed): own buttons since
+    -- 0.139.0, they were Other Buffs before
+    { key = "spellpower", name = "AM_SpellPower", title = "Spell Power", empty = "No Spell Power",
+      label = "spell power buffs", set = "buff_spellpower", buffPart = true, part = "spellpower",
+      placeholder = { item = 13454 } },   -- Greater Arcane Elixir
+    { key = "haste", name = "AM_Haste", title = "Haste Buff", empty = "No Haste Buff", label = "haste buffs",
+      set = "buff_haste", buffPart = true, part = "haste", placeholder = { item = 2459 } },   -- Swiftness Potion
+    -- movement, immunity and escapes (Swiftness, Free Action, invisibility, water
+    -- breathing): not a buff kind, so never on the one Buffs button
+    { key = "utility", name = "AM_Utility", title = "Utility Buff", empty = "No Utility Buff",
+      label = "utility buffs", set = "buff_utility", placeholder = { item = 5634 } },   -- Free Action Potion
+    -- used on an enemy: nets, glue, Bag of Marbles, Magic Dust, Glowing Wax Stick
+    { key = "enemydebuff", name = "AM_EnemyDebuff", title = "Enemy Debuff", empty = "No Enemy Debuff",
+      label = "enemy debuff items", set = "enemy_debuff", placeholder = { item = 835 } },   -- Large Rope Net
+    -- anything else a "Use:" line raises: attack power, crit, ...
     { key = "otherbuff", name = "AM_OtherBuff", title = "Other Buffs", empty = "No Other Buffs", label = "other buffs",
-      set = "buff_other", placeholder = { item = 12820 } },   -- Winterfall Firewater
+      set = "buff_other", buffPart = true, part = "other", placeholder = { item = 12820 } },   -- Winterfall Firewater
+    -- All of the above that suits this character, on one button, instead of
+    -- them (only while OneBuff() is on): the parts it ticked (BuffParts).
+    -- Character tab: what it holds is per character.
+    { key = "buffs", name = "AM_Buffs", title = "Buffs", empty = "No Buffs", label = "buffs",
+      set = "buff_class", oneBuff = true, scope = "character", placeholder = { item = 2458 } },
     { key = "explosives", name = "AM_Explosive", title = "Explosive", empty = "No Explosives", label = "explosives",
       set = "explosives", placeholder = { item = 4358 } },
     { key = "ragepot", name = "AM_RagePot", title = "Rage Potion", empty = "No Rage Potion", label = "rage potions",
@@ -557,6 +651,7 @@ EMPTY_MESSAGE = {}     -- macro name when empty -> tooltip message
 -- and the mage scroll button are on; item buttons stay off until you first
 -- carry their items (AutoEnable then switches them on for good).
 function Enabled(e)
+    if e.oneBuff then return OneBuff() end   -- (the Buffs button is on exactly while buffs are combined)
     local on = OnOff()
     if on[e.key] ~= nil then return on[e.key] end
     if e.custom or e.special == "scroll" then return e.default == true end
@@ -618,7 +713,10 @@ function RebuildMacros()
     for i = #ALL, 1, -1 do ALL[i] = nil end
     for k in pairs(EMPTY_MESSAGE) do EMPTY_MESSAGE[k] = nil end
     local _, class = UnitClass("player")
-    for _, e in ipairs(CATALOG) do ALL[#ALL + 1] = e end
+    -- (the stat buttons or the one Buffs button, whichever this character uses)
+    for _, e in ipairs(CATALOG) do
+        if not HiddenButton(e) then ALL[#ALL + 1] = e end
+    end
     for _, e in ipairs(CustomEntries()) do ALL[#ALL + 1] = e end
     for _, e in ipairs(ALL) do
         if e.set then EMPTY_MESSAGE[e.empty] = "No " .. e.label .. " in inventory." end

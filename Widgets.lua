@@ -296,6 +296,55 @@ function MakeColor(parent, x, y, key, hasAlpha)
     return b
 end
 
+-- A dropdown where each entry is ticked or not (several at once): list() =
+-- { { key, label } }, isOn(key), toggle(key), summary() = the text it shows
+-- shut. nil when the client has neither dropdown (the caller shows checkboxes).
+MakeMulti = function(parent, x, y, width, list, isOn, toggle, summary)
+    -- retail's dropdown menu: checkboxes that keep the menu open
+    local dd = Template("DropdownButton", parent, "WowStyle1DropdownTemplate")
+    if dd and dd.SetupMenu then
+        dd:SetWidth(width)
+        dd:SetPoint("LEFT", parent, "TOPLEFT", x, y - 8)
+        local function showText()
+            local text = Loc(summary())
+            if dd.OverrideText then pcall(dd.OverrideText, dd, text)
+            elseif dd.SetDefaultText then pcall(dd.SetDefaultText, dd, text) end
+        end
+        dd:SetupMenu(function(_, root)
+            for _, t in ipairs(list()) do
+                root:CreateCheckbox(Loc(t.label), function() return isOn(t.key) end, function()
+                    toggle(t.key)
+                    showText()
+                    return MenuResponse and MenuResponse.Refresh or nil
+                end, t.key)
+            end
+        end)
+        dd.refresh = function() pcall(dd.GenerateMenu, dd); showText() end
+        dd.refresh()
+        return dd
+    end
+    if dd then dd:Hide() end
+    -- older clients' dropdown: entries that are not radio buttons, menu kept open
+    local old = UIDropDownMenu_Initialize and Template("Frame", parent, "UIDropDownMenuTemplate", true)
+    if old then
+        old:SetPoint("LEFT", parent, "TOPLEFT", x - 16, y - 8)
+        pcall(UIDropDownMenu_SetWidth, old, width)
+        old.refresh = function() pcall(UIDropDownMenu_SetText, old, Loc(summary())) end
+        UIDropDownMenu_Initialize(old, function()
+            for _, t in ipairs(list()) do
+                local info = UIDropDownMenu_CreateInfo()
+                info.text, info.isNotRadio, info.keepShownOnClick = Loc(t.label), true, true
+                info.checked = function() return isOn(t.key) end
+                info.func = function() toggle(t.key); old.refresh() end
+                UIDropDownMenu_AddButton(info)
+            end
+        end)
+        old.refresh()
+        return old
+    end
+    return nil
+end
+
 MakeChoice = function(parent, x, y, width, list, get, set)
     local function labelOf()
         for _, t in ipairs(list()) do

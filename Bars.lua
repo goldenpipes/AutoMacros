@@ -90,7 +90,8 @@ end
 -- size); with EllesmereUI's look, of your EllesmereUI buttons.
 function BLIZZ_ART.ItemSize(f)
     local base = EUIButtonLook() and (BLIZZ_ART.BarButtonSize()) or BLIZZ_ART.native or 36
-    return BarUnits(f, base * (tonumber(Style("itemScale")) or 100) / 100)
+    -- (BLIZZ_ART.scaleFor: one button's own Item size while its popout is worked out, see PopoutLook)
+    return BarUnits(f, base * (tonumber(BLIZZ_ART.scaleFor or Style("itemScale")) or 100) / 100)
 end
 glows = {}          -- button -> border frame
 macroAt = {}        -- macro index -> macro, for every macro we manage

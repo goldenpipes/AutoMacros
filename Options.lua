@@ -75,6 +75,8 @@ end
 
 -- Turns a button on or off, the same as /amac add and /amac remove.
 function UI.SetEnabled(e, on)
+    -- the Buffs button: on and off with combining (its icon, /amac add buffs)
+    if e.oneBuff then return UI.SetOneBuff(on) end
     OnOff()[e.key] = on and true or false
     if not on then
         toDelete[e.key] = e   -- its macro goes on the next update
@@ -171,11 +173,28 @@ function UI.QueueScan()
     if C_Timer and C_Timer.After then C_Timer.After(1, run) else run() end
 end
 
+-- the name of the profession whose window is open, or nil
+function UI.OpenProfession()
+    local T = C_TradeSkillUI
+    if T and T.GetBaseProfessionInfo then
+        local ok, info = pcall(T.GetBaseProfessionInfo)
+        if ok and type(info) == "table" and info.professionName then return info.professionName end
+    end
+    if GetTradeSkillLine then
+        local ok, name = pcall(GetTradeSkillLine)
+        if ok and type(name) == "string" then return name end
+    end
+end
+
 function UI.ScanRecipes()
     local db = DB()
     if type(db.recipes) ~= "table" then db.recipes = {} end
     local mine = type(db.recipes[CharKey()]) == "table" and db.recipes[CharKey()] or {}
     db.recipes[CharKey()] = mine
+    -- the Cooking window: also every ingredient of a recipe that still gives
+    -- you skill (orange, yellow or green), kept off the food buttons (CookingReagent)
+    local skillUp = UI.OpenProfession() == CookingName() and {} or nil
+    local gray = skillUp and {}   -- (and of a gray recipe: no skill left in it)
     local function ItemOf(link) return type(link) == "string" and tonumber(link:match("item:(%d+)")) or nil end
     local T = C_TradeSkillUI
     if T and T.GetAllRecipeIDs and T.GetRecipeSchematic and T.GetRecipeInfo then
@@ -184,12 +203,18 @@ function UI.ScanRecipes()
             local info = T.GetRecipeInfo(recipeID)
             local s = info and info.learned and T.GetRecipeSchematic(recipeID, false)
             if s and s.outputItemID then
+                -- (relativeDifficulty 3 = trivial, gray: no skill)
+                local gives = skillUp and info.relativeDifficulty ~= nil and info.relativeDifficulty ~= 3
                 local need = {}
                 for _, slot in ipairs(s.reagentSlotSchematics or {}) do
                     if slot.required ~= false then   -- (not optional or finishing reagents)
                         local ids = {}
                         for _, r in ipairs(slot.reagents or {}) do
-                            if r.itemID then ids[#ids + 1] = r.itemID end
+                            if r.itemID then
+                                ids[#ids + 1] = r.itemID
+                                if gives then skillUp[r.itemID] = true
+                                elseif gray and info.relativeDifficulty == 3 then gray[r.itemID] = true end
+                            end
                         end
                         if #ids > 0 then need[#need + 1] = { ids = ids, n = slot.quantityRequired or 1 } end
                     end
@@ -203,15 +228,31 @@ function UI.ScanRecipes()
             local _, kind = GetTradeSkillInfo(i)
             local made = kind and kind ~= "header" and kind ~= "subheader" and ItemOf(GetTradeSkillItemLink(i))
             if made then
+                local gives = skillUp and (kind == "optimal" or kind == "medium" or kind == "easy")
                 local need = {}
                 for r = 1, GetTradeSkillNumReagents(i) or 0 do
                     local _, _, count = GetTradeSkillReagentInfo(i, r)
                     local reagent = ItemOf(GetTradeSkillReagentItemLink(i, r))
-                    if reagent and count then need[#need + 1] = { ids = { reagent }, n = count } end
+                    if reagent and count then
+                        need[#need + 1] = { ids = { reagent }, n = count }
+                        if gives then skillUp[reagent] = true
+                        elseif gray and kind == "trivial" then gray[reagent] = true end
+                    end
                 end
                 mine[made] = need
             end
         end
+    end
+    if skillUp then
+        -- (the whole list again each time: a recipe gone gray lets its ingredients back)
+        if type(db.cookSkillUp) ~= "table" then db.cookSkillUp = {} end
+        db.cookSkillUp[CharKey()] = skillUp
+        -- gray: only in gray recipes (one that still gives skill keeps it off the food buttons)
+        for id in pairs(gray) do
+            if skillUp[id] then gray[id] = nil end
+        end
+        if type(db.cookGray) ~= "table" then db.cookGray = {} end
+        db.cookGray[CharKey()] = gray
     end
 end
 
@@ -298,6 +339,7 @@ UI.SHORT = {
     healthpot = "Health", manapot = "Mana", ragepot = "Rage",
     agility = "Agility", intellect = "Intellect", stamina = "Stamina", strength = "Strength",
     spirit = "Spirit", armor = "Armor", otherbuff = "Other", weaponbuff = "Weapon", cure = "Cure",
+    haste = "Haste",
 }
 function UI.Name(e)
     return UI.SHORT[e.key] or e.title
@@ -308,9 +350,9 @@ end
 UI.BUTTON_GROUPS = {
     { name = "Recovery", keys = { "healthpot", "manapot", "ragepot", "bandage", "cure" } },
     { name = "Food & Drink", keys = { "food", "water", "combo", "bufffood" } },
-    { name = "Buffs", keys = { "agility", "intellect", "stamina", "strength", "spirit", "armor",
-        "resistance", "otherbuff", "flask", "weaponbuff" } },
-    { name = "Utility", keys = { "travel", "questitem", "explosives", "professions", "tracking" } },
+    { name = "Buffs and Debuffs", buffs = true, keys = { "agility", "intellect", "stamina", "strength", "spirit",
+        "armor", "resistance", "haste", "spellpower", "otherbuff", "buffs", "flask", "weaponbuff", "enemydebuff" } },
+    { name = "Utility", keys = { "travel", "questitem", "explosives", "professions", "tracking", "utility" } },
     { name = "Class", keys = { "portals", "comprehend" } },
 }
 
@@ -331,6 +373,72 @@ function UI.ButtonsStamp()
     return table.concat(keys, ",")
 end
 
+-- One Buffs button instead of the stat / armor / resistance / other buttons,
+-- for this character. Their macros go (their on/off is kept, so switching
+-- back brings them back); the Buffs button is on while this is (Enabled).
+function UI.SetOneBuff(on)
+    local db = DB()
+    if type(db.oneBuff) ~= "table" then db.oneBuff = {} end
+    db.oneBuff[CharKey()] = on and true or nil
+    for _, e in ipairs(CATALOG) do
+        if (on and e.buffPart) or (not on and e.oneBuff) then toDelete[e.key] = e end
+    end
+    if InCombatLockdown() then Note("buff buttons will change when combat ends") end
+    UI.CustomChanged()   -- (macros, the Buttons page and EllesmereUI's page built again)
+end
+
+-- a part on or off for this character's Buffs button; saved as true or false
+-- (the rest keep following the class's defaults, see BuffParts)
+function UI.SetBuffPart(part, on)
+    local db = DB()
+    if type(db.buffStats) ~= "table" then db.buffStats = {} end
+    local mine = db.buffStats[CharKey()]
+    if type(mine) ~= "table" then mine = {}; db.buffStats[CharKey()] = mine end
+    mine[part] = on and true or false
+    Refresh()
+    RefreshHeaders()
+    RefreshEUIPage()
+end
+
+UI.PART_NAMES = { agility = "Agility", intellect = "Intellect", spirit = "Spirit", stamina = "Stamina",
+    strength = "Strength", armor = "Armor", resistance = "Resistance", haste = "Haste",
+    spellpower = "Spell Power", other = "Other" }
+
+-- "Intellect, Spirit, Stamina +4": what the Buffs button takes, short
+function UI.BuffSummary()
+    local on, names = BuffParts(), {}
+    for _, part in ipairs(BUFF_PARTS) do
+        if on[part] then names[#names + 1] = UI.PART_NAMES[part] end
+    end
+    if #names == 0 then return "None" end
+    if #names <= 3 then return table.concat(names, ", ") end
+    return names[1] .. ", " .. names[2] .. ", " .. names[3] .. " +" .. (#names - 3)
+end
+
+-- the top of the Buffs section: the toggle (it is the Buffs button's on/off,
+-- see Enabled), and while it is on, which kinds of buff the button takes:
+-- filters, in one dropdown where each is ticked or not
+function UI.BuffChoiceItems()
+    local items = {
+        -- (half while it is alone: on EllesmereUI's page its switch then sits in a
+        -- half-width row, by its label; while on, the Buff types dropdown shares its row)
+        { type = "toggle", label = "Combine class-related buffs into one button", half = not OneBuff(),
+          get = function() return OneBuff() end, set = function(v) UI.SetOneBuff(v) end },
+    }
+    if OneBuff() then
+        items[#items + 1] = { type = "multi", label = "Buff types",
+            list = function()
+                local list = {}
+                for _, part in ipairs(BUFF_PARTS) do list[#list + 1] = { key = part, label = UI.PART_NAMES[part] } end
+                return list
+            end,
+            isOn = function(part) return BuffParts()[part] == true end,
+            set = function(part, on) UI.SetBuffPart(part, on) end,
+            summary = UI.BuffSummary }
+    end
+    return items
+end
+
 -- The Buttons tab: one section per group, each a grid of checkboxes in
 -- alphabetical order of the names shown.
 function UI.ButtonSections()
@@ -348,11 +456,20 @@ function UI.ButtonSections()
         for _, key in ipairs(g.keys) do
             local e = byKey[key]
             if e and not e.custom then
-                list[#list + 1] = e
+                -- (the Buffs button's switch is up by the combine toggle instead)
+                if not e.oneBuff then list[#list + 1] = e end
                 placed[key] = true
             end
         end
         add(g.name, list)
+        -- Buffs: the choice between the stat buttons and one Buffs button first
+        if g.buffs and sections[#sections] and sections[#sections].name == g.name then
+            local items = sections[#sections].items
+            for i, item in ipairs(UI.BuffChoiceItems()) do table.insert(items, i, item) end
+            -- and last, what Other Buffs (and the Other buff type) takes
+            items[#items + 1] = { type = "text", height = 30, text = function()
+                return "Other: buffs that fit none of the above, such as attack power, regeneration or crit." end }
+        end
     end
     local custom, other = {}, {}
     for _, e in ipairs(UI.AvailableButtons()) do
@@ -384,6 +501,118 @@ function UI.DirShown(e)
 end
 
 UI.DIR_NAMES = { auto = "Automatic", up = "up", down = "down", left = "left", right = "right" }
+
+-- ---- the Popout page's "Per-Button Overrides" section ----
+-- Pick one of your buttons that are on, then set its popout's direction and
+-- what clicking an item in it does (the same as right-click / Shift+right-click
+-- on its icon on the Buttons page). UI.popoutKey: the button picked.
+UI.popoutKey = nil
+
+function UI.PopoutEntry()
+    local list = UI.EnabledButtons()
+    for _, e in ipairs(list) do
+        if e.key == UI.popoutKey then return e end
+    end
+    return list[1]
+end
+
+-- which buttons are on (the Popout page is built again when it changes)
+function UI.EnabledStamp()
+    local keys = {}
+    for _, e in ipairs(UI.EnabledButtons()) do keys[#keys + 1] = e.key end
+    return table.concat(keys, ",")
+end
+
+UI.DIR_CHOICES = {
+    { key = "auto", label = "Automatic" }, { key = "up", label = "Up" }, { key = "right", label = "Right" },
+    { key = "down", label = "Down" }, { key = "left", label = "Left" },
+}
+
+-- after a change here: the popouts, the Buttons page's tabs, and this page
+function UI.PopoutChanged()
+    pcall(PrepareSecure)
+    Refresh()
+    RefreshHeaders()
+    UI.RefreshPanels()
+    RefreshEUIPage()
+end
+
+function UI.EachButtonItems()
+    if not UI.PopoutEntry() then
+        return { { type = "text", height = 30, text = function() return "Turn a button on to set its popout here." end } }
+    end
+    return {
+        { type = "choice", label = "Button",
+            list = function()
+                local list = {}
+                for _, e in ipairs(UI.EnabledButtons()) do list[#list + 1] = { key = e.key, label = e.title } end
+                return list
+            end,
+            get = function() local e = UI.PopoutEntry(); return e and e.key end,
+            set = function(v) UI.popoutKey = v; UI.PopoutChanged() end },
+        { type = "choice", label = "Opens", list = function() return UI.DIR_CHOICES end,
+            get = function() local e = UI.PopoutEntry(); return e and POPOUT.Chosen(e) or "auto" end,
+            set = function(v)
+                local e = UI.PopoutEntry()
+                if not e then return end
+                local db = DB()
+                if type(db.popDir) ~= "table" then db.popDir = {} end
+                db.popDir[e.key] = (v ~= "auto") and v or nil
+                UI.PopoutChanged()
+            end },
+        { type = "choice", label = "Clicking an item",
+            list = function()
+                local list = { { key = "default", label = "Global" } }
+                for _, c in ipairs(POPOUT_CLICKS) do list[#list + 1] = c end
+                return list
+            end,
+            get = function() local e = UI.PopoutEntry(); return e and OwnPopoutClick(e) or "default" end,
+            set = function(v)
+                local e = UI.PopoutEntry()
+                if not e then return end
+                local db = DB()
+                if type(db.popClick) ~= "table" then db.popClick = {} end
+                db.popClick[e.key] = (v ~= "default") and v or nil
+                UI.PopoutChanged()
+            end },
+        UI.OwnPopoutNumber("Item size", "popSize", 50, 200, 10, "%d%%"),
+        UI.OwnPopoutNumber("Item spacing", "popGap", 0, 10, 1, "%d"),
+    }
+end
+
+-- a dropdown for one of the picked button's own popout numbers (saved in
+-- db[dbKey][button key], read by PopoutSize / PopoutGap): "Global" (none of its
+-- own: the setting above), then every value from lo to hi
+function UI.OwnPopoutNumber(label, dbKey, lo, hi, step, fmt)
+    return { type = "choice", label = label,
+        list = function()
+            local list = { { key = "global", label = "Global" } }
+            for v = lo, hi, step do list[#list + 1] = { key = tostring(v), label = fmt:format(v) } end
+            return list
+        end,
+        get = function()
+            local e = UI.PopoutEntry()
+            local t = DB()[dbKey]
+            local v = e and type(t) == "table" and tonumber(t[e.key])
+            return v and tostring(v) or "global"
+        end,
+        set = function(v)
+            local e = UI.PopoutEntry()
+            if not e then return end
+            local db = DB()
+            if type(db[dbKey]) ~= "table" then db[dbKey] = {} end
+            db[dbKey][e.key] = tonumber(v)   -- (nil for "global")
+            UI.PopoutChanged()
+        end }
+end
+
+-- "Clicking an item: Use only (set by you)", "... Use and set (Popout page)"
+function UI.ClickText(e)
+    local label = {}
+    for _, c in ipairs(POPOUT_CLICKS) do label[c.key] = c.label end
+    local own = OwnPopoutClick(e)
+    return "Clicking an item: " .. label[PopoutClick(e)] .. (own and " (set by you)" or " (Popout page)")
+end
 
 -- "Popout: opens up (Automatic)", "Popout: opens left (set by you)"
 function UI.DirText(e)
@@ -435,6 +664,11 @@ UI.HEADERS.buttons = function(f, width)
             b = UI.SampleButton(f, size)
             b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
             b:SetScript("OnClick", function(self, button)
+                if button == "RightButton" and IsShiftKeyDown() then   -- what clicking an item does
+                    NextPopoutClick(self.entry)
+                    if GameTooltip:GetOwner() == self then self:GetScript("OnEnter")(self) end   -- (its line)
+                    return
+                end
                 if button == "RightButton" then   -- the next popout direction
                     POPOUT.Next(self.entry)
                     Refresh()          -- (the tabs on your bars move)
@@ -458,8 +692,10 @@ UI.HEADERS.buttons = function(f, width)
                 end
                 if UI.NotOnBars(self.entry) then UI.AddNotOnBarsLine(GameTooltip) end
                 GameTooltip:AddLine(UI.DirText(self.entry), 1, 1, 1)
+                GameTooltip:AddLine(UI.ClickText(self.entry), 1, 1, 1)
                 GameTooltip:AddLine("Drag onto an action bar to place it", 0.7, 0.7, 0.7)
                 GameTooltip:AddLine("Right-click to change which way its popout opens", 0.7, 0.7, 0.7)
+                GameTooltip:AddLine("Shift+right-click to change what clicking an item does", 0.7, 0.7, 0.7)
                 if self.entry.custom then
                     GameTooltip:AddLine("Drop an item or spell on it to add it", 0.7, 0.7, 0.7)
                 end
@@ -501,7 +737,7 @@ UI.HEADERS.buttons = function(f, width)
     UI.StyleSample(f.newSlot)
     place(f.newSlot, slots)
     f.newSlot:Show()
-    f.hint = f.hint or UI.SmallText(f, "Click an icon to turn it on or off for this character, or drag it onto an action bar. Right-click to change which way its popout opens (the tab on its edge shows it). The green number is how many you have or can make. A glowing icon has items but isn't on any of your bars yet.")
+    f.hint = f.hint or UI.SmallText(f, "Click an icon to turn it on or off for this character, or drag it onto an action bar. Right-click to change which way its popout opens (the tab on its edge shows it), Shift+right-click what clicking an item in it does. The green number is how many you have or can make. A glowing icon has items but isn't on any of your bars yet.")
     f.hint:ClearAllPoints()
     f.hint:SetWidth(width - 20)
     f.hint:SetPoint("TOP", f, "TOP", 0, -16 - rows * (size + gap) - 4)

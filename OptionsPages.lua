@@ -8,6 +8,17 @@ if not getmetatable(ns) then setmetatable(ns, { __index = _G }) end
 setfenv(1, ns)
 
 -- ---- the settings ----
+UI.CHAT_CHOICES = {
+    { key = "all", label = "All" },
+    { key = "info", label = "Only info messages" },
+    { key = "empty", label = "Only empty-button messages" },
+    { key = "none", label = "None" },
+}
+UI.FALLBACK_CHOICES = {
+    { key = "combo", label = "Use Food & Drink" },
+    { key = "empty", label = "Leave the button empty" },
+}
+
 function UI.SToggle(label, key)
     return { type = "toggle", label = label,
         get = function() return Style(key) and true or false end,
@@ -298,20 +309,26 @@ PAGES = {
             { type = "color", label = "Tooltip text color", key = "tooltipColor" },
         } },
         { name = "Chat", items = {
-            -- what the addon says by itself: items learned, buttons turned on, macros removed
-            { type = "toggle", label = "Show info messages",
-                get = function() return not DB().quiet end,
-                set = function(v) DB().quiet = (not v) or nil end },
-            -- the "No water in inventory." line when you click an empty button
-            { type = "toggle", label = "Show the empty-button message",
-                get = function() return not DB().noEmptyMsg end,
-                set = function(v) DB().noEmptyMsg = (not v) or nil end },
+            -- which of its own messages the addon prints: info (items learned, buttons
+            -- turned on, macros removed; db.quiet hides them) and the "No water in
+            -- inventory." line when you click an empty button (db.noEmptyMsg)
+            { type = "choice", label = "Chat messages", list = function() return UI.CHAT_CHOICES end,
+                get = function()
+                    local info, empty = not DB().quiet, not DB().noEmptyMsg
+                    if info and empty then return "all" end
+                    if info then return "info" end
+                    return empty and "empty" or "none"
+                end,
+                set = function(v)
+                    DB().quiet = (v == "empty" or v == "none") or nil
+                    DB().noEmptyMsg = (v == "info" or v == "none") or nil
+                end },
         } },
         { name = "Food and water", items = {
             -- out of food (water): the Food / Water button uses a Food & Drink item
-            { type = "toggle", label = "Use Food & Drink when out of food or water",
-                get = function() return not DB().noComboFallback end,
-                set = function(v) DB().noComboFallback = (not v) or nil; Refresh() end },
+            { type = "choice", label = "Out of food or water", list = function() return UI.FALLBACK_CHOICES end,
+                get = function() return DB().noComboFallback and "empty" or "combo" end,
+                set = function(v) DB().noComboFallback = (v == "empty") or nil; Refresh() end },
         } },
         { name = "Item learning", items = {
             { type = "learned" },
@@ -328,6 +345,11 @@ PAGES = {
                     end },
             } },
             { type = "button", label = "Reset appearance", action = function() ResetStyle() end, refreshAll = true },
+        } },
+        -- which version is running (from the .toc)
+        { name = "About", items = {
+            { type = "text", height = 24,
+              text = function() return "AutoMacros " .. (AddonVersion() or "(version unknown)") end },
         } },
     } },
     -- previewH: the preview strip's fixed height on Blizzard's pages (see UI.FitHeader);
@@ -354,8 +376,11 @@ PAGES = {
         } },
     } },
     -- (which way each popout opens: right-click its icon on the Buttons page)
-    { name = "Popout", header = "flyout", previewSide = "right", sections = {
-        { name = "Behaviour", items = {
+    -- (stamp: built again when the buttons that are on change, for "Per-Button Overrides")
+    { name = "Popout", header = "flyout", previewSide = "right", stamp = function() return UI.EnabledStamp() end,
+      sections = {
+        -- what every popout does; a button can set its own at the bottom
+        { name = "Global Behavior", items = {
             -- one row: "Popout on hover [x]   Close delay <slider>"
             { type = "row", items = {
                 { type = "toggle", label = "Popout on hover",
@@ -401,6 +426,9 @@ PAGES = {
             { type = "range", label = "Item spacing", key = "entrySpacing", min = 0, max = 10, step = 1,
                 disabled = function() return BLIZZ_ART.PopupArt() end },
         } },
+        -- one button at a time: its direction and its own "Clicking an item"
+        -- (the items are made when the page is built: the buttons that are on)
+        { name = "Per-Button Overrides", items = function() return UI.EachButtonItems() end },
     } },
 }
 
@@ -436,6 +464,8 @@ UI.PAIRABLE = { toggle = true, range = true, choice = true }
 -- as its Action Bars page does: mode dropdown with the colour swatch beside it.
 function UI.Pairable(item)
     if UI.PAIRABLE[item.type] then return true end
+    -- several ticked at once: EllesmereUI's checkbox dropdown (as its "EUI Buttons")
+    if item.type == "multi" then return EllesmereUI and EllesmereUI.BuildVisOptsCBDropdown ~= nil end
     return item.type == "color" and EllesmereUI and EllesmereUI.BuildColorSwatch ~= nil
 end
 
@@ -458,6 +488,29 @@ function UI.InlineSwatch(region, item)
     end)
     if type(refresh) == "function" and EllesmereUI.RegisterWidgetRefresh then
         pcall(EllesmereUI.RegisterWidgetRefresh, function() pcall(refresh) end)
+    end
+end
+
+-- A "multi" item in one half of a DualRow on EllesmereUI's page: its checkbox
+-- dropdown (EllesmereUI.BuildVisOptsCBDropdown, which stays open while you tick
+-- and names what is ticked) in place of the placeholder dropdown from UI.NativeCfg.
+function UI.MultiDropdown(region, item)
+    if item.type ~= "multi" or type(region) ~= "table" or EllesmereUI._prebuilding then return end
+    local items = {}
+    for _, t in ipairs(item.list()) do items[#items + 1] = { key = t.key, label = Loc(t.label) } end
+    local ok, dd, refresh = pcall(EllesmereUI.BuildVisOptsCBDropdown, region, 210, region:GetFrameLevel() + 2,
+        items, function(k) return item.isOn(k) end, function(k, v) item.set(k, v) end)
+    if not ok or type(dd) ~= "table" then return end
+    pcall(function()
+        if region._control then region._control:Hide() end
+        local PP = EllesmereUI.PP or EllesmereUI.PanelPP
+        if PP and PP.Point then PP.Point(dd, "RIGHT", region, "RIGHT", -20, 0)
+        else dd:SetPoint("RIGHT", region, "RIGHT", -20, 0) end
+        region._control = dd
+        region._lastInline = nil
+    end)
+    if type(refresh) == "function" and EllesmereUI.RegisterWidgetRefresh then
+        pcall(EllesmereUI.RegisterWidgetRefresh, refresh)
     end
 end
 
@@ -496,6 +549,10 @@ function UI.NativeCfg(item)
     end
     if item.type == "toggle" then
         return { type = "toggle", text = item.label, getValue = item.get, setValue = item.set }
+    end
+    if item.type == "multi" then   -- (a stand-in: UI.MultiDropdown puts the real one in its place)
+        return { type = "dropdown", text = item.label, values = { _placeholder = "..." },
+            order = { "_placeholder" }, getValue = function() return "_placeholder" end, setValue = function() end }
     end
     -- a style value, unless the item brings its own get / set
     local get = item.get or function() return Style(item.key) end
@@ -606,6 +663,31 @@ function BuildPage(parent, group, x0, y0, native)
                 MakeLabel(parent, item.label, lx, y - 2)
                 refreshers[#refreshers + 1] = MakeChoice(parent, ctlX, y, 150, item.list, c.getValue, c.setValue).refresh
             end
+        elseif item.type == "multi" then
+            -- several ticked at once (list, isOn, set, summary): a dropdown of
+            -- checkboxes on Blizzard's page; on EllesmereUI's its own switches in a
+            -- grid (its dropdowns take one choice and keep their list as built)
+            local toggles = {}
+            for _, t in ipairs(item.list()) do
+                toggles[#toggles + 1] = { label = t.label,
+                    get = function() return item.isOn(t.key) end, set = function(v) item.set(t.key, v) end }
+            end
+            if W then
+                rowH = BuildItem({ type = "togglegrid", toggles = toggles })
+            else
+                MakeLabel(parent, item.label, lx, y - 2)
+                local dd = MakeMulti(parent, ctlX, y, 170, item.list, item.isOn,
+                    function(k) item.set(k, not item.isOn(k)) end, item.summary)
+                if dd then
+                    refreshers[#refreshers + 1] = dd.refresh
+                else
+                    -- (no dropdown on this client: the same as checkboxes, on the rows below)
+                    local top = y
+                    y = y - ROW   -- (under the label)
+                    rowH = ROW + BuildItem({ type = "togglegrid", toggles = toggles })
+                    y = top
+                end
+            end
         elseif item.type == "button" then
             local function after()
                 if item.refreshAll then RefreshOptions() end
@@ -696,6 +778,40 @@ function BuildPage(parent, group, x0, y0, native)
                 h = h + th
             end
             rowH = h
+        elseif item.type == "togglegrid" then
+            -- plain on/off settings in the same grid (item.toggles: { label, get, set })
+            local cols = W and 3 or UI.GRID_COLS
+            local pw = (parent:GetWidth() or 0) > 0 and parent:GetWidth() or UI.CONTENT_W
+            local colW = math.floor((pw - lx - 10) / cols)
+            local h = 0
+            for i = 1, #item.toggles, cols do
+                local th
+                if W then
+                    local cfgs = {}
+                    for j = 0, 2 do
+                        local t = item.toggles[i + j]
+                        if t then
+                            cfgs[j + 1] = { type = "toggle", text = Loc(t.label), getValue = t.get, setValue = t.set }
+                        else
+                            cfgs[j + 1] = { type = "spacer" }   -- (keeps the row's columns in line)
+                        end
+                    end
+                    th = Native("TripleRow", y - h, cfgs[1], cfgs[2], cfgs[3], { 0.34, 0.33 })
+                end
+                if not th then
+                    for j = 0, cols - 1 do
+                        local t = item.toggles[i + j]
+                        if t then
+                            local x = lx + j * colW
+                            refreshers[#refreshers + 1] = MakeToggle(parent, x, y - h, t.get, t.set).refresh
+                            MakeLabel(parent, t.label, x + 26, y - h - 2, colW - 30)
+                        end
+                    end
+                    th = ROW
+                end
+                h = h + th
+            end
+            rowH = h
         end
         return rowH or ROW
     end
@@ -704,13 +820,23 @@ function BuildPage(parent, group, x0, y0, native)
     while i <= #items do
         local item, nxt = items[i], items[i + 1]
         local rowH
-        if W and UI.Pairable(item) and nxt and UI.Pairable(nxt) then
+        if W and UI.Pairable(item) and nxt and UI.Pairable(nxt) and not item.half then
             local row
             rowH, row = Native("DualRow", y, UI.NativeCfg(item), UI.NativeCfg(nxt))
             if rowH then
                 UI.InlineSwatch(row and row._leftRegion, item)
                 UI.InlineSwatch(row and row._rightRegion, nxt)
+                UI.MultiDropdown(row and row._leftRegion, item)
+                UI.MultiDropdown(row and row._rightRegion, nxt)
                 i = i + 1
+            end
+        elseif W and item.half and UI.Pairable(item) then
+            -- on a half-width row of its own (EllesmereUI's "spacer" fills the other half)
+            local row
+            rowH, row = Native("DualRow", y, UI.NativeCfg(item), { type = "spacer" })
+            if rowH then
+                UI.InlineSwatch(row and row._leftRegion, item)
+                UI.MultiDropdown(row and row._leftRegion, item)
             end
         end
         rowH = rowH or BuildItem(item)

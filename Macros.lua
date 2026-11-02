@@ -83,12 +83,43 @@ function ScanBags()
     return have, true, scrolls, locs
 end
 
+-- Cooking's name in this client's language (spell 2550, Cooking on every client)
+function CookingName()
+    return SpellName(2550) or "Cooking"
+end
+
+-- the buttons that eat or drink: a cooking ingredient stays off them
+COOK_SETS = { food = true, water = true, combo = true, food_buff = true }
+
+-- true for a cooking ingredient you'd rather cook than eat, while you know
+-- Cooking: raw fish the game files as Cooking (Trade Goods 7.8: Raw Slitherskin
+-- Mackerel, also before you have its recipe), and anything a recipe you know
+-- still gives you skill for. Not once every recipe you know for it is gray.
+-- From the Cooking window (UI.ScanRecipes): db.cookSkillUp / db.cookGray [char].
+function CookingReagent(id)
+    local function mine(key)
+        local t = DB()[key]
+        return type(t) == "table" and type(t[CharKey()]) == "table" and t[CharKey()] or {}
+    end
+    if mine("cookSkillUp")[id] then return (KnowsSpellName(CookingName())) end
+    if mine("cookGray")[id] then return false end
+    local class, sub = ItemInstant(id)
+    if not ((class == 7 and sub == 8) or COOKING_FISH[id]) then return false end
+    return (KnowsSpellName(CookingName()))
+end
+
+-- raw fish you cook that the game files as plain food (Consumable 0.5), not as Cooking
+COOKING_FISH = {
+    [13755] = true,   -- Raw Winter Squid (Grilled Squid)
+}
+
 -- Every usable item of a category that is in your bags, best first.
 function Candidates(have, setName)
     local level = UnitLevel("player") or 1
     local list = {}
+    local cook = COOK_SETS[setName]
     for id in pairs(have) do
-        if InSet(setName, id) then
+        if InSet(setName, id) and not (cook and CookingReagent(id)) then
             local _, minLevel = ItemInfo(id)
             minLevel = tonumber(minLevel) or 0
             if minLevel <= level then

@@ -28,9 +28,14 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   on buttons holding its own macros itself (`/amac names` toggles this).
 
 ## Versioning — always follow
-- Every iteration is saved as its own version, **semver MAJOR.MINOR.PATCH** (since 0.85.0):
-  - new features or changed behaviour: bump the middle number, patch back to 0 (0.85.0 -> 0.86.0)
-  - only fixing a bug/glitch in the previous version: bump the last number (0.85.0 -> 0.85.1)
+- **One version per session** (Lewis, 2026-11-01: "this session should be a bump, and
+  have bugfixes to this session be 0.XXX.1"), **semver MAJOR.MINOR.PATCH**:
+  - a session with new features or changed behaviour bumps the middle number once, patch
+    0 (0.138.0 -> 0.139.0). Every change in that session goes into that same version;
+    don't bump again per iteration;
+  - a later session that only fixes bugs in it bumps the last number (0.139.0 -> 0.139.1);
+  - once a version is committed and released, the next session starts a new one.
+  - (Up to 0.138.0 every iteration got its own version.)
   - `1.0.0` = first stable release (works on Forever, Lewis happy to recommend it). Stay on 0.x until then.
 - **CHANGELOG.md**: every version gets an entry at the top (date, Added / Changed / Fixed /
   Removed), written for players, not code notes (those stay in this file).
@@ -39,10 +44,10 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.138.0.**
+- **Current version: 0.139.0.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
-  iteration** (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
+  version** (once per session, not per iteration) (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
   in the .toc and in Core.lua's first line.
 - When Lewis asks for a zip (for uploading to uiforever.com), build
   `releases/AutoMacros-<version>.zip` containing an `AutoMacros/` folder with only the
@@ -227,6 +232,253 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   notes in the CurseForge section are out of date.
 - .build.info now (2026-10-29): Forever 1.60.1.70685, retail 12.1.5.70575, Era
   1.15.9.70576, Anniversary 2.5.6.70577, MoP 5.5.4.70631.
+
+## 0.139.0 — session of 2026-11-01 (one version; built in steps then
+numbered 0.139.0-0.149.0, renumbered at Lewis's request. Snapshots of the steps:
+`releases\in-session-builds-2026-11-01\`; the step numbers below are those.)
+
+### after the renumbering (still 0.139.0): raw fish kept for Cooking
+- Lewis (Cooking 10, Raw Slitherskin Mackerel): don't require knowing the recipe; know
+  Cooking and it's something you'll cook (now or later) -> don't eat it.
+- Forever's test data: nearly every raw fish is **Trade Goods 7.8** (Cooking) with a
+  seated Use line (Raw Slitherskin Mackerel 6303, Brilliant Smallfish 6291, Sagefish
+  21071, ...). Exceptions 0.5: Raw Winter Squid 13755 (cookable: caught only via a known
+  recipe), Raw Black Truffle 4608 (not cookable). Classic Era files most things 0.0, so
+  there only known recipes count.
+- `CookingReagent(id)` now: in cookSkillUp -> true (if Cooking known); in `db.cookGray
+  [char]` (reagents only of gray recipes you know: retail relativeDifficulty 3, older kind
+  "trivial"; written by UI.ScanRecipes with cookSkillUp) -> false; else class 7 sub 8 and
+  Cooking known -> true. A fish whose recipe you never learn stays off food while you know
+  Cooking. Untested in game.
+- `COOKING_FISH` (Macros.lua, by item ID, all games): cookable raw fish filed as 0.5,
+  counted like 7.8. Only Raw Winter Squid 13755 (Grilled Squid; Wowhead Forever XML:
+  class 0 sub 5, name "Raw Winter Squid" on Forever, "Winter Squid" in vanilla). Checked
+  every "Raw" item in the Forever test data: all 7.8 except it and Raw Black Truffle
+  (not cookable, stays food).
+
+### after the renumbering (still 0.139.0): per-button size / spacing, Use only
+- Lewis: no selected border when a button is set to Use only; add size and spacing to
+  Per-Button Overrides. (The 0.139.0 note "per-button popout size not done" is now done.)
+- OpenFlyout: `chosen` is nil when PopoutClick(m) == "use", so no entry is `selected`.
+- `db.popSize[key]` (Item size %) / `db.popGap[key]` (Item spacing px), account-wide,
+  nil = global; `PopoutSize(m)`, `PopoutGap(m)`, `PopoutLook(m, fn, ...)` (Popout.lua)
+  set `BLIZZ_ART.scaleFor` / `BLIZZ_ART.gapFor`, which BLIZZ_ART.ItemSize (Bars.lua) and
+  FlyoutPlan's gap read in place of Style. With the bar background on, spacing is the
+  bar's own as before.
+- The item buttons are one shared pool, so the size is applied **as the popout opens**:
+  PrepareSecure works out per button `k<id>` (scale = size / native, Blizzard's
+  template) and `bw<id>` (width: native, or size with the EUI look, k = 1) and ex/ey in
+  those units; OPEN_SNIPPET does `e:SetScale(k)`, SetWidth/SetHeight(bw) (restricted
+  HANDLE:SetScale exists, checked in Gethe/wow-ui-source RestrictedFrames.lua).
+  OpenFlyout dresses the items under the same overrides (OpenFlyoutItems), and out of
+  combat re-runs StyleFlyout so the bar art scales; in combat the art keeps its last
+  scale (it is anchored to the secure popout).
+- Settings: `UI.OwnPopoutNumber(label, dbKey, lo, hi, step, fmt)` = a `choice`
+  ("Global", then each value) for the picked button; Item size 50-200% step 10, Item
+  spacing 0-10. The settings demo still shows the global look. Untested in game.
+
+### step 0.149.0 — "Buffs and Debuffs"
+- Lewis kept the name Enemy Debuff, then: call the Buffs section "Buffs and Debuffs".
+  UI.BUTTON_GROUPS' buffs group is renamed, flagged `buffs = true` (ButtonSections finds
+  it by that, not by name, to put the combine toggle / Buff types first and the Other
+  note last), and `enemydebuff` moved into it from Utility. README table updated.
+
+### step 0.148.0 — Enemy Debuff button
+- Lewis: Glowing Wax Stick (on Utility Buff in 0.146.0 via "invisible") and Bag of
+  Marbles are used on enemies; wants their own button, name open. Chose **"Enemy
+  Debuff"** (matches "Debuff Cure"); renaming = title/empty/label in CATALOG.
+- **Lewis's Forever SavedVariables has a /amac test result** (`db.test.items`, lines
+  "sets | class.sub | name | Use text"): `_forever_\WTF\Account\1791#1\SavedVariables\
+  AutoMacros.lua`. Mined it with a scratchpad script for the rule; a Python copy of the
+  rule matched exactly 14 items there, no false hits: 835, 20084 (15.0), 4941, 1191,
+  18209, 13514, 2091, 3434, 1434, 11565 (quest 12.0), 4388, 5457, 3441, 1704.
+- Learning (CLASSIFIER 21): flag `enemy` = Use line (digit) with target / enemy /
+  enemies / opponent + decreas / reduc / unable to move / to sleep / cripple / cannot
+  stealth / chance to hit / transforms the target / time between / immobiliz / snare /
+  daze / silence / disarm, not friendly / party / increases the target / perman, not
+  `hurts` (bombs stay Explosives). Branch right after onWeapon (poisons), before stats,
+  so before questUse too. CATALOG `enemydebuff` (AM_EnemyDebuff, set `enemy_debuff`,
+  placeholder 835 Large Rope Net), Utility group. README row added. Untested in game.
+
+### step 0.147.0 — what Other means
+- Lewis confirmed Swiftness belongs on Utility Buff (0.146.0). He asked for a one-line
+  note at the bottom of the Buttons page's Buffs section explaining Other: a `text` item
+  (height 30) appended in UI.ButtonSections after the Buffs grid: "Other: buffs that fit
+  none of the above, such as attack power, regeneration or crit." Untested in game.
+
+### step 0.146.0 — Utility Buff button
+- Lewis: movement, immunity and escapes belong under Utility, not Other Buffs. New
+  CATALOG `utility` (AM_Utility, "Utility Buff", set `buff_utility`, placeholder 5634
+  Free Action Potion, ID from memory), Buttons page Utility group. **Not a buffPart**:
+  never folded into the one Buffs button, not in BUFF_PARTS.
+- Learning (CLASSIFIER 20): flag `utility` = Use line (with a digit) naming run /
+  movement / swim / mounted speed, immune, invisib, breathe, walk on/across water,
+  allows you to walk, slow fall, levitat, escape, shows the location (not perman /
+  fishing); branch after resist/armor, before spellpower/haste -> buff_utility. Quest
+  and misc items count too. Swiftness ("Increases run speed") went to Other before.
+- Living Action Potion ("removes existing stun and movement impairing effects") still
+  goes to Debuff Cure (the cure branch returns first). README table row added: **paste
+  README into CurseForge again.** Untested in game.
+
+### step 0.145.0 — cooking ingredients off the food buttons
+- Lewis: raw fish / cooking ingredients that a known recipe still gives skill-ups for
+  should not show as food when the player knows Cooking. Read as: hide them then; show
+  them as before otherwise (without Cooking, or once the recipe is gray).
+- UI.ScanRecipes: when `UI.OpenProfession()` (C_TradeSkillUI.GetBaseProfessionInfo
+  .professionName, else GetTradeSkillLine()) equals `CookingName()` (SpellName(2550), else
+  "Cooking"), every reagent of a recipe giving skill (retail relativeDifficulty ~= 3;
+  older kind optimal / medium / easy) goes in `db.cookSkillUp[char]`, replaced whole on
+  each Cooking scan. `CookingReagent(id)` (Macros.lua) = in that list and
+  KnowsSpellName(CookingName()). Candidates skips those for `COOK_SETS` (food, water,
+  combo, food_buff): buttons, popouts, Stocked/AutoEnable, the settings counts.
+- Nothing is hidden until the Cooking window has been opened once with 0.145.0.
+  Untested in game (incl. GetTradeSkillLine's name on Forever, retail's
+  GetBaseProfessionInfo).
+
+- Buff types on EUI: Lewis showed EllesmereUI's own checkbox dropdown (General >
+  "EUI Buttons", EUI__General_Options.lua ~2005). It is
+  `EllesmereUI.BuildVisOptsCBDropdown(parent, w, level, items {key,label,tooltip},
+  getFn(k), setFn(k, v), ...)` -> ddBtn, refreshFn (EllesmereUI_Widgets_CheckboxDropdowns.lua;
+  not in PLUGINS_API.md). EUI builds a DualRow with a placeholder dropdown, hides
+  `rgn._control`, PP.Point(dd, "RIGHT", rgn, "RIGHT", -20, 0), sets `rgn._control = dd`,
+  `_lastInline = nil`, RegisterWidgetRefresh(refresh). Ours: `UI.MultiDropdown(region,
+  item)` after each DualRow; NativeCfg(multi) = that placeholder; UI.Pairable(multi) =
+  BuildVisOptsCBDropdown exists (else BuildItem's togglegrid). The combine toggle is
+  `half = not OneBuff()` again, so it pairs with the dropdown. Untested in game.
+
+### step 0.144.0 — Popout page sections; Buff types switches on EUI
+- Lewis (EUI page, 0.143.0): the Buff types dropdown used Blizzard check icons, not EUI's
+  look, and picks seemed to do nothing. **EllesmereUI's dropdown builds its menu once and
+  caches it** (BuildDropdownMenu / WireLazyDropdown), and each item click calls
+  setValue then sets the label to that entry's text and closes. The ticks never redrew,
+  so it can't act as a multi-select. On W the `multi` item now builds a `togglegrid`
+  (EUI TripleRow switches), and `multi` is no longer in UI.PAIRABLE. Blizzard's page keeps
+  MakeMulti. The multi item takes `set(key, on)` (was `toggle`). UI.SetBuffPart also calls
+  RefreshEUIPage. UI.CHECK / NOCHECK removed. The combine toggle is always `half`.
+- Lewis: the Popout page's top section is "Global Behavior" (global settings above), and
+  "Each button" is renamed "Per-Button Overrides" and moved to the bottom; its "As above"
+  choice is now "Global".
+
+### step 0.143.0 — dropdowns where they fit
+- Lewis: use dropdowns where it makes sense; he picked all four proposals.
+- General: Chat = one `choice` "Chat messages" (UI.CHAT_CHOICES all / info / empty / none,
+  mapped onto db.quiet + db.noEmptyMsg); "Food and water" = `choice` "Out of food or
+  water" (UI.FALLBACK_CHOICES combo / empty -> db.noComboFallback).
+- New settings item type **`multi`** (`list` {key,label}, `isOn(key)`, `toggle(key)`,
+  `summary()`; pairable): Blizzard page = `MakeMulti` (Widgets.lua: WowStyle1Dropdown
+  `CreateCheckbox` returning MenuResponse.Refresh so the menu stays open, text via
+  OverrideText / SetDefaultText; else UIDropDownMenu isNotRadio + keepShownOnClick; nil
+  -> BuildPage falls back to a togglegrid under the label). EUI = its single-choice
+  dropdown (EllesmereUI has no multi-select): UI.NativeCfg fills values with UI.CHECK /
+  UI.NOCHECK icons + label, getValue always "_summary" (not in order, labels the closed
+  dropdown), setValue toggles and refills the same tables in place, RefreshEUIPage().
+  **Unverified** that EUI's dropdown shows values["_summary"] for a key not in order.
+- Buffs: UI.BuffChoiceItems = the combine toggle (half only while off, so while on it
+  pairs with the dropdown) + `multi` "Buff types" (BUFF_PARTS, UI.BuffSummary
+  "A, B, C +N"). The togglegrid type stays (fallback).
+- Popout page: section "Each button" (`items` function UI.EachButtonItems: `choice`
+  Button (UI.EnabledButtons, UI.popoutKey; UI.PopoutEntry), Opens (UI.DIR_CHOICES ->
+  db.popDir), Clicking an item ("As above" + POPOUT_CLICKS -> db.popClick); changes go
+  through UI.PopoutChanged (PrepareSecure, Refresh, headers, RefreshPanels,
+  RefreshEUIPage)). Page `stamp` = UI.EnabledStamp so Blizzard's page rebuilds when the
+  buttons that are on change. Untested in game.
+
+### step 0.142.0 — combining is the Buffs button's switch
+- Lewis, right after 0.141.1: with combine on, the Buffs button should simply be what is
+  enabled; the types are filters. `Enabled(e)` returns `OneBuff()` for the `oneBuff`
+  entry (OnOff ignored); `UI.SetEnabled` on it calls `UI.SetOneBuff(on)` (icon row,
+  welcome window, `/amac add|remove buffs` all go through SetEnabled); SetOneBuff no
+  longer sets OnOff().buffs. 0.141.1's separate Buffs toggle is removed again; the Buffs
+  grid still leaves the `oneBuff` entry out. Untested in game.
+
+### step 0.141.1
+- 0.141.0 in game (Lewis's EUI screenshot): the checkbox grid works, 3 to a row, Spell
+  Power ticked on his caster. The Buffs button's own switch sat in the button grid with
+  Flask / Weapon; he wants it first, left of the combine toggle. UI.BuffChoiceItems now
+  starts (while OneBuff) with a plain toggle for the `oneBuff` entry (label UI.Name,
+  Enabled / UI.SetEnabled), so on EUI it pairs into one DualRow with the combine toggle
+  (`half` only applies to an item that would be alone). UI.ButtonSections leaves
+  `oneBuff` entries out of the Buffs grid (still `placed`, so not under Other).
+
+### step 0.141.0 — Haste / Spell Power buttons; a checkbox per buff kind in 3 columns
+- Lewis (EUI screenshot of 0.140.1's stat toggles: 2 per row, Strength alone): keep 3
+  columns for these checkboxes; Resistance, Haste and Spell Power each their own category.
+  He chose: Haste and Spell Power as **buttons and checkboxes**; Spell Power ticked by
+  default for casters only.
+- Learning (CLASSIFIER 19): flags `spellPower` (buff, not resist, and "spell power" /
+  "magical spells" / "healing done", or "spell" + damage/healing) and `haste` (buff +
+  "haste" / "attack speed" / "casting speed"); new branch after resist/armor ->
+  `buff_spellpower`, `buff_haste` (was buff_other). Stat buffs still win (stats branch is
+  first).
+- CATALOG: `spellpower` (AM_SpellPower "Spell Power", placeholder 13454) and `haste`
+  (AM_Haste "Haste Buff", placeholder 2459 Swiftness Potion), both buffPart. Field
+  `stat` -> `part` on every buffPart entry (armor, resistance, haste, spellpower, other
+  too). UI.SHORT haste = "Haste"; BUTTON_GROUPS Buffs has both.
+- `BUFF_PARTS` (10, checkbox order), `SPELL_CLASSES` (Mage, Warlock, Priest, Paladin,
+  Shaman, Druid, Evoker); `BuffStats()` -> **`BuffParts()`**: class stats + armor,
+  resistance, haste, other (+ spellpower for SPELL_CLASSES), then db.buffStats[char]
+  overlaid (now saved **true / false** per part, `UI.SetBuffPart`; parts not touched keep
+  following the defaults). InSet("buff_class") = any part's buff_<part>.
+- New settings item type **`togglegrid`** (`toggles = { { label, get, set } }`): EUI =
+  TripleRow (missing slots `{ type = "spacer" }`), Blizzard = UI.GRID_COLS columns of
+  MakeToggle + label (like buttongrid). UI.BuffChoiceItems: the half toggle + one
+  togglegrid of BUFF_PARTS (UI.PART_NAMES); the "also takes armor..." note is gone.
+- Untested in game, incl. the haste/spell power wording on Forever's items.
+
+### step 0.140.1
+- Lewis (EUI page screenshot): rename the one-Buffs toggle -> **"Combine class-related
+  buffs into one button"** (README + 0.139.0 changelog text too); its switch was far right
+  (EllesmereUI gives a lone toggle a full-width row). Settings items may set `half =
+  true`: on EUI, BuildPage puts such a pairable item alone in a `DualRow` with
+  `{ type = "spacer" }` as the right half (EllesmereUI_Widgets_Rows.lua: "Empty half-space
+  placeholder"), so its switch sits mid-row like paired ones. Only that toggle has it so
+  far ("Use EllesmereUI styling" is also a lone full-width toggle). Blizzard's page
+  unchanged. The icon in his shot was his mouse cursor. Untested in game.
+
+### step 0.140.0 — version on the General page
+- Lewis: show the current version in the General settings. `AddonVersion()` (Core.lua:
+  C_AddOns.GetAddOnMetadata / GetAddOnMetadata(ADDON, "Version"), pcall'd) and a last
+  General section "About" with one text item "AutoMacros <version>" (both settings pages
+  draw text items). Built on top of untested 0.139.0. Untested in game.
+- 2026-11-01: **Lewis now tests in `_forever_`, not `_classic_beta_`.** `_forever_`'s
+  AutoMacros was a plain copy of released 0.138.0 (CurseForge app, 17:07): moved to
+  `releases\forever-copy-0.138.0`, junction in its place (New-Item -ItemType Junction).
+  **If the CurseForge app keeps AutoMacros installed there, its next update will replace
+  the junction again and may delete project files through it** (as with Games\/Media\).
+
+### step 0.139.0 — one Buffs button; Clicking an item per button
+- Lewis: the buff buttons don't suit casters (Str/Agi useless); option for one button with
+  the class's buff items. He chose: stats per character with class defaults, plus Other,
+  Armor and Resistance; the separate buttons **hidden** while it's on; per-button "Clicking
+  an item" set by **Shift+right-click** on the Buttons page icon row.
+- Core: CATALOG flags `buffPart` (agility, intellect, stamina, strength, spirit, armor,
+  resistance, otherbuff) and `stat` (the five stats); new entry `buffs` (AM_Buffs,
+  "Buffs", set `buff_class`, `oneBuff`, scope character, placeholder 2458).
+  `BUFF_STATS`, `CLASS_BUFF_STATS` (casters Int/Spi/Sta, Warrior/Rogue Str/Agi/Sta, Hunter
+  Agi/Int/Sta, Paladin/Shaman/Druid all, DK Str/Sta, DH/Monk Agi/Sta, Evoker Int/Sta),
+  `OneBuff()` (db.oneBuff[char]), `BuffStats()` (db.buffStats[char] or the class's),
+  `HiddenButton(e)`. InSet("buff_class") = any chosen buff_<stat>, buff_armor,
+  buff_resistance, buff_other. RebuildMacros leaves hidden entries out of ALL (so also
+  MACROS, the Buttons page, AutoEnable). UpdateCore's toDelete counts hidden as off.
+- Options: `UI.SetOneBuff(on)` (saves, queues the other kind's macros in toDelete, turns
+  `buffs` on, UI.CustomChanged); `UI.SetBuffStat(stat, on)`; `UI.BuffChoiceItems()` =
+  the toggle "One Buffs button for this character" + (while on) five "Buffs: <Stat>"
+  toggles and a note, inserted at the top of the Buttons page's Buffs section
+  (UI.ButtonSections). BUTTON_GROUPS Buffs has `buffs`.
+- Popout: `PopoutClick(m)` = db.popClick[key] (account-wide, like popDir) else the global;
+  `OwnPopoutClick(e)`, `NextPopoutClick(e)` (Default -> Use and set -> Set only -> Use
+  only). Secure: attribute `mode<id>` per wrapped button (OPEN_SNIPPET reads it; the old
+  shared "mode" is gone). PostClick / entry tooltip use flyout.macro's. Buttons page icon:
+  Shift+right-click = NextPopoutClick; tooltip line `UI.ClickText(e)`.
+- **Not done: per-button popout size** (Lewis asked mid-turn). The popout's item buttons
+  are one shared pool, sized out of combat by scale; a size per button would need a pool
+  per size (SetScale on protected frames is blocked in combat). Asked Lewis first.
+- 2026-11-01: `Games\` and `Media\` were **deleted from the project again**, and
+  `_forever_\Interface\AddOns\AutoMacros` was a plain folder, not a junction:
+  most likely the CurseForge app updating AutoMacros there deleted through the junction.
+  Restored the six files from HEAD (`git show HEAD:<path>` into the missing files; a
+  `git checkout --` was refused by the permission check). Told Lewis.
+- README Features/Buttons updated: **paste README into CurseForge again**. Untested in game.
 
 ## 0.138.0 — "Right-click: Conjure Water" in the tooltip
 - Lewis: the Water and Food buttons' tooltips should say right-click conjures.

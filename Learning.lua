@@ -129,6 +129,10 @@ function Classify(id)
     local health, mana, rage, damage, weapon, travel, wellFed = false, false, false, false, false, false, false
     local stats, hasUse, restore, buff, armor, resist, seated = {}, false, false, false, false, false, false
     local cure = false   -- removes a debuff
+    -- raises spell damage / healing ("Increases spell damage by up to 35":
+    -- Greater Arcane Elixir; "spell shadow damage": Shadow Power), or haste
+    -- (attack or casting speed): own buttons since 0.139.0, before Other Buffs
+    local spellPower, haste, utility, enemy = false, false, false, false
     -- put on your weapon ("Applies wizard oil to your weapon, increasing
     -- Intellect": retail's oils name a stat, so this goes before stat buffs)
     local onWeapon = false
@@ -202,6 +206,27 @@ function Classify(id)
                 if buff and HasWord(low, "armor", ARMOR, "defense") then armor = true end
                 -- raises a resistance, or a protection potion: "Absorbs 1950 to 3250 fire damage"
                 if (buff and HasWord(low, "resist")) or (HasWord(low, "absorb") and damage) then resist = true end
+                if buff and not resist and (HasWord(low, "spell power", "magical spells", "healing done")
+                    or (HasWord(low, "spell") and HasWord(low, "damage", "healing"))) then spellPower = true end
+                if buff and HasWord(low, "haste", "attack speed", "casting speed") then haste = true end
+                -- movement, immunity and escapes: "Increases run speed by 50%" (Swiftness),
+                -- "Makes you immune to Stun and Movement Impairing effects" (Free Action),
+                -- invisibility, water breathing / walking, slow fall, "shows the location"
+                if HasWord(low, "run speed", "movement speed", "swim speed", "mounted speed", "immune",
+                        "invisib", "breathe", "walk on water", "walk across water", "allows you to walk",
+                        "slow fall", "levitat", "escape", "shows the location")
+                    and not HasWord(low, "perman", "fishing") then utility = true end
+                -- used on an enemy, not on you: "Renders a target unable to move" (nets,
+                -- glue), "Decreases target's chance to hit" (Bag of Marbles), "Puts the
+                -- enemy target to sleep" (Magic Dust), "Decrease the armor of the target"
+                -- (Glowing Wax Stick). Not bombs ("Inflicts ... and stuns targets"), not
+                -- scrolls ("Increases the target's Spirit")
+                if HasWord(low, "target", "enemy", "enemies", "opponent")
+                    and HasWord(low, "decreas", "reduc", "unable to move", "to sleep", "cripple", "cannot stealth",
+                        "chance to hit", "transforms the target", "time between", "immobiliz", "snare",
+                        "daze", "silence", "disarm")
+                    and not HasWord(low, "friendly", "party", "increases the target", "perman")
+                    and not hurts then enemy = true end
                 -- only the stats it raises: "increases your Strength by 1 and decreases
                 -- your Intellect by 1" (Stormstout) is a Strength buff, not Intellect
                 local raised = text
@@ -258,7 +283,7 @@ function Classify(id)
     -- for what helps you: restoring health or mana, and buffs; or as quest items
     if class == 12 or class == 15 then sub = -1 end
     local own = sub ~= -1   -- a consumable (not a quest or misc item)
-    if not own and not (restoring or next(stats) or armor or resist or buff or questUse) then
+    if not own and not (restoring or next(stats) or armor or resist or buff or utility or enemy or questUse) then
         -- a quest or misc item that does none of that
     elseif seated and (health or mana) and not wellFed then
         -- food and drink, also from quests (Clara's Fresh Apple): you sit to eat
@@ -281,6 +306,9 @@ function Classify(id)
     elseif own and onWeapon then
         -- a weapon oil or stone, also one that names a stat (retail's wizard oils)
         sets[#sets + 1] = "weapon_buff"
+    elseif sub ~= 6 and enemy then
+        -- (before the buffs: "Increases time between target's attacks" is no buff of yours)
+        sets[#sets + 1] = "enemy_debuff"
     elseif sub ~= 6 and next(stats) then   -- (6: item enhancements, worn on gear)
         for _, key in ipairs(STAT_KEYS) do
             if stats[key] then sets[#sets + 1] = "buff_" .. key end
@@ -288,6 +316,12 @@ function Classify(id)
     elseif sub ~= 6 and (resist or armor) then
         if resist then sets[#sets + 1] = "buff_resistance" end
         if armor then sets[#sets + 1] = "buff_armor" end
+    elseif sub ~= 6 and utility then
+        -- (its own button in the Utility group, not one of the buff kinds)
+        sets[#sets + 1] = "buff_utility"
+    elseif sub ~= 6 and (spellPower or haste) then
+        if spellPower then sets[#sets + 1] = "buff_spellpower" end
+        if haste then sets[#sets + 1] = "buff_haste" end
     elseif questUse then
         -- (before weapon and explosives: "throw it at the wagon" is the quest's)
         sets[#sets + 1] = "quest"

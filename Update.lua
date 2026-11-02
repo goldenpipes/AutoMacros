@@ -79,15 +79,18 @@ function UpdateCore()
             toDelete[key] = nil
             -- skipped if it was switched back on in the meantime. A shared
             -- (general tab) macro stays while another character has it on.
+            -- (hidden: a stat button while this character uses the one Buffs
+            -- button, or that button while it doesn't; its on/off stays as it was)
+            local off = not Enabled(e) or HiddenButton(e)
             local elsewhere = false
             if not e.removed and e.scope ~= "character" then
                 for char, t in pairs(DB().enabledBy or {}) do
                     if char ~= CharKey() and type(t) == "table" and t[e.key] then elsewhere = true end
                 end
             end
-            if elsewhere and not Enabled(e) then
+            if elsewhere and off then
                 Note(e.title .. ": off on this character (its macro stays: another character uses it)")
-            elseif not Enabled(e) or e.removed then
+            elseif off or e.removed then
                 DeleteManaged(e)
             end
         end

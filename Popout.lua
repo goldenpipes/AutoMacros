@@ -39,10 +39,36 @@ prepared = {}    -- that number -> what its popout holds: { m, list, n, dir, pla
 -- button's item, "set" only make it the button's item, "use" only use it.
 POPOUT_CLICKS = { { key = "useset", label = "Use and set" }, { key = "set", label = "Set only" },
     { key = "use", label = "Use only" } }
-function PopoutClick()
+-- What clicking an item in a popout does: button m's own choice
+-- (db.popClick[key], Shift+right-click on the Buttons page), else the Popout
+-- page's (db.popoutClick).
+function PopoutClick(m)
+    local own = m and type(DB().popClick) == "table" and DB().popClick[m.key]
+    if own == "useset" or own == "set" or own == "use" then return own end
     local v = DB().popoutClick
     if v == "set" or v == "use" then return v end
     return "useset"
+end
+
+-- button e's own choice (nil: it follows the Popout page)
+function OwnPopoutClick(e)
+    local t = DB().popClick
+    return type(t) == "table" and t[e.key] or nil
+end
+
+-- the next one (Default, Use and set, Set only, Use only), saved for e
+function NextPopoutClick(e)
+    local order = { false, "useset", "set", "use" }
+    local cur = OwnPopoutClick(e) or false
+    local nxt = false
+    for i, v in ipairs(order) do
+        if v == cur then nxt = order[i % #order + 1] end
+    end
+    local db = DB()
+    if type(db.popClick) ~= "table" then db.popClick = {} end
+    db.popClick[e.key] = nxt or nil
+    pcall(PrepareSecure)
+    return nxt or nil
 end
 
 function CountOf(id)
@@ -187,7 +213,7 @@ function Entry(i)
             elseif not EquipByID(self.itemID) then
                 Print(ItemRef(self.itemID) .. ": could not be equipped")
             end
-        elseif PopoutClick() == "use" then
+        elseif PopoutClick(m) == "use" then
             return
         end
         -- the best item is what "automatic" already uses, so picking it clears the choice
@@ -202,7 +228,7 @@ function Entry(i)
         if self.unequipped then
             GameTooltip:AddLine("Not equipped - click to put it on", 1, 0.82, 0)
         else
-            GameTooltip:AddLine(POPOUT_CLICK_TIPS[PopoutClick()], 0.7, 0.7, 0.7)
+            GameTooltip:AddLine(POPOUT_CLICK_TIPS[PopoutClick(flyout.macro)], 0.7, 0.7, 0.7)
         end
         GameTooltip:Show()
     end)
@@ -241,7 +267,8 @@ function FlyoutPlan(f, n, button, arrow, dir)
     -- buttons, touching the popout's edge with the art reaching out past them
     -- (StyleFlyout). Without, Item spacing between and around them.
     local art = BLIZZ_ART.PopupArt()
-    local gap = art and Snap(f, BLIZZ_ART.BarGap(f) * BLIZZ_ART.ArtScale(f)) or Style("entrySpacing") * px
+    local gap = art and Snap(f, BLIZZ_ART.BarGap(f) * BLIZZ_ART.ArtScale(f))
+        or (BLIZZ_ART.gapFor or Style("entrySpacing")) * px
     local pad = art and 0 or gap
     local plan = { pos = {}, size = size, gap = gap, pad = pad, art = art, across = across }
     for i = 1, n do
@@ -298,9 +325,10 @@ end
 -- The snippet wrapped round an action button's OnEnter (the game runs it, in
 -- combat too; "id" is set in front of it, see WrapButton). Reads what
 -- PrepareSecure left on the header: n<id> items, the popout's size w/h and
--- place pt/rpt/x/y, per item ex/ey (its place) and t/v (item or spell to use;
--- "" for none, e.g. gear to put on). "Set only" leaves the items without a type,
--- so a click uses nothing.
+-- place pt/rpt/x/y, mode<id> (what a click does, per button), k<id> / bw<id> (the
+-- items' scale and width: the button's own Item size), per item ex/ey
+-- (its place) and t/v (item or spell to use; "" for none, e.g. gear to put on).
+-- "Set only" leaves the items without a type, so a click uses nothing.
 OPEN_SNIPPET = [[
     if owner:GetAttribute("off") then return end
     local n = owner:GetAttribute("n" .. id) or 0
@@ -313,11 +341,17 @@ OPEN_SNIPPET = [[
         f:SetHeight(owner:GetAttribute("h" .. id))
         f:SetPoint(owner:GetAttribute("pt" .. id), self, owner:GetAttribute("rpt" .. id),
             owner:GetAttribute("x" .. id), owner:GetAttribute("y" .. id))
-        local setOnly = owner:GetAttribute("mode") == "set"
+        local setOnly = owner:GetAttribute("mode" .. id) == "set"
+        local k, bw = owner:GetAttribute("k" .. id) or 1, owner:GetAttribute("bw" .. id)
         for i = 1, owner:GetAttribute("max") do
             local e = owner:GetFrameRef("e" .. i)
             if i <= n then
                 local key = id .. "_" .. i
+                e:SetScale(k)   -- (this button's own item size)
+                if bw then
+                    e:SetWidth(bw)
+                    e:SetHeight(bw)
+                end
                 e:ClearAllPoints()
                 e:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", owner:GetAttribute("ex" .. key), owner:GetAttribute("ey" .. key))
                 local t = owner:GetAttribute("t" .. key)
@@ -335,6 +369,28 @@ OPEN_SNIPPET = [[
     f:RegisterAutoHide(owner:GetAttribute("delay") or 0.5)
     f:AddToAutoHide(self)
 ]]
+
+-- A button's own Item size (percent) and Item spacing (pixels) on the Popout
+-- page's Per-Button Overrides, account-wide like its direction; nil = the global one.
+function PopoutSize(m)
+    local t = DB().popSize
+    return m and type(t) == "table" and tonumber(t[m.key]) or nil
+end
+
+function PopoutGap(m)
+    local t = DB().popGap
+    return m and type(t) == "table" and tonumber(t[m.key]) or nil
+end
+
+-- Runs fn(...) with macro m's popout size and spacing in place of the global ones
+-- (BLIZZ_ART.ItemSize and FlyoutPlan read them), and returns what it returns.
+function PopoutLook(m, fn, ...)
+    BLIZZ_ART.scaleFor, BLIZZ_ART.gapFor = PopoutSize(m), PopoutGap(m)
+    local ok, a = pcall(fn, ...)
+    BLIZZ_ART.scaleFor, BLIZZ_ART.gapFor = nil, nil
+    if not ok then error(a, 0) end
+    return a
+end
 
 -- Gives action button b its number and wraps the snippet round its OnEnter
 -- (once, out of combat). nil when it cannot be: no secure header, or b is not
@@ -361,7 +417,6 @@ function PrepareSecure()
     for _, e in ipairs(entries) do StyleEntry(e) end
     local hd = secureHeader
     if not hd then return end
-    hd:SetAttribute("mode", PopoutClick())
     hd:SetAttribute("delay", Style("closeDelay"))
     hd:SetAttribute("off", DB().noFlyout == true)
     hd:SetAttribute("max", #entries)
@@ -374,20 +429,29 @@ function PrepareSecure()
             local n = list and math.min(#list, #entries) or 0
             if n >= 2 then
                 local dir = POPOUT.Direction(b, m)
-                local plan = FlyoutPlan(flyout, n, b, arrows[b], dir)
+                -- its own size and spacing: the items are scaled by k (Blizzard's
+                -- button) or sized bw (EllesmereUI's look) as it opens (OPEN_SNIPPET)
+                local plan = PopoutLook(m, FlyoutPlan, flyout, n, b, arrows[b], dir)
+                local size = PopoutLook(m, BLIZZ_ART.ItemSize, flyout)
+                local e1 = entries[1]
+                local k, bw = 1, size
+                if e1.native and not e1.euiLook then k, bw = size / e1.native, e1.native end
                 local copy = {}
                 for i = 1, n do copy[i] = list[i] end
                 prepared[id] = { m = m, list = copy, n = n, dir = dir, plan = plan }
                 hd:SetAttribute("n" .. id, n)
+                hd:SetAttribute("mode" .. id, PopoutClick(m))   -- (per button)
                 hd:SetAttribute("w" .. id, plan.w)
                 hd:SetAttribute("h" .. id, plan.h)
                 hd:SetAttribute("pt" .. id, plan.pt)
                 hd:SetAttribute("rpt" .. id, plan.rpt)
                 hd:SetAttribute("x" .. id, plan.x)
                 hd:SetAttribute("y" .. id, plan.y)
+                hd:SetAttribute("k" .. id, k)
+                hd:SetAttribute("bw" .. id, bw)
                 for i = 1, n do
                     local key = id .. "_" .. i
-                    local k = entries[i].k or 1   -- (the items are scaled: offsets in their own units)
+                    -- (the items are scaled: offsets in their own units)
                     hd:SetAttribute("ex" .. key, plan.pos[i][1] / k)
                     hd:SetAttribute("ey" .. key, plan.pos[i][2] / k)
                     local it = list[i]
@@ -419,7 +483,20 @@ function OpenFlyout(button)
     flyout.macro, flyout.button, flyout.dir = p.m, button, p.dir
     local list, m = p.list, p.m
     local _, chosenEntry = ChosenFor(m, list)
-    local chosen = chosenEntry and (chosenEntry.pick or chosenEntry.id)
+    -- (Use only never changes the button's item: no item is marked as the one in use)
+    local chosen = PopoutClick(m) ~= "use" and chosenEntry and (chosenEntry.pick or chosenEntry.id)
+    -- this button's own size and spacing while the items are dressed (StyleEntry
+    -- sizes them out of combat only; the snippet already did, in combat too)
+    BLIZZ_ART.scaleFor, BLIZZ_ART.gapFor = PopoutSize(m), PopoutGap(m)
+    local ok, err = pcall(OpenFlyoutItems, p, list, m, chosen)
+    BLIZZ_ART.scaleFor, BLIZZ_ART.gapFor = nil, nil
+    if not ok then error(err, 0) end
+end
+
+function OpenFlyoutItems(p, list, m, chosen)
+    -- the bar art behind the items scales with them (only out of combat: it is
+    -- anchored to the secure popout; in combat it keeps the size it last had)
+    if not InCombatLockdown() then StyleFlyout(flyout) end
     for i = 1, p.n do
         local e = entries[i]
         local isSpell = m.kind == "spells" or list[i].spell == true   -- the Hearth/Teleport button has both
