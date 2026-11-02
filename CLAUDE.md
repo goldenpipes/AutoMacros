@@ -237,6 +237,12 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 numbered 0.139.0-0.149.0, renumbered at Lewis's request. Snapshots of the steps:
 `releases\in-session-builds-2026-11-01\`; the step numbers below are those.)
 
+- **Committed** (896b4b1) and **released** 2026-11-02 as pre-release v0.139.0 (notes: its
+  changelog section); CurseForge upload run 41372513969, success. `gh release create`
+  needs git on PATH: prepend GitHub Desktop's git cmd folder to $env:PATH first.
+  README changed: Lewis to paste it into CurseForge (pane + Waterfox opened).
+  v0.138.0's release and tag deleted: v0.139.0 is the only GitHub release.
+
 ### after the renumbering (still 0.139.0): raw fish kept for Cooking
 - Lewis (Cooking 10, Raw Slitherskin Mackerel): don't require knowing the recipe; know
   Cooking and it's something you'll cook (now or later) -> don't eat it.
