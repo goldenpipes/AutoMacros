@@ -11,9 +11,15 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - **Run on Lewis's PC** (Lewis, 2026-11-01: "always run on the PC unless i specify
   otherwise"): work in a local Claude Code session with a Windows shell, not a cloud
   session (a cloud session can only read/write files; it can't run mklink, git.exe, gh).
-- **Both clients are junctions to this folder again** (made 2026-11-01 with
-  `tools\link_clients.bat`; Lewis ran it). Old copies are in each client's
-  `Interface\AutoMacros-old-copy`. Re-run the .bat if an addon manager replaces a link.
+- **`_forever_` gets a plain copy, not a junction** (Lewis, 2026-11-02, after the
+  CurseForge app replaced the junction and deleted project files through it three times;
+  Lewis runs off `_forever_` and lets the app update the addon there). After every build
+  (before handing it over) run `& .\tools\sync_forever.ps1`: it checks every file the .toc
+  lists + the Media icon exists, removes a junction as a link only
+  ([IO.Directory]::Delete(path, $false)), replaces a plain folder, copies the files and
+  prints the version. **Never make a junction to this folder again**, and never use
+  Remove-Item -Recurse on a junction (it can delete the target's files).
+  `tools\link_clients.bat` is out of date for `_forever_`.
 - Lewis has given standing OK to read and write these. From a cloud session, ask for
   access to these exact folders at the start without asking him first (the access prompt
   still shows once per session).
@@ -79,6 +85,8 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   WoW's Lua 5.1 refuses a file with more than 200, and then NOTHING loads (0.30.0 broke this
   way). Since the split each file has only its header's 2.
 - There is no Lua interpreter here; the checker is the only pre-flight test.
+- Then copy the build into the game: `& .\tools\sync_forever.ps1` (see Folders). Lewis's
+  own Lua edits only reach the game after the next copy.
 
 ## Code layout (since 0.102.0)
 - **Per-game files (since 0.121.0, Lewis: keep each game's things separate; only files a
