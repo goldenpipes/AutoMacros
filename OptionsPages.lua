@@ -997,9 +997,17 @@ function UI.RegisterBlizzPanel()
 end
 
 -- the settings on whichever of our pages is on screen
+-- (one whose list has changed, see a page's stamp, is built again)
 function UI.RefreshPanels()
-    for _, pn in ipairs(UI.panels) do
-        if pn.frame:IsVisible() and pn.content.amRefresh then pn.content.amRefresh() end
+    for i, pn in ipairs(UI.panels) do
+        if pn.frame:IsVisible() then
+            local page = PAGES[i]
+            if pn.built and page and page.stamp and page.stamp() ~= pn.stamp then
+                UI.ShowPanel(i)
+            elseif pn.content.amRefresh then
+                pn.content.amRefresh()
+            end
+        end
     end
 end
 

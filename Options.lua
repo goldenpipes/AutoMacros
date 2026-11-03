@@ -508,19 +508,21 @@ UI.DIR_NAMES = { auto = "Automatic", up = "up", down = "down", left = "left", ri
 -- on its icon on the Buttons page). UI.popoutKey: the button picked.
 UI.popoutKey = nil
 
+-- the button picked, or nil while it is "Example" (the default: the page's
+-- demo then shows a made-up popout with the global settings)
 function UI.PopoutEntry()
-    local list = UI.EnabledButtons()
-    for _, e in ipairs(list) do
+    for _, e in ipairs(UI.EnabledButtons()) do
         if e.key == UI.popoutKey then return e end
     end
-    return list[1]
 end
 
--- which buttons are on (the Popout page is built again when it changes)
+-- which buttons are on, and which one is picked (the Popout page is built
+-- again when it changes: the rows below the Button choice come and go)
 function UI.EnabledStamp()
     local keys = {}
     for _, e in ipairs(UI.EnabledButtons()) do keys[#keys + 1] = e.key end
-    return table.concat(keys, ",")
+    local e = UI.PopoutEntry()
+    return table.concat(keys, ",") .. "|" .. (e and e.key or "")
 end
 
 UI.DIR_CHOICES = {
@@ -538,18 +540,37 @@ function UI.PopoutChanged()
 end
 
 function UI.EachButtonItems()
-    if not UI.PopoutEntry() then
+    if #UI.EnabledButtons() == 0 then
         return { { type = "text", height = 30, text = function() return "Turn a button on to set its popout here." end } }
     end
-    return {
+    local items = {
+        -- "Example" first: the demo shows a made-up popout; pick a button and it
+        -- shows that button's popout, and its own settings appear below
         { type = "choice", label = "Button",
             list = function()
-                local list = {}
+                local list = { { key = "_example", label = "Example" } }
                 for _, e in ipairs(UI.EnabledButtons()) do list[#list + 1] = { key = e.key, label = e.title } end
                 return list
             end,
-            get = function() local e = UI.PopoutEntry(); return e and e.key end,
-            set = function(v) UI.popoutKey = v; UI.PopoutChanged() end },
+            get = function() local e = UI.PopoutEntry(); return e and e.key or "_example" end,
+            set = function(v)
+                UI.popoutKey = (v ~= "_example") and v or nil
+                UI.PopoutChanged()
+                RefreshEUIPage(true)   -- (its rows change)
+            end },
+    }
+    if not UI.PopoutEntry() then
+        items[#items + 1] = { type = "text", height = 30, text = function()
+            return "Pick one of your buttons to give its popout its own settings." end }
+        return items
+    end
+    for _, item in ipairs(UI.OwnPopoutItems()) do items[#items + 1] = item end
+    return items
+end
+
+-- the picked button's own popout settings (UI.EachButtonItems)
+function UI.OwnPopoutItems()
+    return {
         { type = "choice", label = "Opens", list = function() return UI.DIR_CHOICES end,
             get = function() local e = UI.PopoutEntry(); return e and POPOUT.Chosen(e) or "auto" end,
             set = function(v)
@@ -575,34 +596,41 @@ function UI.EachButtonItems()
                 db.popClick[e.key] = (v ~= "default") and v or nil
                 UI.PopoutChanged()
             end },
-        UI.OwnPopoutNumber("Item size", "popSize", 50, 200, 10, "%d%%"),
-        UI.OwnPopoutNumber("Item spacing", "popGap", 0, 10, 1, "%d"),
+        UI.OwnPopoutNumber("Item size", "popSize", "itemScale", 50, 200, 10, "%d%%"),
+        UI.OwnPopoutNumber("Item spacing", "popGap", "entrySpacing", 0, 10, 1, nil,
+            function() return BLIZZ_ART.PopupArt() end),   -- (as the global one: the bar's gap with the background on)
+        { type = "button", label = "Use global size and spacing",
+            action = function()
+                local e = UI.PopoutEntry()
+                if not e then return end
+                for _, dbKey in ipairs({ "popSize", "popGap" }) do
+                    local t = DB()[dbKey]
+                    if type(t) == "table" then t[e.key] = nil end
+                end
+                UI.PopoutChanged()
+            end },
     }
 end
 
--- a dropdown for one of the picked button's own popout numbers (saved in
--- db[dbKey][button key], read by PopoutSize / PopoutGap): "Global" (none of its
--- own: the setting above), then every value from lo to hi
-function UI.OwnPopoutNumber(label, dbKey, lo, hi, step, fmt)
-    return { type = "choice", label = label,
-        list = function()
-            local list = { { key = "global", label = "Global" } }
-            for v = lo, hi, step do list[#list + 1] = { key = tostring(v), label = fmt:format(v) } end
-            return list
-        end,
+-- a slider for one of the picked button's own popout numbers (saved in
+-- db[dbKey][button key], read by PopoutSize / PopoutGap). It shows the
+-- button's own value, or the global one (styleKey) until it is moved.
+function UI.OwnPopoutNumber(label, dbKey, styleKey, lo, hi, step, fmt, disabled)
+    return { type = "range", label = label, min = lo, max = hi, step = step, fmt = fmt, disabled = disabled,
         get = function()
             local e = UI.PopoutEntry()
             local t = DB()[dbKey]
             local v = e and type(t) == "table" and tonumber(t[e.key])
-            return v and tostring(v) or "global"
+            return v or tonumber(Style(styleKey)) or lo
         end,
         set = function(v)
             local e = UI.PopoutEntry()
             if not e then return end
             local db = DB()
             if type(db[dbKey]) ~= "table" then db[dbKey] = {} end
-            db[dbKey][e.key] = tonumber(v)   -- (nil for "global")
-            UI.PopoutChanged()
+            db[dbKey][e.key] = tonumber(v)
+            pcall(PrepareSecure)   -- (the popouts and the demo; the page stays as it is while you drag)
+            RefreshHeaders()
         end }
 end
 
@@ -768,25 +796,76 @@ UI.HEADERS.glow = function(f, width)
     return 116
 end
 
--- Flyout: a button with its tab and an open popup drawn with the current look.
+-- What the Popout page's demo shows: the button picked under Per-Button
+-- Overrides (its popout as it is now: items, counts, the one in use), or with
+-- "Example" picked a made-up one. Returns the list of { icon, count, selected }
+-- and the button's icon.
+UI.DEMO_ITEMS = { 929, 1710, 3928 }   -- (healing potions)
+
+function UI.DemoPopout()
+    local e = UI.PopoutEntry()
+    local list = e and flyoutItems[e.name]
+    if e and type(list) == "table" and #list > 0 then
+        local _, chosenEntry = ChosenFor(e, list)
+        -- (Use only marks none, as the real popout)
+        local chosen = PopoutClick(e) ~= "use" and chosenEntry and (chosenEntry.pick or chosenEntry.id)
+        local shown, icon = {}, nil
+        for i = 1, math.min(#list, 10) do
+            local it = list[i]
+            local isSpell = e.kind == "spells" or it.spell == true
+            local count = (not isSpell) and CountOf(it.id) or nil
+            local s = { icon = isSpell and SpellIcon(it.id) or IconFor({ item = it.id }),
+                count = (count and count > 1) and tostring(count) or "",
+                selected = chosen ~= nil and (it.pick or it.id) == chosen }
+            shown[i] = s
+            if s.selected or not icon then icon = s.icon end
+        end
+        return shown, icon
+    end
+    local shown = {}
+    for i, id in ipairs(UI.DEMO_ITEMS) do
+        shown[i] = { icon = IconFor({ item = id }), count = i == 1 and "5" or "", selected = i == 1 }
+    end
+    return shown, shown[1].icon
+end
+
+-- Flyout: a button with its tab and an open popup drawn with the current look
+-- (the picked button's own size and spacing, see UI.DemoPopout).
 UI.HEADERS.flyout = function(f, width)
     if not f.btn then
-        f.btn = UI.SampleButton(f, 40, IconFor({ item = 929 }))
+        f.btn = UI.SampleButton(f, 40, IconFor({ item = UI.DEMO_ITEMS[1] }))
         local a = ArrowFor(f.btn)
         if a then a:Show() end
         f.arrow = a
         local pop = CreateFrame("Frame", nil, f)
         pop.items = {}
-        for i, id in ipairs({ 929, 1710, 3928 }) do
-            local e = ItemButton(pop)
-            e.icon:SetTexture(IconFor({ item = id }))
-            e.count:SetText(i == 1 and "5" or "")
-            e.selected = (i == 1)   -- the one in use
-            pop.items[i] = e
-        end
         f.pop = pop
         f.hint = UI.SmallText(f, UI.FLYOUT_NOTE)
     end
+    local e = UI.PopoutEntry()
+    BLIZZ_ART.scaleFor, BLIZZ_ART.gapFor = PopoutSize(e), PopoutGap(e)
+    local ok, h = pcall(UI.LayoutDemo, f, width)
+    BLIZZ_ART.scaleFor, BLIZZ_ART.gapFor = nil, nil
+    if not ok then error(h, 0) end
+    return h
+end
+
+function UI.LayoutDemo(f, width)
+    local shown, btnIcon = UI.DemoPopout()
+    local pop = f.pop
+    for i, s in ipairs(shown) do
+        local e = pop.items[i]
+        if not e then
+            e = ItemButton(pop)
+            pop.items[i] = e
+        end
+        e.icon:SetTexture(s.icon)
+        e.count:SetText(s.count)
+        e.selected = s.selected
+        e:Show()
+    end
+    for i = #shown + 1, #pop.items do pop.items[i]:Hide() end
+    if f.btn.icon and btnIcon then f.btn.icon:SetTexture(btnIcon) end
     -- the sample is the size of your action buttons on screen (whatever the
     -- settings window's scale), so the indicator and items compare
     local px = PixelSize(f)
@@ -810,8 +889,8 @@ UI.HEADERS.flyout = function(f, width)
     if f.arrow then StyleArrow(f.arrow) end
     local pop = f.pop
     StyleFlyout(pop)
-    for _, e in ipairs(pop.items) do StyleEntry(e) end
-    LayoutFlyout(pop, pop.items, #pop.items, f.btn, f.arrow)   -- same layout as the real popup
+    for i = 1, #shown do StyleEntry(pop.items[i]) end
+    LayoutFlyout(pop, pop.items, #shown, f.btn, f.arrow)   -- same layout as the real popup
     local extra = 0
     if BLIZZ_ART.PopupArt() then   -- the art reaches past the popup above and below
         local _, top, _, below = BLIZZ_ART.BarInsets(pop)

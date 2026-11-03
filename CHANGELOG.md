@@ -4,6 +4,17 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): while the version st
 the addon is in beta. The middle number goes up for new features or changes, the last number
 for bug fixes only.
 
+## 0.140.0 - 2026-11-02 (not yet tested in game)
+
+### Changed
+- Popout page, Per-Button Overrides: **Item size** and **Item spacing** are sliders. They
+  show the button's own value, or the global one until you move them. **Use global size
+  and spacing** puts the picked button back on the global settings.
+- Popout page demo: pick one of your buttons under Per-Button Overrides and the demo
+  shows that button's popout as it is now (its items, counts and the one in use), at
+  its own size and spacing. The Button choice starts on **Example**, the made-up popout
+  shown before, and the override settings appear once a button is picked.
+
 ## 0.139.0 - 2026-11-01 (not yet tested in game)
 
 ### Added

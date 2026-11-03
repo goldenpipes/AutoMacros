@@ -44,7 +44,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.139.0.**
+- **Current version: 0.140.0.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   version** (once per session, not per iteration) (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -232,6 +232,37 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   notes in the CurseForge section are out of date.
 - .build.info now (2026-10-29): Forever 1.60.1.70685, retail 12.1.5.70575, Era
   1.15.9.70576, Anniversary 2.5.6.70577, MoP 5.5.4.70631.
+
+## 0.140.0 — session of 2026-11-02
+- Lewis (EUI screenshot of Per-Button Overrides): Item size and Item spacing should be
+  sliders. `UI.OwnPopoutNumber(label, dbKey, styleKey, lo, hi, step, fmt, disabled)` is now
+  a `range` item: get = the button's own value, else Style(styleKey) (the global); set
+  saves the override and only runs PrepareSecure (no page refresh while dragging). Moving
+  a slider always makes an override; the `button` item "Use global size and spacing"
+  clears both (UI.PopoutChanged). Spacing is greyed out with the bar background on
+  (Blizzard's page; EUI sliders ignore `disabled`). Untested in game.
+- Lewis: the Popout page demo should show the button picked in Per-Button Overrides,
+  with the current demo as the default. The Button choice now starts with "Example"
+  (`_example`; `UI.popoutKey` nil). `UI.PopoutEntry()` returns nil then (no more
+  fallback to the first button), and UI.EachButtonItems shows only the choice + a note;
+  the override rows are `UI.OwnPopoutItems()`. `UI.EnabledStamp` includes the picked key,
+  and `UI.RefreshPanels` now rebuilds a visible page whose stamp changed (UI.ShowPanel);
+  EUI gets RefreshEUIPage(true) from the Button setter.
+- `UI.DemoPopout()` -> { icon, count, selected } list + button icon: the picked button's
+  `flyoutItems[e.name]` (max 10, ChosenFor, none selected on Use only), else
+  `UI.DEMO_ITEMS` 929/1710/3928. HEADERS.flyout sets BLIZZ_ART.scaleFor / gapFor to the
+  button's own and calls `UI.LayoutDemo` (item pool grows, extras hidden). The demo
+  still opens upward whatever the button's direction. Slider drags call RefreshHeaders.
+  Untested in game.
+- 2026-11-02: **`Games\` and `Media\` deleted from the project a third time**, and
+  `_forever_\Interface\AddOns\AutoMacros` was a plain folder holding CurseForge's 0.139.0
+  (written 15:53, the day after the v0.139.0 upload): the CurseForge app updates the addon
+  there and deletes through the junction. Restored the six files from HEAD (`cmd /c git
+  show HEAD:<path> > file`). The other client folders don't exist on this PC any more
+  (only `_forever_` has an AddOns\AutoMacros). **Every release now triggers this while the
+  CurseForge app manages AutoMacros in `_forever_`.** Lewis runs off `_forever_`; its
+  copy moved to `releases\forever-copy-0.139.0`, junction remade (New-Item -ItemType
+  Junction), checked: loads 0.140.0.
 
 ## 0.139.0 — session of 2026-11-01 (one version; built in steps then
 numbered 0.139.0-0.149.0, renumbered at Lewis's request. Snapshots of the steps:
