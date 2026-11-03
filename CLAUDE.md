@@ -242,6 +242,10 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   1.15.9.70576, Anniversary 2.5.6.70577, MoP 5.5.4.70631.
 
 ## 0.140.0 — session of 2026-11-02
+- **Committed** (caef378), **released** 2026-11-03 as pre-release v0.140.0 (notes: its
+  changelog section); CurseForge upload run 41558106367, success. v0.139.0's release
+  and tag deleted: v0.140.0 is the only GitHub release. (A push alone uploads nothing:
+  CurseForge only gets a file from a published release.)
 - Lewis (EUI screenshot of Per-Button Overrides): Item size and Item spacing should be
   sliders. `UI.OwnPopoutNumber(label, dbKey, styleKey, lo, hi, step, fmt, disabled)` is now
   a `range` item: get = the button's own value, else Style(styleKey) (the global); set
