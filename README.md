@@ -49,6 +49,7 @@ you like: no extra bar to place, unlike AutoBar.
 | Bandage | Buff Food | Flask | Professions | |
 | Debuff Cure | | Weapon Buff | Tracking | |
 | | | Enemy Debuff (nets, glue, Bag of Marbles) | Utility Buff (speed, immunity, escapes) | |
+| | | | Openable Items (clams, crates, lockboxes) | |
 
 A button turns itself on the first time you carry (or know) something for it, and stays on
 after that. Switch buttons on or off on the Buttons page, or with `/amac add` / `/amac remove`.

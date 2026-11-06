@@ -1,4 +1,4 @@
--- AutoMacros 1.0.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 1.1.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -150,7 +150,7 @@ end
 --   noComboFallback   Food / Water do not borrow Food & Drink items when out (0.136.0)
 -- ---------------------------------------------------------------------------
 SCHEMA = 2
-CLASSIFIER = 21 -- raise when the learning rules change, so items are checked again
+CLASSIFIER = 22 -- raise when the learning rules change, so items are checked again
 
 STYLE_DEFAULTS = {
     glowColor = { 1, 0.15, 0.15, 1 }, glowThickness = 3, glowTexture = "solid",
@@ -596,6 +596,11 @@ CATALOG = {
     -- breathing): not a buff kind, so never on the one Buffs button
     { key = "utility", name = "AM_Utility", title = "Utility Buff", empty = "No Utility Buff",
       label = "utility buffs", set = "buff_utility", placeholder = { item = 5634 } },   -- Free Action Potion
+    -- opens with a right-click: clams, crates, unlocked boxes, and locked ones you
+    -- can open (Pick Lock, skeleton keys: OpenableList). (Macro names stop at 16
+    -- letters: "No Openable Items" would not fit.)
+    { key = "openable", name = "AM_Openable", title = "Openable Items", empty = "No Openables",
+      label = "openable items", set = "openable", placeholder = { item = 5523 } },   -- Small Barnacled Clam
     -- used on an enemy: nets, glue, Bag of Marbles, Magic Dust, Glowing Wax Stick
     { key = "enemydebuff", name = "AM_EnemyDebuff", title = "Enemy Debuff", empty = "No Enemy Debuff",
       label = "enemy debuff items", set = "enemy_debuff", placeholder = { item = 835 } },   -- Large Rope Net

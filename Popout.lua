@@ -227,6 +227,8 @@ function Entry(i)
         ShowEntryTooltip(self, self.itemID, self.loc, self.kind == "spell")
         if self.unequipped then
             GameTooltip:AddLine("Not equipped - click to put it on", 1, 0.82, 0)
+        elseif self.unlock and PopoutClick(flyout.macro) ~= "set" then
+            GameTooltip:AddLine("Click to unlock it", 1, 0.82, 0)
         else
             GameTooltip:AddLine(POPOUT_CLICK_TIPS[PopoutClick(flyout.macro)], 0.7, 0.7, 0.7)
         end
@@ -327,7 +329,7 @@ end
 -- PrepareSecure left on the header: n<id> items, the popout's size w/h and
 -- place pt/rpt/x/y, mode<id> (what a click does, per button), k<id> / bw<id> (the
 -- items' scale and width: the button's own Item size), per item ex/ey
--- (its place) and t/v (item or spell to use; "" for none, e.g. gear to put on).
+-- (its place) and t/v (item, spell or macro text to run; "" for none, e.g. gear to put on).
 -- "Set only" leaves the items without a type, so a click uses nothing.
 OPEN_SNIPPET = [[
     if owner:GetAttribute("off") then return end
@@ -359,6 +361,7 @@ OPEN_SNIPPET = [[
                 e:SetAttribute("type", t)
                 e:SetAttribute("item", t == "item" and owner:GetAttribute("v" .. key) or nil)
                 e:SetAttribute("spell", t == "spell" and owner:GetAttribute("v" .. key) or nil)
+                e:SetAttribute("macrotext", t == "macro" and owner:GetAttribute("v" .. key) or nil)
                 e:Show()
             else
                 e:Hide()
@@ -456,7 +459,9 @@ function PrepareSecure()
                     hd:SetAttribute("ey" .. key, plan.pos[i][2] / k)
                     local it = list[i]
                     local t, v = "", nil
-                    if m.kind == "spells" or it.spell then
+                    if it.unlock then   -- a locked box: Pick Lock or a key on it (OpenableList)
+                        t, v = "macro", it.unlock
+                    elseif m.kind == "spells" or it.spell then
                         local name = SpellName(it.id)
                         if name then t, v = "spell", name end
                     elseif not NeedsEquip(it.id) then   -- (gear to put on first: PostClick equips it)
@@ -504,6 +509,7 @@ function OpenFlyoutItems(p, list, m, chosen)
         e.itemID = list[i].id
         e.pick = list[i].pick or list[i].id
         e.loc = (not isSpell) and lastLocs[list[i].id] or nil
+        e.unlock = list[i].unlock
         e.icon:SetTexture(isSpell and SpellIcon(list[i].id) or IconFor({ item = list[i].id }))
         e.unequipped = (not isSpell) and NeedsEquip(list[i].id)   -- grey until worn
         pcall(e.icon.SetDesaturated, e.icon, e.unequipped and true or false)

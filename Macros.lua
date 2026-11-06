@@ -113,8 +113,107 @@ COOKING_FISH = {
     [13755] = true,   -- Raw Winter Squid (Grilled Squid)
 }
 
+-- What the Openable Items button can open, by bag slot: id -> { bag, slot, locked }.
+-- Read from the slot's own tooltip, as only that knows a picked lockbox is open.
+-- With several of one item, an unlocked one counts first.
+function OpenableSlots()
+    local slots = {}
+    local C = C_Container
+    local getSlots = (C and C.GetContainerNumSlots) or GetContainerNumSlots
+    local getID = (C and C.GetContainerItemID) or GetContainerItemID
+    if not (getSlots and getID) then return slots end
+    local word = LOCKED or "Locked"
+    for bag = 0, (NUM_BAG_SLOTS or 4) do
+        local n = getSlots(bag)
+        if type(n) == "table" then n = n.numSlots or n.slots or n[1] end
+        for slot = 1, (tonumber(n) or 0) do
+            local id = getID(bag, slot)
+            if type(id) == "table" then id = id.itemID end
+            if type(id) == "number" and InSet("openable", id) and not (slots[id] and not slots[id].locked) then
+                local locked = false
+                for _, text in ipairs(BagTooltipLines(bag, slot) or {}) do
+                    if text == word then locked = true end
+                end
+                slots[id] = { bag = bag, slot = slot, locked = locked }
+            end
+        end
+    end
+    return slots
+end
+
+-- Pick Lock's name, if you know it (Rogues)
+function PickLockName()
+    local name = SpellName(1804)
+    if KnowsSpell(1804) then return name end
+    if name and KnowsSpellName(name) then return name end
+end
+
+-- The Lockpicking skill each box needs: the game's tooltips don't say. (All
+-- games: the same IDs everywhere. A box not listed counts as openable by any.)
+LOCK_SKILL = {
+    [4632] = 1, [4633] = 25, [4634] = 70, [4636] = 125, [4637] = 175,   -- Ornate Bronze .. Steel Lockbox
+    [4638] = 225, [5758] = 225, [5759] = 225, [5760] = 225,             -- Reinforced Steel .. Eternium Lockbox
+    [16882] = 1, [16883] = 70, [16884] = 175, [16885] = 250,            -- Battered .. Heavy Junkbox
+    [6354] = 1, [6355] = 70, [13875] = 175, [13918] = 250,              -- Small .. Reinforced Locked Chest
+    [12033] = 275,                                                      -- Thaurissan Family Jewels
+}
+-- ... and how much each skeleton key opens: Silver, Golden, Truesilver, Arcanite
+KEY_SKILL = { [15869] = 25, [15870] = 125, [15871] = 200, [15872] = 300 }
+
+-- Your Lockpicking skill: from the skill list, else 5 x your level (its cap, and
+-- all retail has: the list can have that section collapsed, or be in another language)
+function LockSkill()
+    if GetNumSkillLines and GetSkillLineInfo then
+        for i = 1, GetNumSkillLines() or 0 do
+            local name, _, _, rank = GetSkillLineInfo(i)
+            if name == "Lockpicking" and tonumber(rank) then return tonumber(rank) end
+        end
+    end
+    return (UnitLevel("player") or 1) * 5
+end
+
+-- The cheapest skeleton key you carry that opens a lock needing `need` skill
+-- (nil: not known, the cheapest one). keys: from Candidates, any order.
+function CheapestKey(keys, need)
+    local best, bestCap
+    for _, k in ipairs(keys) do
+        local cap = KEY_SKILL[k.id] or math.huge   -- (a key we have no number for: last)
+        if (not need or cap >= need) and (not best or cap < bestCap) then best, bestCap = k, cap end
+    end
+    return best
+end
+
+-- The Openable Items button's list: what opens as it is first, then locked
+-- boxes you can open. entry.unlock = the macro lines that open a locked one:
+-- Pick Lock if your skill is enough, else the cheapest skeleton key that fits,
+-- on the box in its bag slot.
+function OpenableList(have)
+    local pick = PickLockName()
+    local skill = pick and LockSkill() or 0
+    local keys = Candidates(have, "skeleton_key")
+    local list = {}
+    for id, s in pairs(OpenableSlots()) do
+        local unlock
+        if s.locked then
+            local need = LOCK_SKILL[id]
+            local key = CheapestKey(keys, need)
+            if pick and skill >= (need or 0) then
+                unlock = "/cast " .. pick .. "\n/use " .. s.bag .. " " .. s.slot
+            elseif key then
+                unlock = "/use item:" .. key.id .. "\n/use " .. s.bag .. " " .. s.slot
+            end
+        end
+        if unlock or not s.locked then
+            list[#list + 1] = { id = id, unlock = unlock, score = (s.locked and 0 or 1000000000) + id }
+        end
+    end
+    table.sort(list, function(x, y) return x.score > y.score end)
+    return list
+end
+
 -- Every usable item of a category that is in your bags, best first.
 function Candidates(have, setName)
+    if setName == "openable" then return OpenableList(have) end
     local level = UnitLevel("player") or 1
     local list = {}
     local cook = COOK_SETS[setName]
@@ -416,6 +515,8 @@ function BodyMatches(m, body)
     if body:find("No " .. stem, 1, true) then return true end
     -- Restore Health / Mana making a healthstone or mana gem; Bandage casting Cannibalize
     if (MADE[m.set] or m.spells) and body:find("/cast", 1, true) then return true end
+    -- Openable Items on a locked box: Pick Lock or a key, then the box's bag slot
+    if m.set == "openable" and body:find("/use %d+ %d+") then return true end
     local id = tonumber(body:match("item:(%d+)"))
     return m.set ~= nil and id ~= nil and InSet(m.set, id)
 end

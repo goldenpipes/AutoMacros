@@ -51,7 +51,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 1.0.0.**
+- **Current version: 1.1.0.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   version** (once per session, not per iteration) (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -242,6 +242,38 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   notes in the CurseForge section are out of date.
 - .build.info now (2026-10-29): Forever 1.60.1.70685, retail 12.1.5.70575, Era
   1.15.9.70576, Anniversary 2.5.6.70577, MoP 5.5.4.70631.
+
+## 1.1.0 — Openable Items button (2026-11-06)
+- Lewis: a button for openables, called 'Openable Items'; Rogues pick locked boxes, and
+  blacksmiths' keys open them too.
+- Wowhead Forever XML: Small Barnacled Clam 5523 is 7.11 `<Right Click to Open>`, Dented
+  Crate 6351 is 15.4 the same, Ornate Bronze Lockbox 4632 / Iron 4634 are 15.4 `Locked`
+  (no lock skill in the tooltip). Skeleton keys 15869 Silver .. 15872 Arcanite are 0.8,
+  "Use: Allows opening of simple / hard locks."
+- Learning (CLASSIFIER 22): tooltip line equal to ITEM_OPENABLE or LOCKED -> `openable`;
+  Use line with "opening of" + "locks" -> `skeleton_key` (no button). Both right after
+  `permanent`, so before the class 5/7 branch (clams are 7.11).
+- By item ID the tooltip always says Locked, so `OpenableSlots()` (Macros.lua) reads each
+  slot's own tooltip (`BagTooltipLines`, SetBagItem): id -> { bag, slot, locked }, an
+  unlocked one first. `OpenableList(have)` is what Candidates returns for set `openable`:
+  unlocked first; locked only with `entry.unlock` = "/cast Pick Lock\n/use bag slot"
+  (1804, `PickLockName`), else "/use item:<key>\n/use bag slot".
+- Lewis: cheapest key first, always, and Rogues only when they can. The client's tooltip
+  gives no lock skill, so `LOCK_SKILL` (Macros.lua, by item ID, all games: vanilla boxes,
+  numbers from warcraft.wiki.gg's box pages and Lockpicking page, IDs checked on Wowhead
+  Forever) and `KEY_SKILL` (15869 Silver 25, 15870 Golden 125, 15871 Truesilver 200,
+  15872 Arcanite 300; the wiki's Silver page says 15, its Lockpicking page 25).
+  `LockSkill()`: GetSkillLineInfo "Lockpicking", else 5 x level (retail; enUS name only).
+  `CheapestKey(keys, need)`: lowest cap >= need; a box not listed takes the cheapest, a
+  key not listed comes last. Pick Lock needs skill >= need; a box neither can open is left
+  out. Numbers are vanilla's: Forever could differ.
+- UpdateCore: `entry.unlock` body = #showtooltip + those lines. BodyMatches accepts
+  "/use N N" for set openable. Popout: t "macro", v = entry.unlock, OPEN_SNIPPET sets
+  `macrotext`; entry tooltip "Click to unlock it".
+- CATALOG `openable` (AM_Openable, "Openable Items", empty "No Openables": macro names
+  stop at 16 letters; placeholder 5523), Utility group. README row added: **paste README
+  into CurseForge again.** Untested in game: macrotext on the popout's secure items,
+  /use bag slot on Pick Lock's cursor, the box updating after it is unlocked.
 
 ## 1.0.0 — first stable release (2026-11-06)
 - Lewis: "push the current version as 1.0 and make it public on curseforge". Same code as

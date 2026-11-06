@@ -352,7 +352,8 @@ UI.BUTTON_GROUPS = {
     { name = "Food & Drink", keys = { "food", "water", "combo", "bufffood" } },
     { name = "Buffs and Debuffs", buffs = true, keys = { "agility", "intellect", "stamina", "strength", "spirit",
         "armor", "resistance", "haste", "spellpower", "otherbuff", "buffs", "flask", "weaponbuff", "enemydebuff" } },
-    { name = "Utility", keys = { "travel", "questitem", "explosives", "professions", "tracking", "utility" } },
+    { name = "Utility", keys = { "travel", "questitem", "explosives", "professions", "tracking", "utility",
+        "openable" } },
     { name = "Class", keys = { "portals", "comprehend" } },
 }
 

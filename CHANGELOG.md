@@ -4,6 +4,16 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): the middle number go
 features or changes, the last number for bug fixes only. Versions starting with `0.` were
 the beta.
 
+## 1.1.0 - 2026-11-06 (not yet tested in game)
+
+### Added
+- **Openable Items** button (Utility group): clams, fishing crates and boxes, and anything
+  else with `<Right Click to Open>`. Click it to open one; the popout lists what you carry.
+- Locked boxes only show up when you can open them:
+  - Rogues pick the lock with Pick Lock when their Lockpicking skill is high enough.
+  - Otherwise the cheapest skeleton key (Blacksmithing) that opens that box is used.
+  - Boxes someone has already unlocked for you work like any other openable item.
+
 ## 1.0.0 - 2026-11-06
 
 The first stable release of AutoMacros. It's the same addon as 0.140.0, now out of beta:

@@ -79,15 +79,17 @@ end
 STAT_KEYS = { "strength", "agility", "stamina", "intellect", "spirit" }   -- SPELL_STAT1..5_NAME
 
 -- (scanTip)
-function TooltipLines(id)
+function ScanTipReady()
     if not scanTip then
         local ok, t = pcall(CreateFrame, "GameTooltip", "AutoMacrosScanTip", nil, "GameTooltipTemplate")
-        if not ok or not t then return nil end
+        if not ok or not t then return false end
         scanTip = t
     end
     pcall(scanTip.SetOwner, scanTip, UIParent, "ANCHOR_NONE")
-    local ok = pcall(scanTip.SetItemByID, scanTip, id)
-    if not ok then pcall(scanTip.SetHyperlink, scanTip, "item:" .. id) end
+    return true
+end
+
+function ScanTipLines()
     local lines = {}
     for i = 1, scanTip:NumLines() do
         local fs = _G["AutoMacrosScanTipTextLeft" .. i]
@@ -95,6 +97,21 @@ function TooltipLines(id)
         if type(text) == "string" and Readable(text) then lines[#lines + 1] = text end
     end
     return lines
+end
+
+function TooltipLines(id)
+    if not ScanTipReady() then return nil end
+    local ok = pcall(scanTip.SetItemByID, scanTip, id)
+    if not ok then pcall(scanTip.SetHyperlink, scanTip, "item:" .. id) end
+    return ScanTipLines()
+end
+
+-- the tooltip of what is in a bag slot: this very item, so a lockbox that has
+-- been picked no longer says Locked (asked by item ID, it always does)
+function BagTooltipLines(bag, slot)
+    if not ScanTipReady() then return nil end
+    if not pcall(scanTip.SetBagItem, scanTip, bag, slot) then return nil end
+    return ScanTipLines()
 end
 
 function HasWord(low, ...)
@@ -146,10 +163,16 @@ function Classify(id)
     local quest = class == 12
     -- applied to gear for good: "Permanently enchant ...", "Permanently adds ..." (no button)
     local permanent = false
+    -- opens by right-click, no "Use:" line: "<Right Click to Open>" (clams,
+    -- crates) or "Locked" (lockboxes); and what opens a lock: "Allows opening of
+    -- simple locks" (Blacksmithing's skeleton keys)
+    local openable, lockKey = false, false
     for _, text in ipairs(lines) do
         local low = text:lower()
         if text:find(use, 1, true) then hasUse = true end
         if text == (ITEM_BIND_QUEST or "Quest Item") or low == "quest item" then quest = true end
+        if text == (ITEM_OPENABLE or "<Right Click to Open>") or text == (LOCKED or "Locked") then openable = true end
+        if text:find(use, 1, true) and HasWord(low, "opening of") and HasWord(low, "locks") then lockKey = true end
         if low:find("well fed", 1, true) or text:find(use, 1, true) then
             for i = 1, #low do
                 local c = low:byte(i)
@@ -254,6 +277,9 @@ function Classify(id)
     if travel then return { "travel" }, sig end
     if class == 4 and not NotWorn(slot) then return {}, sig end   -- gear (rings, cloaks, trinkets): only teleports count
     if permanent then return {}, sig end    -- enchants and kits put on gear
+    if lockKey then return { "skeleton_key" }, sig end   -- (no button: OpenableList uses them)
+    -- (before the class rules: clams are Trade Goods 7.11, crates and lockboxes Misc 15.4)
+    if openable then return { "openable" }, sig end
     -- a cure, from anything you carry: potions, First Aid's poultices and
     -- tourniquets (trade goods), quest rewards
     if cure and not quest then return { "cure" }, sig end   -- (a quest item that "cures a sickly animal" is the quest's)

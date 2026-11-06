@@ -192,6 +192,8 @@ function UpdateCore()
                 body = EmptyBody(m.label)
             elseif spellUsed then
                 body = SpellBody(id)
+            elseif entry and entry.unlock then
+                body = "#showtooltip " .. ItemRef(id) .. "\n" .. entry.unlock   -- a locked box (OpenableList)
             elseif m.weapon then
                 body = WeaponBody(id)
             else
