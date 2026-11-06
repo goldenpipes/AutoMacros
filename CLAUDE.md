@@ -247,6 +247,10 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Lewis: "push the current version as 1.0 and make it public on curseforge". Same code as
   0.140.0, only the version changed. Full GitHub release (no --prerelease), which the
   workflow uploads as CurseForge release type "release", not beta.
+- **Committed** (332173a) and **released** 2026-11-06 as v1.0.0, Latest on GitHub (notes:
+  its changelog section); CurseForge upload run 42236840950, file id 9474793, type
+  release. README unchanged, so no paste needed. v0.140.0's release and tag deleted:
+  v1.0.0 is the only GitHub release.
 
 ## 0.140.0 — session of 2026-11-02
 - **Committed** (caef378), **released** 2026-11-03 as pre-release v0.140.0 (notes: its
