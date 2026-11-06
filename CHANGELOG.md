@@ -1,8 +1,14 @@
 # Changelog
 
-AutoMacros uses [Semantic Versioning](https://semver.org/): while the version starts with `0.`
-the addon is in beta. The middle number goes up for new features or changes, the last number
-for bug fixes only.
+AutoMacros uses [Semantic Versioning](https://semver.org/): the middle number goes up for new
+features or changes, the last number for bug fixes only. Versions starting with `0.` were
+the beta.
+
+## 1.0.0 - 2026-11-06
+
+The first stable release of AutoMacros. It's the same addon as 0.140.0, now out of beta:
+consumable and teleport macros that keep themselves up to date, for any action bar, with
+a popout to pick what each button uses.
 
 ## 0.140.0 - 2026-11-02 (not yet tested in game)
 

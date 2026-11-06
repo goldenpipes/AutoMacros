@@ -42,7 +42,8 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   - a later session that only fixes bugs in it bumps the last number (0.139.0 -> 0.139.1);
   - once a version is committed and released, the next session starts a new one.
   - (Up to 0.138.0 every iteration got its own version.)
-  - `1.0.0` = first stable release (works on Forever, Lewis happy to recommend it). Stay on 0.x until then.
+  - `1.0.0` = first stable release (Lewis, 2026-11-06). From here: 1.1.0 for a session with
+    new features or changes, 1.0.1 for bug fixes only.
 - **CHANGELOG.md**: every version gets an entry at the top (date, Added / Changed / Fixed /
   Removed), written for players, not code notes (those stay in this file).
 - **GitHub Releases** are only for builds worth downloading. Every iteration is still
@@ -50,7 +51,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 0.140.0.**
+- **Current version: 1.0.0.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   version** (once per session, not per iteration) (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -70,7 +71,8 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   `--prerelease`.
 - **Every release is `--prerelease` (beta on CurseForge) unless Lewis says otherwise for
   that release** (Lewis, 2026-11-01: "always prerelease unless i specify otherwise"),
-  tested in game or not. Don't ask which type; just use pre-release.
+  tested in game or not. Don't ask which type; just use pre-release. (v1.0.0 was a full
+  release because Lewis said so; that doesn't change the default for later ones.)
 - Lewis edits the Lua himself. Before building a new version, diff against the last one you
   produced and **merge his edits** — never overwrite them.
 - **Every commit message ends with** a blank line and `Co-Authored-By: Claude
@@ -240,6 +242,11 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   notes in the CurseForge section are out of date.
 - .build.info now (2026-10-29): Forever 1.60.1.70685, retail 12.1.5.70575, Era
   1.15.9.70576, Anniversary 2.5.6.70577, MoP 5.5.4.70631.
+
+## 1.0.0 — first stable release (2026-11-06)
+- Lewis: "push the current version as 1.0 and make it public on curseforge". Same code as
+  0.140.0, only the version changed. Full GitHub release (no --prerelease), which the
+  workflow uploads as CurseForge release type "release", not beta.
 
 ## 0.140.0 — session of 2026-11-02
 - **Committed** (caef378), **released** 2026-11-03 as pre-release v0.140.0 (notes: its
