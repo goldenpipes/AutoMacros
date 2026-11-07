@@ -258,7 +258,11 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   unknown.
 - **Committed** (ab841be) and **released** 2026-11-07 as pre-release v1.1.1 (default type;
   notes: its changelog section); CurseForge upload run 42413956543, file id 9499766, beta.
-  v1.1.0 (full release) kept for now.
+  Then made a **full release** (Lewis: "Yes, make it full"): `gh release edit
+  --prerelease=false --latest`, CurseForge re-uploaded by hand (`gh workflow run
+  curseforge.yml -f tag=v1.1.1`, run 42426626263, file id 9502139, type release; the
+  beta file 9499766 is still there). v1.1.0's release and tag deleted: v1.1.1 is the only
+  GitHub release.
 
 ## 1.1.0 — Openable Items button (2026-11-06)
 - Lewis: a button for openables, called 'Openable Items'; Rogues pick locked boxes, and
