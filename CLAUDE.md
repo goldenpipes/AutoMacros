@@ -256,6 +256,9 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   Lewis's 1791#1 data has from the scrapped build). **Confirmed** (Lewis, Forever,
   2026-11-07): the clam shows on Openable Items. Which of the two changes did it is
   unknown.
+- **Committed** (ab841be) and **released** 2026-11-07 as pre-release v1.1.1 (default type;
+  notes: its changelog section); CurseForge upload run 42413956543, file id 9499766, beta.
+  v1.1.0 (full release) kept for now.
 
 ## 1.1.0 — Openable Items button (2026-11-06)
 - Lewis: a button for openables, called 'Openable Items'; Rogues pick locked boxes, and
