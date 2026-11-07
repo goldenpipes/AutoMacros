@@ -171,7 +171,10 @@ function Classify(id)
         local low = text:lower()
         if text:find(use, 1, true) then hasUse = true end
         if text == (ITEM_BIND_QUEST or "Quest Item") or low == "quest item" then quest = true end
-        if text == (ITEM_OPENABLE or "<Right Click to Open>") or text == (LOCKED or "Locked") then openable = true end
+        -- (case and color codes left out: an exact match missed Forever's clams in 1.1.0)
+        local plain = low:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+        if plain == (ITEM_OPENABLE or "<Right Click to Open>"):lower() or plain:find("right click to open", 1, true)
+            or plain == (LOCKED or "Locked"):lower() then openable = true end
         if text:find(use, 1, true) and HasWord(low, "opening of") and HasWord(low, "locks") then lockKey = true end
         if low:find("well fed", 1, true) or text:find(use, 1, true) then
             for i = 1, #low do
@@ -264,7 +267,7 @@ function Classify(id)
             end
         end
     end
-    if not hasUse then
+    if not hasUse and not openable then
         -- The item has a use effect but its "Use:" text has not arrived yet (the
         -- game loads the spell's text after the item): ask for it, try again later.
         local getSpell = (C_Item and C_Item.GetItemSpell) or GetItemSpell

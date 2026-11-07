@@ -1,4 +1,4 @@
--- AutoMacros 1.1.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 1.1.1 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -150,7 +150,7 @@ end
 --   noComboFallback   Food / Water do not borrow Food & Drink items when out (0.136.0)
 -- ---------------------------------------------------------------------------
 SCHEMA = 2
-CLASSIFIER = 22 -- raise when the learning rules change, so items are checked again
+CLASSIFIER = 24 -- (23 was a build never released; skipped so its saved results are redone) raise when the learning rules change, so items are checked again
 
 STYLE_DEFAULTS = {
     glowColor = { 1, 0.15, 0.15, 1 }, glowThickness = 3, glowTexture = "solid",

@@ -116,23 +116,36 @@ COOKING_FISH = {
 -- What the Openable Items button can open, by bag slot: id -> { bag, slot, locked }.
 -- Read from the slot's own tooltip, as only that knows a picked lockbox is open.
 -- With several of one item, an unlocked one counts first.
+-- Besides what learning sorted here, any slot the bag itself says holds loot
+-- (clams, crates, boxes: the game's own flag, no tooltip needed) counts: 1.1.0
+-- found no Small Barnacled Clam on Forever by its tooltip alone.
 function OpenableSlots()
     local slots = {}
     local C = C_Container
     local getSlots = (C and C.GetContainerNumSlots) or GetContainerNumSlots
     local getID = (C and C.GetContainerItemID) or GetContainerItemID
+    local getInfo = (C and C.GetContainerItemInfo) or GetContainerItemInfo
     if not (getSlots and getID) then return slots end
-    local word = LOCKED or "Locked"
+    local function hasLoot(bag, slot)
+        if not getInfo then return false end
+        -- a table on newer clients; else texture, count, locked, quality, readable, lootable
+        local ok, a, _, _, _, _, lootable = pcall(getInfo, bag, slot)
+        if not ok then return false end
+        if type(a) == "table" then return a.hasLoot == true end
+        return lootable == true or lootable == 1
+    end
+    local word = (LOCKED or "Locked"):lower()
     for bag = 0, (NUM_BAG_SLOTS or 4) do
         local n = getSlots(bag)
         if type(n) == "table" then n = n.numSlots or n.slots or n[1] end
         for slot = 1, (tonumber(n) or 0) do
             local id = getID(bag, slot)
             if type(id) == "table" then id = id.itemID end
-            if type(id) == "number" and InSet("openable", id) and not (slots[id] and not slots[id].locked) then
+            if type(id) == "number" and not (slots[id] and not slots[id].locked)
+                and (InSet("openable", id) or hasLoot(bag, slot)) then
                 local locked = false
                 for _, text in ipairs(BagTooltipLines(bag, slot) or {}) do
-                    if text == word then locked = true end
+                    if text:lower() == word then locked = true end
                 end
                 slots[id] = { bag = bag, slot = slot, locked = locked }
             end

@@ -4,6 +4,13 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): the middle number go
 features or changes, the last number for bug fixes only. Versions starting with `0.` were
 the beta.
 
+## 1.1.1 - 2026-11-07
+
+### Fixed
+- **Openable Items** didn't find Small Barnacled Clams (and likely other clams, crates
+  and boxes) on WoW Forever. It now picks up anything your bags say holds loot, as well
+  as items whose tooltip says `<Right Click to Open>`.
+
 ## 1.1.0 - 2026-11-07 (not yet tested in game)
 
 ### Added

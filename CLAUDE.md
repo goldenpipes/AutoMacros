@@ -51,7 +51,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 1.1.0.**
+- **Current version: 1.1.1.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   version** (once per session, not per iteration) (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -242,6 +242,20 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   notes in the CurseForge section are out of date.
 - .build.info now (2026-10-29): Forever 1.60.1.70685, retail 12.1.5.70575, Era
   1.15.9.70576, Anniversary 2.5.6.70577, MoP 5.5.4.70631.
+
+## 1.1.1 — openables found by the bag's loot flag (2026-11-07)
+- Lewis (Forever, after the v1.1.0 release): Small Barnacled Clams weren't found; /use
+  item works, the button just never had them. Saved data (GOLDENPIPES, 13:41) had no
+  learned or ignored record of 5523. Cause **not confirmed** (asked for `/run
+  print(GetItemInfoInstant(5523)) print(GetItemSpell(5523)) print(ITEM_OPENABLE)`; no
+  answer yet). Wowhead Forever XML: 7.11, `<Right Click to Open>`, no item spell.
+- Fix: `OpenableSlots` also takes any slot whose GetContainerItemInfo says hasLoot (table
+  field, or the 6th return `lootable` on old clients), learned or not; Classify matches
+  the open line case-blind, without color codes, or containing "right click to open",
+  and an openable item no longer waits for GetItemSpell. CLASSIFIER 24 (skips 23, which
+  Lewis's 1791#1 data has from the scrapped build). **Confirmed** (Lewis, Forever,
+  2026-11-07): the clam shows on Openable Items. Which of the two changes did it is
+  unknown.
 
 ## 1.1.0 — Openable Items button (2026-11-06)
 - Lewis: a button for openables, called 'Openable Items'; Rogues pick locked boxes, and
