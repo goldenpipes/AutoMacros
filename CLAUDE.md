@@ -275,6 +275,11 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   into CurseForge again.** Untested in game: macrotext on the popout's secure items,
   /use bag slot on Pick Lock's cursor, the box updating after it is unlocked.
 
+- **Committed** (62b0919, notes 4c08bb0) and **released** 2026-11-07 as v1.1.0, a **full
+  release** because Lewis said so (openables only), Latest on GitHub; CurseForge upload run
+  42390926237, file id 9495133, type release. v1.0.0's release and tag kept for now.
+  README changed: Lewis to paste it into CurseForge. Openables still untested in game.
+
 ### Scrapped (Lewis, 2026-11-07: "scrap the offhand items thing altogether")
 Everything below in this section was **removed before 1.1.0 was released**: none of those
 functions or rules exist in the code (gear with a Use line on buttons, /equip in UseBody,
