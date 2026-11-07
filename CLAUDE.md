@@ -275,6 +275,80 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   into CurseForge again.** Untested in game: macrotext on the popout's secure items,
   /use bag slot on Pick Lock's cursor, the box updating after it is unlocked.
 
+### Scrapped (Lewis, 2026-11-07: "scrap the offhand items thing altogether")
+Everything below in this section was **removed before 1.1.0 was released**: none of those
+functions or rules exist in the code (gear with a Use line on buttons, /equip in UseBody,
+OffHandSwap, AMDropSlot, CLASSIFIER 23; it stays 22). The notes stay for what they found
+out about the game. The code: `releases\gear-offhand-scrapped-2026-11-07.patch` (a diff
+against 62b0919).
+
+- Lewis: Ley Orb and other such items on the buttons they fit. Ley Orb 7508 is 4.0 held
+  off-hand, "Use: Restores 80 to 240 mana", skipped because gear only counted for
+  teleports. Class 2 is now in LOOKED_AT; `IsGear(class, slot)` (weapons, worn armour):
+  CLASSIFIER 23, no Use line -> {}, else sub = -1 like quest / misc items (restoring,
+  buffs, utility, enemy; no food, weapon_buff, explosives by sub). Checked on Forever:
+  Insignia of the Alliance 18854 "Dispels all Immobilizing, Slowing and Stun" -> cure,
+  Gnomish Cloaking Device 4397 -> utility, Cold Basilisk Eye 5079 -> enemy.
+- `WorthALook(id, noGear)`: the rules test passes true, so `/amac test` does not ask the
+  server about all gear, and shows no gear (it stays out of the test's results).
+- Candidates (not Hearth/Teleport): equippable items score -1e9 worn, -2e9 not, so
+  consumables, then worn gear, then bag gear. The popout shows bag gear gray. Every piece
+  of gear carried now gets an `ignored` entry in saved data. Untested in game.
+- Lewis: not worn -> a click on the bar equips it, taking off a staff for an off-hand if
+  needed; these items work like trinkets, with a cooldown after equipping. `UseBody(id)`
+  adds `/equip item:<id>` before the /use while NeedsEquip(id) (every UseBody button, so
+  unworn Hearth/Teleport gear too). The /use stays so a later click works in combat, where
+  the macro can't be rewritten; PLAYER_EQUIPMENT_CHANGED drops the /equip after combat.
+  The first click's /use may give a red error while the swap is under way. The popout's
+  gray items still don't equip in combat (PostClick).
+- Lewis, in game (Forever, staff 248008, 2026-11-06): /equip of Ley Orb works with no
+  staff, but **the game does not put an off-hand on over a two-hander**. A failed attempt
+  **locks the weapon until logout** (IsInventoryItemLocked(16); /reload doesn't reliably
+  clear it, so test from a fresh login). Failed: PickupInventoryItem(16) +
+  PutItemInBackpack/PutItemInBag; macro `/click CharacterMainHandSlot` + `/click
+  CharacterBag0Slot` in one click.
+- **Works (Lewis, 2026-11-06: "It works"; bar button, out of combat, Forever):**
+  `OffHandSwap(id)` = `/click CharacterMainHandSlot` (only with a free slot) + `/amac equip
+  <id>`; `DropStaffFor(id)` waits one frame (C_Timer.After(0); Lewis tried a test command:
+  0 works, so 0.3 s was not needed), then PickupContainerItem on one exact empty slot
+  (`FreeSlot`), keeps `offHandWanted`, and on PLAYER_EQUIPMENT_CHANGED or a 0.5 s timer
+  (within 5 s) `FinishOffHand` calls EquipByID (not in combat: the rebuilt macro's next
+  click does it). Exact slot in the same frame as the lift was never tried. No /equip
+  or /use in that body: they may lock the weapon too. `TwoHanderInTheWay(id)` =
+  `IsOffHand` (`OFF_HAND_SLOTS`) + main hand in `TWO_HAND_SLOTS`; TwoHanderMessage when
+  there's no bag room. The weapon stays in bags. Not re-tested after removing the trace.
+  Popout: PrepareSecure gives such an item t "macro" = OffHandSwap, PostClick skips
+  EquipByID for it (Set only: message). Untested: popout, other clients.
+- **In combat the game blocks an addon's PickupContainerItem** (Lewis's BugGrabber:
+  ADDON_ACTION_BLOCKED, from the timer in DropStaffFor). So the swap is out of combat only:
+  `/click [nocombat] ...` (from memory that /click takes conditions; not found in
+  Forever's source), and DropStaffFor checks InCombatLockdown (ClearCursor + a message)
+  in case. Untested in game.
+- Lewis: in combat he can drag the staff to a bag by hand, then equip the orb. A macro
+  can't. His macro tests: `/click CharacterMainHandSlot` lifts it (in combat too), but
+  **`/click CharacterBag0Slot` locks the weapon even on its own key press**, so the bag
+  button (PutItemInBag) is what fails; only an exact-slot PickupContainerItem works, and
+  an addon can't call that in combat. `/use <bag> <slot>` on an empty slot with it on the
+  cursor does nothing. `/equipslot 17 item:7508` over a staff does nothing. AutoBar
+  (MuffinManKen/AutoBar) never takes a weapon off; it equips with `/equipslot <slot> <bag>
+  <slot>`.
+- **Works in combat (Lewis, 2026-11-06, two macros on keys):** lift, then on a second
+  press `/click` on our hidden copy of Blizzard's bag slot button (`UpdateDropSlot`:
+  frame `AMDropSlot`, ContainerFrameItemButtonTemplate, parent `AMDropBag`; parent's
+  SetID = bag, own SetID = slot, kept on FreeSlot on PLAYER_ENTERING_WORLD and
+  BAG_UPDATE_DELAYED, in combat too; not protected). Lift + that drop in one macro press
+  fails (no /wait in macros).
+- OffHandSwap: `/equip` + `/use [combat,nocursor,noequipped:<main hand's subtype>]
+  item:<id>`, then one line `/click [cursor] AMDropSlot; CharacterMainHandSlot`, then
+  `/amac equip <id>`. First try had separate /click lines and [noequipped] without
+  [combat,nocursor]: Lewis: "doesn't work at all", no details (suspect: a lifted weapon
+  doesn't count as equipped, so /equip fired and locked it; unconfirmed). **255-letter
+  macro limit**: about 215 letters + 2 x subtype + 3 x ID length, so #showtooltip uses
+  item:<id>, not the name. Out of combat one press (DropStaffFor's timer). In combat:
+  press lifts, press drops, press equips. Untested in game, incl. `;` in /click, [cursor]
+  there, `[noequipped:Staves]`, and a **mouse click with the weapon on the cursor** (may
+  land on the button).
+
 ## 1.0.0 — first stable release (2026-11-06)
 - Lewis: "push the current version as 1.0 and make it public on curseforge". Same code as
   0.140.0, only the version changed. Full GitHub release (no --prerelease), which the

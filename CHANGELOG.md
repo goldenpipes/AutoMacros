@@ -4,7 +4,7 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): the middle number go
 features or changes, the last number for bug fixes only. Versions starting with `0.` were
 the beta.
 
-## 1.1.0 - 2026-11-06 (not yet tested in game)
+## 1.1.0 - 2026-11-07 (not yet tested in game)
 
 ### Added
 - **Openable Items** button (Utility group): clams, fishing crates and boxes, and anything
