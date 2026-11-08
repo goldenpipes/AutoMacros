@@ -106,6 +106,12 @@ function UI.Available(e, have)
         for _, o in ipairs(TravelOptions(e, have)) do
             if o.spell then parts.spells = parts.spells + 1 else parts.bags = parts.bags + 1 end
         end
+    elseif e.kind == "fishing" then
+        parts.bags = #FishingList(have)
+    elseif e.kind == "trinket" then
+        parts.bags = #TrinketList(e.slot, have)
+    elseif e.kind == "weapons" then
+        parts.bags = SwapBody(have) and 1 or 0
     elseif e.kind == "spells" then   -- (Portals, Professions)
         parts.spells = #KnownSpells(e)
     elseif e.set then
@@ -353,7 +359,8 @@ UI.BUTTON_GROUPS = {
     { name = "Buffs and Debuffs", buffs = true, keys = { "agility", "intellect", "stamina", "strength", "spirit",
         "armor", "resistance", "haste", "spellpower", "otherbuff", "buffs", "flask", "weaponbuff", "enemydebuff" } },
     { name = "Utility", keys = { "travel", "questitem", "explosives", "professions", "tracking", "utility",
-        "openable" } },
+        "openable", "fishing" } },
+    { name = "Gear", keys = { "trinket1", "trinket2", "weaponswap" } },
     { name = "Class", keys = { "portals", "comprehend" } },
 }
 

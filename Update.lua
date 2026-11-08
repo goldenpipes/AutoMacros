@@ -14,6 +14,17 @@ rightCast = {}
 -- spells you know; Professions: the profession windows you know); 0 = none.
 function Stocked(e, have)
     if e.kind == "travel" then return #TravelOptions(e, have) end
+    if e.kind == "fishing" then   -- (poles only: lures alone don't switch it on)
+        local n = 0
+        for _, f in ipairs(FishingList(have)) do if f.pole then n = n + 1 end end
+        return n
+    end
+    if e.kind == "trinket" then   -- (trinkets with a Use effect: passive ones alone don't switch it on)
+        local n = 0
+        for _, t in ipairs(TrinketList(e.slot, have)) do if HasUse(t.id) then n = n + 1 end end
+        return n
+    end
+    if e.kind == "weapons" then return SwapBody(have) and 1 or 0 end   -- (once both sets are known)
     if e.autoSpells then return #KnownSpells(e) end
     if e.set then return #Candidates(have, e.set) end
     return 0
@@ -127,6 +138,25 @@ function UpdateCore()
             else
                 body = UseBody(id)
             end
+        elseif m.kind == "fishing" then
+            -- your fishing pole on and off (FishBody); lures and the rest are only in the popout
+            local list = FishingList(have)
+            flyoutItems[m.name] = list
+            local poles = {}
+            for _, e in ipairs(list) do if e.pole then poles[#poles + 1] = e end end
+            id = Chosen(m, poles)
+            body = id and FishBody(id, have) or EmptyBody(m.label)
+        elseif m.kind == "trinket" then
+            -- uses the trinket worn in its slot; the popout wears another there
+            local list, worn = TrinketList(m.slot, have)
+            flyoutItems[m.name] = list
+            body, id = TrinketBody(m.slot, list, worn)
+            body = body or EmptyBody(m.label)
+        elseif m.kind == "weapons" then
+            -- two-hander <-> one-hander and off hand; until both are known it says how to teach it
+            flyoutItems[m.name] = WeaponList(have)
+            body, id = SwapBody(have)
+            body = body or ("/amac empty " .. m.emptyText)
         elseif m.kind == "travel" then
             local list = TravelOptions(m, have)
             flyoutItems[m.name] = list

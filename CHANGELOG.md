@@ -4,6 +4,28 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): the middle number go
 features or changes, the last number for bug fixes only. Versions starting with `0.` were
 the beta.
 
+## 1.2.0 - 2026-11-08
+
+### Added
+- **Fishing** button (Utility group). Click it to put your fishing pole on; click it again to
+  put back the weapons you were wearing (main hand and off hand). Works in combat too.
+- The Fishing popout lists your fishing poles (pick which one the button uses), your lures
+  (click one to put it on the pole you're holding) and other fishing items such as WoW
+  Forever's Shiny Silver Coin (click to use it).
+- **Trinket 1** and **Trinket 2** buttons (new Gear group): click to use the trinket worn in
+  that slot. The popout lists every trinket you carry; click one to wear it in that slot
+  (out of combat: the game doesn't allow trinket swaps in combat).
+- **Weapon Swap** button (Gear group): switches between your two-hander and your one-hander
+  with a shield or off-hand item, in combat too. It learns both sets from what you wear: put
+  each set on once. Its popout lists your two-handers and shields / off hands to wear.
+
+### Changed
+- Automatic popout direction now avoids other action buttons: a popout opens the first way
+  that is clear of your other bars and fits on screen (sideways first on vertical bars, up
+  or down first on horizontal ones), so bars away from the screen's edge work too.
+- A popout direction you set by hand goes back to Automatic when you move that button from
+  a vertical action bar to a horizontal one, or the other way round. A chat message says so.
+
 ## 1.1.1 - 2026-11-07
 
 ### Fixed

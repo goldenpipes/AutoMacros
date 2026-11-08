@@ -21,7 +21,8 @@ you like: no extra bar to place, unlike AutoBar.
   can use). Macros are only rewritten out of combat.
 - **Popout:** hover a button to see every item it can use. Click one to use it, make it the
   button's item, or both (your choice, for all buttons or each button on its own); this works
-  in combat too. Each popout opens toward the middle of the screen, or the way you set it.
+  in combat too. Each popout opens toward the middle of the screen, or the way you set it
+  (moving a button between a vertical and a horizontal bar sets it back to automatic).
 - **Learns your items:** consumables are sorted onto the right button by themselves, from what
   the game says about them. Each item is checked once and again only if the game changes it.
 - **Makes what you're missing:** Restore Health and Restore Mana conjure a Healthstone or mana
@@ -41,15 +42,16 @@ you like: no extra bar to place, unlike AutoBar.
 
 ## Buttons
 
-| Recovery | Food & drink | Buffs and debuffs | Utility | Class |
-|---|---|---|---|---|
-| Restore Health | Food | Agility, Intellect, Stamina, Strength, Spirit | Hearth/Teleport | Mage portals |
-| Restore Mana | Water | Armor, Resistance, Haste, Spell Power | Quest Item | Mage Comprehend scrolls |
-| Rage Potion | Food & Drink | Other Buffs | Explosives | |
-| Bandage | Buff Food | Flask | Professions | |
-| Debuff Cure | | Weapon Buff | Tracking | |
-| | | Enemy Debuff (nets, glue, Bag of Marbles) | Utility Buff (speed, immunity, escapes) | |
-| | | | Openable Items (clams, crates, lockboxes) | |
+| Recovery | Food & drink | Buffs and debuffs | Utility | Gear | Class |
+|---|---|---|---|---|---|
+| Restore Health | Food | Agility, Intellect, Stamina, Strength, Spirit | Hearth/Teleport | Trinket 1, Trinket 2 (use it; swap trinkets in the popout) | Mage portals |
+| Restore Mana | Water | Armor, Resistance, Haste, Spell Power | Quest Item | Weapon Swap (two-hander or one-hander and shield) | Mage Comprehend scrolls |
+| Rage Potion | Food & Drink | Other Buffs | Explosives | | |
+| Bandage | Buff Food | Flask | Professions | | |
+| Debuff Cure | | Weapon Buff | Tracking | | |
+| | | Enemy Debuff (nets, glue, Bag of Marbles) | Utility Buff (speed, immunity, escapes) | | |
+| | | | Openable Items (clams, crates, lockboxes) | | |
+| | | | Fishing (puts your pole on and your weapons back; lures in the popout) | | |
 
 A button turns itself on the first time you carry (or know) something for it, and stays on
 after that. Switch buttons on or off on the Buttons page, or with `/amac add` / `/amac remove`.

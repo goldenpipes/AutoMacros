@@ -167,6 +167,7 @@ function Classify(id)
     -- crates) or "Locked" (lockboxes); and what opens a lock: "Allows opening of
     -- simple locks" (Blacksmithing's skeleton keys)
     local openable, lockKey = false, false
+    local lure, fishBuff = false, false   -- (the Fishing button's popout)
     for _, text in ipairs(lines) do
         local low = text:lower()
         if text:find(use, 1, true) then hasUse = true end
@@ -176,6 +177,16 @@ function Classify(id)
         if plain == (ITEM_OPENABLE or "<Right Click to Open>"):lower() or plain:find("right click to open", 1, true)
             or plain == (LOCKED or "Locked"):lower() then openable = true end
         if text:find(use, 1, true) and HasWord(low, "opening of") and HasWord(low, "locks") then lockKey = true end
+        -- fishing: a lure, "When applied to your fishing pole, increases Fishing by 25
+        -- for 10 min." (put on the pole), or something used by itself, Forever's
+        -- Shiny Silver Coin 286732, "Toss the lucky coin into the water to increase
+        -- your Fishing Skill by 30". Not fish you eat ("gain 5 Fishing Skill", well
+        -- fed), High Test Eternium Fishing Line ("Replaces the fishing line"), enchants.
+        if text:find(use, 1, true) and HasWord(low, "fishing")
+            and not HasWord(low, "well fed", "seated", "perman", "replaces") then
+            if HasWord(low, "fishing pole") then lure = true
+            elseif HasWord(low, "increase") then fishBuff = true end
+        end
         if low:find("well fed", 1, true) or text:find(use, 1, true) then
             for i = 1, #low do
                 local c = low:byte(i)
@@ -281,6 +292,8 @@ function Classify(id)
     if class == 4 and not NotWorn(slot) then return {}, sig end   -- gear (rings, cloaks, trinkets): only teleports count
     if permanent then return {}, sig end    -- enchants and kits put on gear
     if lockKey then return { "skeleton_key" }, sig end   -- (no button: OpenableList uses them)
+    if lure then return { "lure" }, sig end   -- (the Fishing button's popout: FishingList)
+    if fishBuff then return { "fishing_buff" }, sig end
     -- (before the class rules: clams are Trade Goods 7.11, crates and lockboxes Misc 15.4)
     if openable then return { "openable" }, sig end
     -- a cure, from anything you carry: potions, First Aid's poultices and
@@ -370,6 +383,12 @@ end
 function SetTitle(setName)
     for _, e in ipairs(ALL) do
         if e.set == setName then return e.title, e.key end
+    end
+    -- (lures and fishing items show on the Fishing button, which has no set of its own)
+    if setName == "lure" or setName == "fishing_buff" then
+        for _, e in ipairs(ALL) do
+            if e.kind == "fishing" then return e.title, e.key end
+        end
     end
     return setName
 end

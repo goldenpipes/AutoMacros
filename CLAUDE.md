@@ -51,7 +51,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 1.1.1.**
+- **Current version: 1.2.0.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   version** (once per session, not per iteration) (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -242,6 +242,82 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   notes in the CurseForge section are out of date.
 - .build.info now (2026-10-29): Forever 1.60.1.70685, retail 12.1.5.70575, Era
   1.15.9.70576, Anniversary 2.5.6.70577, MoP 5.5.4.70631.
+
+## 1.2.0 — Fishing button; popout direction resets on bar orientation (2026-11-08)
+- Lewis: moving a button from a vertical bar to a horizontal one should reset its popout
+  direction to auto. `POPOUT.Layout(b)` (Bars.lua; split out of POPOUT.Auto) -> "column" /
+  "row" / nil. `POPOUT.CheckLayout(b, m)` (from RefreshArrows, the first visible bar button
+  holding the macro): `db.popLayout[key]` = last column/row seen; when it flips and
+  `db.popDir[key]` is set -> nil + Note. Grid / lone buttons leave popLayout alone. Also
+  fires when Edit Mode turns the bar itself around.
+  - **First try failed** (Lewis, Forever: Food moved from a bar opening left to one opening
+    up, no change): Layout gave no answer on his bar, so nothing was saved. Now CheckLayout
+    uses `POPOUT.Auto`'s axis (left/right = "column", up/down = "row"), which always
+    answers. `/amac debug` prints per button: bar <now, opens X> (saved <kind>),
+    direction <set>. **Reset confirmed** (Lewis: the message shows, set to Automatic).
+  - Counting hidden same-parent slots in Layout (tried alongside) broke Automatic on
+    vertical bars (Lewis: "doesn't know what direction to point"): removed, visible
+    buttons only again, as before 1.2.0. Cause inferred, not confirmed.
+- Lewis: his bars aren't at the screen's edge; popouts should go sideways rather than over
+  another button (video: Food at the right end of a bottom row, a bar right above it).
+  Automatic now = `POPOUT.Order(b)` (shape + place, as before: column -> sideways toward
+  the middle, then the other side, then up/down; row -> up/down toward the middle first;
+  grid/lone -> away from the nearest edge first) filtered by `POPOUT.Clear(b, dir, n)`:
+  first way whose strip (n items, n = `POPOUT.Count(m)`, max 10) has no visible action
+  button and fits on screen; none clear -> order[1]. CheckLayout uses order[1] only (so
+  something in the way never counts as a move). Untested in game.
+- Lewis: a button to equip a fishing rod, lures in it; equipping remembers the weapon
+  replaced, the next click puts it back. CATALOG `fishing` (AM_Fishing, kind "fishing",
+  scope character, empty "No Fishing Pole", placeholder 6256), Utility group.
+  `IsFishingPole` = class 2 sub 20. `FishingList(have)` = poles (pole = true, macro
+  "/amac fish\n/equip item:P"), lures (Candidates "lure", noPick, macro "/use item:L\n/use
+  16"), then `fishing_buff` (noPick, plain item use). UpdateCore: Chosen over the poles only;
+  `FishBody(id, have)` = `#showtooltip [equipped:<pole subtype>] item:<main>; item:<pole>`,
+  `/amac fish`, `/equip [noequipped:<sub>] item:<pole>`, `/equipslot [equipped:<sub>] 16
+  item:<main>` (+ 17 off). Subtype name from ItemInstant (localized), "Fishing Poles"
+  fallback. Over 255 letters -> plain #showtooltip. Stocked counts poles only.
+- Weapons: `db.fishWeapons[char] = { main, off }` (`FishRecord`: not when slot 16 is a pole
+  or both hands are empty). Recorded by `/amac fish` (in the macro, before the /equip) and
+  by `FishWatch` (Events: 1 s after the last PLAYER_EQUIPMENT_CHANGED / at login, so a
+  half-done swap isn't saved; changed -> Schedule). Only weapons still carried go in the
+  macro.
+- Popout: entries with `macro` get t "macro" (like `unlock`); attribute `u<id>_<i>` = noPick,
+  so lures are used on Set only too (OPEN_SNIPPET); PostClick returns for noPick, skips
+  EquipByID for a pole with a macro; noPick never `selected`; tooltips "Click to put it on
+  your fishing pole" / "Click to use it".
+- Learning (CLASSIFIER 25): Use line with "fishing", not well fed / seated / perman /
+  replaces: "fishing pole" -> `lure`, else "increase" -> `fishing_buff`. Checked against
+  Lewis's 1791#1 test data: Shiny Bauble 6529, Nightcrawlers 6530, Bright Baubles 6532,
+  Aquadynamic Fish Attractor 6533, Flesh Eating Worm 7307, Aquadynamic Fish Lens 6811 ->
+  lure; High Test Eternium Fishing Line 19971 and the QAEnchant out; fishing foods stay food.
+  Forever's **Shiny Silver Coin 286732** (Lewis: on Trabetha; found in Syndicator's data;
+  Wowhead Forever XML: 0.8, "Toss the lucky coin into the water to increase your Fishing
+  Skill by 30 for 30 min.") -> fishing_buff. SetTitle maps both sets to the Fishing button.
+- **Fishing button confirmed** (Lewis, Forever, 2026-11-08: "works perfectly"). Not
+  itemised what he checked (combat swap, lures, coin unknown).
+- README Buttons row + popout line changed: **paste README into CurseForge again.**
+- Lewis (after Fishing + directions confirmed): buttons for using and swapping trinkets, and
+  switching a two-hander for a one-hander + shield (tanks). New BUTTON_GROUPS "Gear".
+  - CATALOG `trinket1` / `trinket2` (AM_Trinket1/2, kind "trinket", `slot` 13 / 14,
+    character scope, placeholder 11122 Carrot on a Stick, ID from memory). `TrinketList(slot,
+    have)` (Macros.lua): every INVTYPE_TRINKET carried/worn, all noPick; the one worn there
+    first (`worn`, macro `/use <slot>`), then Use-effect ones (HasUse = GetItemSpell), macro
+    `/equipslot <slot> item:X` (out of combat only: the game blocks trinket swaps in combat).
+    `TrinketBody`: `#showtooltip 13` / `/use 13`; nothing worn there -> equipslot the first.
+    Stocked = trinkets with a Use effect.
+  - CATALOG `weaponswap` (AM_WeaponSwap, kind "weapons", placeholder 12784 Arcanite Reaper,
+    from memory, `emptyText` = how to teach it; RebuildMacros puts emptyText in
+    EMPTY_MESSAGE). `db.weaponSets[char] = { two, main, off }` by `WeaponRecord` (from
+    FishWatch's 1 s wait): 16 = INVTYPE_2HWEAPON (not a pole) -> two; else 16 + 17 both worn
+    -> main/off. `SwapBody`: `[equipped:<two's subtype>]` -> equipslot 16 main, 17 off, else
+    `/equip item:two` (same pattern as FishBody). Not ready (a set missing or not carried) ->
+    `/amac empty <emptyText>`. `WeaponList`: two-handers (`/equip`) then shields / holdables /
+    off-hand weapons (`OFF_HAND_ITEMS`, `/equipslot 16 main` + `17 X`, only with a one-hander
+    known or worn), worn ones first. Stocked = 1 once SwapBody works.
+  - Popout: list entries may have `tip` (tooltip line) and `worn` (selected border, also for
+    noPick).
+  - **Weapon Swap confirmed** (Lewis, Forever, 2026-11-08: "works great"; Fishing again too).
+    **Trinket buttons confirmed** too (Lewis: "trinkets work also").
 
 ## 1.1.1 — openables found by the bag's loot flag (2026-11-07)
 - Lewis (Forever, after the v1.1.0 release): Small Barnacled Clams weren't found; /use

@@ -207,7 +207,10 @@ function Entry(i)
         local m = flyout.macro
         if not m then return end
         -- gear that is not worn yet is put on (not used), so the button can show its cooldown
-        if self.unequipped then
+        if self.noPick then return end   -- (a lure or fishing item: used, the button keeps its pole)
+        if self.unequipped and self.macroText then
+            -- (a fishing pole: its macro put it on; made the button's pole below)
+        elseif self.unequipped then
             if InCombatLockdown() then
                 Print(ItemRef(self.itemID) .. ": cannot be equipped in combat")
             elseif not EquipByID(self.itemID) then
@@ -225,7 +228,13 @@ function Entry(i)
     end)
     e:SetScript("OnEnter", function(self)
         ShowEntryTooltip(self, self.itemID, self.loc, self.kind == "spell")
-        if self.unequipped then
+        if self.tip then   -- (trinkets, Weapon Swap: what a click does)
+            GameTooltip:AddLine(self.tip, 1, 0.82, 0)
+        elseif self.lure then
+            GameTooltip:AddLine("Click to put it on your fishing pole", 1, 0.82, 0)
+        elseif self.noPick then
+            GameTooltip:AddLine("Click to use it", 0.7, 0.7, 0.7)
+        elseif self.unequipped then
             GameTooltip:AddLine("Not equipped - click to put it on", 1, 0.82, 0)
         elseif self.unlock and PopoutClick(flyout.macro) ~= "set" then
             GameTooltip:AddLine("Click to unlock it", 1, 0.82, 0)
@@ -357,7 +366,8 @@ OPEN_SNIPPET = [[
                 e:ClearAllPoints()
                 e:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", owner:GetAttribute("ex" .. key), owner:GetAttribute("ey" .. key))
                 local t = owner:GetAttribute("t" .. key)
-                if setOnly or t == "" then t = nil end
+                -- (u: always used, also on Set only: a lure, which is never the button's item)
+                if (setOnly and not owner:GetAttribute("u" .. key)) or t == "" then t = nil end
                 e:SetAttribute("type", t)
                 e:SetAttribute("item", t == "item" and owner:GetAttribute("v" .. key) or nil)
                 e:SetAttribute("spell", t == "spell" and owner:GetAttribute("v" .. key) or nil)
@@ -461,6 +471,8 @@ function PrepareSecure()
                     local t, v = "", nil
                     if it.unlock then   -- a locked box: Pick Lock or a key on it (OpenableList)
                         t, v = "macro", it.unlock
+                    elseif it.macro then   -- Fishing: put a pole on, or a lure on the pole (FishingList)
+                        t, v = "macro", it.macro
                     elseif m.kind == "spells" or it.spell then
                         local name = SpellName(it.id)
                         if name then t, v = "spell", name end
@@ -469,6 +481,7 @@ function PrepareSecure()
                     end
                     hd:SetAttribute("t" .. key, t)
                     hd:SetAttribute("v" .. key, v)
+                    hd:SetAttribute("u" .. key, it.noPick and true or nil)
                 end
             else
                 prepared[id] = nil
@@ -510,12 +523,17 @@ function OpenFlyoutItems(p, list, m, chosen)
         e.pick = list[i].pick or list[i].id
         e.loc = (not isSpell) and lastLocs[list[i].id] or nil
         e.unlock = list[i].unlock
+        e.macroText = list[i].macro   -- (Fishing: the macro puts the pole on, PostClick doesn't)
+        e.noPick = list[i].noPick     -- (a lure: used, never the button's item)
+        e.lure = list[i].noPick and list[i].macro ~= nil
+        e.tip = list[i].tip
         e.icon:SetTexture(isSpell and SpellIcon(list[i].id) or IconFor({ item = list[i].id }))
         e.unequipped = (not isSpell) and NeedsEquip(list[i].id)   -- grey until worn
         pcall(e.icon.SetDesaturated, e.icon, e.unequipped and true or false)
         local count = (not isSpell) and CountOf(list[i].id) or nil
         e.count:SetText((count and count > 1) and tostring(count) or "")
-        e.selected = (e.pick == chosen)                   -- highlighted border: the one in use
+        -- highlighted border: the one in use (trinkets, Weapon Swap: the one worn)
+        e.selected = ((e.pick == chosen) and not e.noPick) or list[i].worn == true
         StyleEntry(e)   -- (its size stays as it is in combat: see BLIZZ_ART.Size)
     end
     local pl = p.plan
@@ -616,6 +634,7 @@ RefreshArrows = function()
     local enabled = DB().noFlyout ~= true
     local tabs = 0
     report.onBar = {}
+    report.barLayout = {}   -- vertical / horizontal bar per button (POPOUT.CheckLayout; /amac debug)
     report.barDir = {}   -- which way Automatic opens each button's popout on your bars (the Buttons page shows it)
     for _, b in ipairs(buttons) do
         HookButton(b)
@@ -626,7 +645,8 @@ RefreshArrows = function()
         if mine and b:IsVisible() then
             report.onBar[mine.name] = (report.onBar[mine.name] or 0) + 1
             if not report.barDir[mine.name] then
-                local okDir, auto = pcall(POPOUT.Auto, b)
+                POPOUT.CheckLayout(b, mine)   -- (moved between a vertical and a horizontal bar: Automatic again)
+                local okDir, auto = pcall(POPOUT.Auto, b, POPOUT.Count(mine))
                 report.barDir[mine.name] = okDir and auto or "up"
             end
         end

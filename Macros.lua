@@ -224,6 +224,231 @@ function OpenableList(have)
     return list
 end
 
+-- ---- Fishing ----
+-- A fishing pole: Weapon (2), Fishing Pole (20) on every client.
+function IsFishingPole(id)
+    if type(id) ~= "number" then return false end
+    local class, sub = ItemInstant(id)
+    return class == 2 and sub == 20
+end
+
+-- The weapons the Fishing button puts back on, kept per character in
+-- db.fishWeapons[char] = { main = id, off = id }: what you wore the last time
+-- your main hand held something other than a fishing pole.
+function FishWeapons()
+    local db = DB()
+    if type(db.fishWeapons) ~= "table" then db.fishWeapons = {} end
+    local t = db.fishWeapons[CharKey()]
+    return type(t) == "table" and t or nil
+end
+
+-- Remembers the weapons worn now, unless that is a fishing pole (or nothing).
+-- Run by the button itself (/amac fish, just before it puts the pole on) and a
+-- moment after your gear changes (Events: FishWatch). Returns true when they changed.
+function FishRecord()
+    if not GetInventoryItemID then return false end
+    local main = GetInventoryItemID("player", 16)
+    local off = GetInventoryItemID("player", 17)
+    if IsFishingPole(main) or (not main and not off) then return false end
+    local old = FishWeapons()
+    if old and old.main == main and old.off == off then return false end
+    DB().fishWeapons[CharKey()] = { main = main, off = off }
+    return true
+end
+
+-- The Fishing button's popout: your fishing poles (best first; clicking one puts
+-- it on, as the button does), then lures (clicking one puts it on the pole you
+-- wear: /use 16), then what you use by itself (Forever's Shiny Silver Coin).
+-- Lures and the rest are never the button's own item (noPick).
+function FishingList(have)
+    local level = UnitLevel("player") or 1
+    local list = {}
+    for id in pairs(have) do
+        if IsFishingPole(id) then
+            local _, minLevel = ItemInfo(id)
+            minLevel = tonumber(minLevel) or 0
+            if minLevel <= level then
+                list[#list + 1] = { id = id, score = minLevel * 10000000 + id, pole = true,
+                    macro = "/amac fish\n/equip item:" .. id }
+            end
+        end
+    end
+    table.sort(list, function(x, y) return x.score > y.score end)
+    for _, e in ipairs(Candidates(have, "lure")) do
+        list[#list + 1] = { id = e.id, noPick = true, macro = "/use item:" .. e.id .. "\n/use 16" }
+    end
+    for _, e in ipairs(Candidates(have, "fishing_buff")) do
+        list[#list + 1] = { id = e.id, noPick = true }
+    end
+    return list
+end
+
+-- The Fishing button's macro for pole id: with no pole in your hands it
+-- remembers your weapons and puts the pole on; holding a pole it puts the
+-- remembered weapons back (main hand, then off hand). Macro conditions do the
+-- choosing, so it works in combat too, where the macro can't be rewritten.
+-- (The weapons are only the ones you still carry.)
+function FishBody(id, have)
+    local _, _, _, _, subName = ItemInstant(id)
+    local pole = (type(subName) == "string" and subName ~= "") and subName or "Fishing Poles"
+    local w = FishWeapons()
+    local main = w and have[w.main] and w.main or nil
+    local off = w and have[w.off] and w.off or nil
+    local back = ""
+    if main then back = back .. "\n/equipslot [equipped:" .. pole .. "] 16 item:" .. main end
+    if off then back = back .. "\n/equipslot [equipped:" .. pole .. "] 17 item:" .. off end
+    local rest = "\n/amac fish\n/equip [noequipped:" .. pole .. "] item:" .. id .. back
+    -- the icon: the weapon a click would put back while you hold the pole
+    local show = "#showtooltip " .. (main and ("[equipped:" .. pole .. "] item:" .. main .. "; ") or "") .. "item:" .. id
+    if #show + #rest > 255 then show = "#showtooltip item:" .. id end
+    return show .. rest
+end
+
+-- ---- Trinkets ----
+function EquipSlotOf(id)
+    if type(id) ~= "number" then return nil end
+    local _, _, _, _, _, slot = ItemInstant(id)
+    return slot
+end
+
+function IsTrinket(id) return EquipSlotOf(id) == "INVTYPE_TRINKET" end
+
+-- Has a "Use:" effect (GetItemSpell gives its spell).
+function HasUse(id)
+    local fn = (C_Item and C_Item.GetItemSpell) or GetItemSpell
+    if not fn then return false end
+    local ok, name = pcall(fn, id)
+    return ok and name ~= nil
+end
+
+function WornIn(slot)
+    return GetInventoryItemID and GetInventoryItemID("player", slot) or nil
+end
+
+-- The popout of Trinket 1 (slot 13) / Trinket 2 (14): the one worn there
+-- first (a click uses it), then every other trinket you carry or wear, those
+-- with a Use effect first (a click wears it in this slot; the game allows that
+-- out of combat only). None is ever the button's own item (noPick): the
+-- button always uses what is worn there.
+function TrinketList(slot, have)
+    local worn = WornIn(slot)
+    local list = {}
+    for id in pairs(have) do
+        if IsTrinket(id) then
+            local e = { id = id, noPick = true }
+            if id == worn then
+                e.worn, e.score, e.macro, e.tip = true, 3e9, "/use " .. slot, "Click to use it"
+            else
+                e.score = (HasUse(id) and 1e9 or 0) + id
+                e.macro = "/equipslot " .. slot .. " item:" .. id
+                e.tip = "Click to wear it in this slot (not in combat)"
+            end
+            list[#list + 1] = e
+        end
+    end
+    table.sort(list, function(x, y) return x.score > y.score end)
+    return list, worn
+end
+
+-- The trinket button's macro: uses what is worn in the slot; with nothing worn
+-- there it puts on the first trinket you carry.
+function TrinketBody(slot, list, worn)
+    if worn then return "#showtooltip " .. slot .. "\n/use " .. slot, worn end
+    local first = list[1]
+    if not first then return nil end
+    return "#showtooltip item:" .. first.id .. "\n/equipslot " .. slot .. " item:" .. first.id, first.id
+end
+
+-- ---- Weapon Swap ----
+-- (a fishing pole is a two-hander too, but the Fishing button looks after that)
+function IsTwoHander(id)
+    return EquipSlotOf(id) == "INVTYPE_2HWEAPON" and not IsFishingPole(id)
+end
+
+OFF_HAND_ITEMS = { INVTYPE_SHIELD = true, INVTYPE_HOLDABLE = true, INVTYPE_WEAPONOFFHAND = true }
+
+-- db.weaponSets[char] = { two = id, main = id, off = id }: the two-hander you
+-- wore last, and the one-hander and off hand you wore together last.
+function WeaponSets()
+    local db = DB()
+    if type(db.weaponSets) ~= "table" then db.weaponSets = {} end
+    local t = db.weaponSets[CharKey()]
+    if type(t) ~= "table" then t = {}; db.weaponSets[CharKey()] = t end
+    return t
+end
+
+-- Notes the weapons worn now (Events: FishWatch, a second after your gear stops
+-- changing). Returns true when a set changed.
+function WeaponRecord()
+    local main, off = WornIn(16), WornIn(17)
+    if not main then return false end
+    local s = WeaponSets()
+    if IsTwoHander(main) then
+        if s.two == main then return false end
+        s.two = main
+        return true
+    end
+    if off and not IsFishingPole(main) and EquipSlotOf(main) ~= "INVTYPE_2HWEAPON" then
+        if s.main == main and s.off == off then return false end
+        s.main, s.off = main, off
+        return true
+    end
+    return false
+end
+
+-- The sets you still carry: two-hander, one-hander, off hand (any nil = not ready).
+function SwapSets(have)
+    local s = WeaponSets()
+    return s.two and have[s.two] and s.two or nil, s.main and have[s.main] and s.main or nil,
+        s.off and have[s.off] and s.off or nil
+end
+
+-- Weapon Swap's macro: holding the two-hander it puts the one-hander and off
+-- hand on, otherwise the two-hander. The condition is the two-hander's own
+-- kind ("Two-Handed Swords", "Staves", ...), which a one-hander never is, so
+-- it works in combat too, where the macro can't be rewritten.
+function SwapBody(have)
+    local two, main, off = SwapSets(have)
+    if not (two and main and off) then return nil end
+    local _, _, _, _, sub = ItemInstant(two)
+    if type(sub) ~= "string" or sub == "" then return nil end
+    local c = "[equipped:" .. sub .. "]"
+    return "#showtooltip " .. c .. " item:" .. off .. "; item:" .. two
+        .. "\n/equipslot " .. c .. " 16 item:" .. main
+        .. "\n/equipslot " .. c .. " 17 item:" .. off
+        .. "\n/equip [noequipped:" .. sub .. "] item:" .. two, two
+end
+
+-- Weapon Swap's popout: the two-handers you carry (a click wears it), then your
+-- shields and off hands (a click wears it with your one-hander). Worn ones are
+-- marked. None is the button's own item: the button follows what you wear.
+function WeaponList(have)
+    local _, main = SwapSets(have)
+    local now = WornIn(16)
+    if now and not IsTwoHander(now) and EquipSlotOf(now) ~= "INVTYPE_2HWEAPON" then main = now end
+    local twos, offs = {}, {}
+    for id in pairs(have) do
+        if IsTwoHander(id) then
+            twos[#twos + 1] = { id = id, noPick = true, worn = IsEquipped(id), score = id,
+                macro = "/equip item:" .. id, tip = "Click to wear it" }
+        elseif main and OFF_HAND_ITEMS[EquipSlotOf(id) or ""] then
+            offs[#offs + 1] = { id = id, noPick = true, worn = IsEquipped(id), score = id,
+                macro = "/equipslot 16 item:" .. main .. "\n/equipslot 17 item:" .. id,
+                tip = "Click to wear it with " .. ItemRef(main) }
+        end
+    end
+    for _, e in ipairs(twos) do e.worn = e.worn and true or false end
+    for _, e in ipairs(offs) do e.worn = e.worn and true or false end
+    local function order(x, y)
+        if (x.worn and 1 or 0) ~= (y.worn and 1 or 0) then return x.worn and true or false end
+        return x.score > y.score
+    end
+    table.sort(twos, order)
+    table.sort(offs, order)
+    for _, e in ipairs(offs) do twos[#twos + 1] = e end
+    return twos
+end
+
 -- Every usable item of a category that is in your bags, best first.
 function Candidates(have, setName)
     if setName == "openable" then return OpenableList(have) end
@@ -523,6 +748,11 @@ function BodyMatches(m, body)
     if m.special == "scroll" then return body:find("Comprehend", 1, true) ~= nil end
     if m.kind == "spells" then return body:find("/cast", 1, true) ~= nil end
     if m.kind == "travel" and body:find("/cast", 1, true) then return true end
+    if m.kind == "fishing" and body:find("/amac fish", 1, true) then return true end
+    if m.kind == "trinket" and (body:find("/use " .. m.slot, 1, true) or body:find("/equipslot " .. m.slot, 1, true)) then
+        return true
+    end
+    if m.kind == "weapons" and (body:find("/equip", 1, true) or body:find("Weapon Swap:", 1, true)) then return true end
     -- empty-state text, in any of the forms used by different versions
     local stem = m.label:gsub("s$", "")
     if body:find("No " .. stem, 1, true) then return true end

@@ -1,4 +1,4 @@
--- AutoMacros 1.1.1 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 1.2.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -150,7 +150,7 @@ end
 --   noComboFallback   Food / Water do not borrow Food & Drink items when out (0.136.0)
 -- ---------------------------------------------------------------------------
 SCHEMA = 2
-CLASSIFIER = 24 -- (23 was a build never released; skipped so its saved results are redone) raise when the learning rules change, so items are checked again
+CLASSIFIER = 25 -- (25: fishing lures; 23 was a build never released, skipped so its saved results are redone) raise when the learning rules change, so items are checked again
 
 STYLE_DEFAULTS = {
     glowColor = { 1, 0.15, 0.15, 1 }, glowThickness = 3, glowTexture = "solid",
@@ -601,6 +601,22 @@ CATALOG = {
     -- letters: "No Openable Items" would not fit.)
     { key = "openable", name = "AM_Openable", title = "Openable Items", empty = "No Openables",
       label = "openable items", set = "openable", placeholder = { item = 5523 } },   -- Small Barnacled Clam
+    -- puts your fishing pole on, and the weapons you wore back on the next click
+    -- (FishBody); the popout also has your lures and fishing items (FishingList).
+    -- Character tab: the weapons in its text are this character's.
+    { key = "fishing", name = "AM_Fishing", title = "Fishing", empty = "No Fishing Pole", label = "fishing poles",
+      kind = "fishing", scope = "character", placeholder = { item = 6256 } },   -- Fishing Pole
+    -- the trinket worn in slot 13 / 14: used by a click; the popout has every
+    -- trinket you carry, a click wears it in that slot (TrinketList, TrinketBody)
+    { key = "trinket1", name = "AM_Trinket1", title = "Trinket 1", empty = "No Trinket 1", label = "trinkets",
+      kind = "trinket", slot = 13, scope = "character", placeholder = { item = 11122 } },   -- Carrot on a Stick
+    { key = "trinket2", name = "AM_Trinket2", title = "Trinket 2", empty = "No Trinket 2", label = "trinkets",
+      kind = "trinket", slot = 14, scope = "character", placeholder = { item = 11122 } },
+    -- two-hander <-> one-hander and shield (or other off hand), the sets learned
+    -- from what you wear (WeaponRecord, SwapBody); works in combat
+    { key = "weaponswap", name = "AM_WeaponSwap", title = "Weapon Swap", empty = "No Weapon Swap", label = "weapon sets",
+      kind = "weapons", scope = "character", placeholder = { item = 12784 },   -- Arcanite Reaper
+      emptyText = "Weapon Swap: wear your two-hander once, and your one-hander and shield once, and the button learns them." },
     -- used on an enemy: nets, glue, Bag of Marbles, Magic Dust, Glowing Wax Stick
     { key = "enemydebuff", name = "AM_EnemyDebuff", title = "Enemy Debuff", empty = "No Enemy Debuff",
       label = "enemy debuff items", set = "enemy_debuff", placeholder = { item = 835 } },   -- Large Rope Net
@@ -724,7 +740,8 @@ function RebuildMacros()
     end
     for _, e in ipairs(CustomEntries()) do ALL[#ALL + 1] = e end
     for _, e in ipairs(ALL) do
-        if e.set then EMPTY_MESSAGE[e.empty] = "No " .. e.label .. " in inventory." end
+        if e.emptyText then EMPTY_MESSAGE[e.empty] = e.emptyText
+        elseif e.set or e.kind == "fishing" or e.kind == "trinket" then EMPTY_MESSAGE[e.empty] = "No " .. e.label .. " in inventory." end
         if Enabled(e) and (not e.class or e.class == class) then MACROS[#MACROS + 1] = e end
     end
 end

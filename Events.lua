@@ -315,6 +315,24 @@ function Init()
     if not okPanel then Fail("options page", errPanel) end
 end
 
+-- A second after your gear stops changing, the weapons you wear (unless a
+-- fishing pole) become the ones the Fishing button puts back. The wait skips
+-- the moment in a swap when only one hand has changed (putting a pole on takes
+-- the off hand off first, or after). New ones: its macro is rewritten.
+fishWatchGen = 0
+function FishWatch()
+    if not (C_Timer and C_Timer.After) then return end
+    fishWatchGen = fishWatchGen + 1
+    local gen = fishWatchGen
+    C_Timer.After(1, function()
+        if gen ~= fishWatchGen then return end
+        local ok, changed = pcall(FishRecord)
+        -- (and Weapon Swap's two sets: WeaponRecord)
+        local okW, changedW = pcall(WeaponRecord)
+        if (ok and changed) or (okW and changedW) then Schedule() end
+    end)
+end
+
 BAR_EVENTS = {
     ACTIONBAR_SLOT_CHANGED = true, ACTIONBAR_PAGE_CHANGED = true,
     UPDATE_BONUS_ACTIONBAR = true, UPDATE_SHAPESHIFT_FORM = true,
@@ -345,6 +363,7 @@ frame:SetScript("OnEvent", function(_, event)
     elseif BAR_EVENTS[event] then
         ScheduleGlow()
     else
+        if event == "PLAYER_EQUIPMENT_CHANGED" or event == "PLAYER_ENTERING_WORLD" then FishWatch() end
         if event == "PLAYER_ENTERING_WORLD" and C_Timer and C_Timer.After then
             -- bar addons build their buttons a moment after login
             C_Timer.After(3, function()
@@ -392,6 +411,11 @@ SlashCmdList["AUTOMACROS"] = function(msg)
         return
     end
     msg = msg and msg:lower() or ""
+    -- the Fishing button, just before it puts the pole on: remember your weapons (FishBody)
+    if msg:match("^%s*fish%s*$") then
+        pcall(FishRecord)
+        return
+    end
     -- /amac by itself: the settings at the Buttons page (since 0.137.0; before,
     -- it updated and printed the report, now /amac update)
     if msg:match("^%s*$") then
@@ -623,8 +647,12 @@ SlashCmdList["AUTOMACROS"] = function(msg)
         for _, m in ipairs(MACROS) do
             local saved = MacroSlots()[m.name]
             local list = flyoutItems[m.name]
-            Print(string.format("  %s: macro slot %s, %s item(s), on a bar %dx", m.title, tostring(saved),
-                list and #list or "?", (report.onBar and report.onBar[m.name]) or 0))
+            local pd, pl = DB().popDir, DB().popLayout
+            Print(string.format("  %s: macro slot %s, %s item(s), on a bar %dx, bar %s (saved %s), direction %s",
+                m.title, tostring(saved), list and #list or "?", (report.onBar and report.onBar[m.name]) or 0,
+                tostring(report.barLayout and report.barLayout[m.name] or "-"),
+                tostring(type(pl) == "table" and pl[m.key] or "-"),
+                tostring(type(pd) == "table" and pd[m.key] or "auto")))
         end
         local probe = _G["ActionButton1"]
         if probe then

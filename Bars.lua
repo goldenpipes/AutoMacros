@@ -25,18 +25,16 @@ function POPOUT.Rect(b)
     return (l + w / 2) * s, (bottom + h / 2) * s, w * s, h * s
 end
 
--- Automatic: a button in a column (another action button straight above or
--- below it, none beside it), as on a bar at the side of the screen, opens
--- away from the nearer side: right on the left half, left on the right half.
--- One in a row opens up in the lower half of the screen, down in the upper
--- half. Anything else (a grid, a lone button) opens away from the nearest edge.
-function POPOUT.Auto(b)
+-- How action button b sits: "column" (a vertical bar), "row" (a horizontal
+-- bar), or nil (a grid, a lone button, not laid out); and its centre in
+-- screen pixels.
+function POPOUT.Layout(b)
     local x, y, w, h = POPOUT.Rect(b)
-    if not x then return "up" end
-    local s = UIParent:GetEffectiveScale()
-    local sw, sh = UIParent:GetWidth() * s, UIParent:GetHeight() * s
+    if not x then return nil end
     local column, row = false, false
     for _, o in ipairs(buttons) do
+        -- (visible ones only: 1.2.0 briefly counted a bar's hidden slots too, and
+        -- Automatic stopped finding vertical bars on Forever)
         if o ~= b and o:IsVisible() then
             local ox, oy = POPOUT.Rect(o)
             if ox then
@@ -46,13 +44,83 @@ function POPOUT.Auto(b)
             end
         end
     end
-    if column and not row then return x < sw / 2 and "right" or "left" end
-    if row and not column then return y < sh / 2 and "up" or "down" end
-    local near, best
-    for edge, d in pairs({ left = x, right = sw - x, bottom = y, top = sh - y }) do
-        if not best or d < best then near, best = edge, d end
+    local layout = (column and not row and "column") or (row and not column and "row") or nil
+    return layout, x, y
+end
+
+-- Whether a popout of n items opening `dir` from button b would stay clear of
+-- every other visible action button and on the screen.
+function POPOUT.Clear(b, dir, n)
+    local x, y, w, h = POPOUT.Rect(b)
+    if not x then return false end
+    local s = UIParent:GetEffectiveScale()
+    local sw, sh = UIParent:GetWidth() * s, UIParent:GetHeight() * s
+    local across = dir == "left" or dir == "right"
+    local size = across and w or h
+    local reach = n * size + size * 0.5   -- (its items, and the gap to the button)
+    local room = ({ left = x - w / 2, right = sw - x - w / 2, down = y - h / 2, up = sh - y - h / 2 })[dir]
+    if room < reach then return false end
+    for _, o in ipairs(buttons) do
+        if o ~= b and o:IsVisible() then
+            local ox, oy, ow, oh = POPOUT.Rect(o)
+            if ox then
+                local along = ({ left = x - ox, right = ox - x, down = y - oy, up = oy - y })[dir]
+                local side = across and math.abs(oy - y) or math.abs(ox - x)
+                local half = across and (h + oh) / 2 or (w + ow) / 2
+                if along > 0 and along < reach + size / 2 and side < half * 0.9 then return false end
+            end
+        end
     end
-    return POPOUT.AWAY[near]
+    return true
+end
+
+-- Automatic for button b with a popout of n items (default 4): the first of
+-- these ways it can open clear of other action buttons and on screen (see
+-- POPOUT.Clear), else the first of them anyway.
+-- In a column (a vertical bar): sideways, toward the middle of the screen
+-- first, then the other side, then up or down. In a row (a horizontal bar): up
+-- or down, toward the middle first, then sideways. A grid or lone button: away
+-- from the nearest screen edge first.
+-- (Lewis, 1.2.0: bars not at the screen's edge, popouts should go sideways
+-- rather than over another bar's buttons.)
+function POPOUT.Auto(b, n)
+    local order = POPOUT.Order(b)
+    if not order then return "up" end
+    n = tonumber(n) or 4
+    for _, dir in ipairs(order) do
+        local ok, clear = pcall(POPOUT.Clear, b, dir, n)
+        if ok and clear then return dir end
+    end
+    return order[1]
+end
+
+-- The ways Automatic tries for button b, best first, by the shape of its bar
+-- and where it is on screen (nil when b is not laid out). order[1] alone, with
+-- no look at what is in the way, is what POPOUT.CheckLayout compares.
+function POPOUT.Order(b)
+    local layout, x, y = POPOUT.Layout(b)
+    if not x then return nil end
+    local s = UIParent:GetEffectiveScale()
+    local sw, sh = UIParent:GetWidth() * s, UIParent:GetHeight() * s
+    local inX = x < sw / 2 and "right" or "left"   -- toward the middle, sideways
+    local inY = y < sh / 2 and "up" or "down"      -- toward the middle, up or down
+    local outX = inX == "right" and "left" or "right"
+    local outY = inY == "up" and "down" or "up"
+    local order
+    if layout == "column" then
+        order = { inX, outX, inY, outY }
+    elseif layout == "row" then
+        order = { inY, outY, inX, outX }
+    else
+        local near, best
+        for edge, d in pairs({ left = x, right = sw - x, bottom = y, top = sh - y }) do
+            if not best or d < best then near, best = edge, d end
+        end
+        local away = POPOUT.AWAY[near]
+        if away == "left" or away == "right" then order = { away, inY, outY, outX }
+        else order = { away, inX, outX, outY } end
+    end
+    return order
 end
 
 -- What right-clicking a button on the Buttons page goes through.
@@ -77,12 +145,45 @@ function POPOUT.Next(e)
     return nxt
 end
 
+-- Button m is on action button b (the first of its on your bars): when it has
+-- gone from a vertical bar to a horizontal one or back since last time, a
+-- direction set by hand (which suited the old bar) goes back to Automatic.
+-- The bar's kind is Automatic's first choice there (POPOUT.Order, by shape and
+-- place, not by what is in the way): sideways = "column", up / down = "row".
+-- (POPOUT.Layout alone has no answer for a bar it can't tell, so a move from
+-- such a bar went unnoticed: Lewis's Food button.) db.popLayout[key] = the last one seen.
+function POPOUT.CheckLayout(b, m)
+    -- (the bar's shape only: something else in the way of the popout is no move)
+    local ok, order = pcall(POPOUT.Order, b)
+    local pref = ok and order and order[1]
+    local layout = pref and ((pref == "left" or pref == "right") and "column" or "row") or nil
+    local okA, auto = pcall(POPOUT.Auto, b, POPOUT.Count(m))
+    report.barLayout = report.barLayout or {}
+    report.barLayout[m.name] = layout and (layout .. ", opens " .. tostring(okA and auto)) or ("? " .. tostring(order))   -- (/amac debug)
+    if not layout or not POPOUT.Rect(b) then return end   -- (not laid out: no answer)
+    local db = DB()
+    if type(db.popLayout) ~= "table" then db.popLayout = {} end
+    local was = db.popLayout[m.key]
+    db.popLayout[m.key] = layout
+    if was and was ~= layout and type(db.popDir) == "table" and db.popDir[m.key] then
+        db.popDir[m.key] = nil
+        Note(m.title .. ": moved to a " .. (layout == "column" and "vertical" or "horizontal")
+            .. " bar, popout direction back to Automatic")
+    end
+end
+
 -- The direction for our button m's popout on action button b.
 function POPOUT.Direction(b, m)
     local set = m and type(DB().popDir) == "table" and DB().popDir[m.key]
     if set == "up" or set == "down" or set == "left" or set == "right" then return set end
-    local ok, dir = pcall(POPOUT.Auto, b)
+    local ok, dir = pcall(POPOUT.Auto, b, POPOUT.Count(m))
     return ok and dir or "up"
+end
+
+-- How many items button m's popout shows (at most 10), for POPOUT.Auto
+function POPOUT.Count(m)
+    local list = m and flyoutItems[m.name]
+    return list and math.max(1, math.min(#list, 10)) or nil
 end
 
 -- The popup items' size in frame f's units: Item size, a percentage like Edit
