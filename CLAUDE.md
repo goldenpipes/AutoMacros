@@ -318,6 +318,9 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
     noPick).
   - **Weapon Swap confirmed** (Lewis, Forever, 2026-11-08: "works great"; Fishing again too).
     **Trinket buttons confirmed** too (Lewis: "trinkets work also").
+- **Committed and pushed** 2026-11-08 (54d06f2). **Released** 2026-11-08 as pre-release
+  v1.2.0 (default type; notes: its changelog section); CurseForge upload run 42541954668,
+  success. README changed (Gear column): Lewis to paste it into CurseForge.
 
 ## 1.1.1 — openables found by the bag's loot flag (2026-11-07)
 - Lewis (Forever, after the v1.1.0 release): Small Barnacled Clams weren't found; /use
