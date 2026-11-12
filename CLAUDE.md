@@ -496,7 +496,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - **Released** 2026-11-11 as a **full release** v1.3.0 (Lewis: "commit and push it as release
   to both GH and CF"; notes: its changelog section). Commit dbecf30; Latest on GitHub;
   CurseForge upload run 43139253035, file id 9568051, type release. README changed (Class
-  and Group columns): Lewis to paste it into CurseForge. The ping work that held the commit is
+  and Group columns): Lewis pasted it into CurseForge (2026-11-11). The ping work that held the commit is
   done (pings are part of Raid Marker). Unconfirmed in game at release: the Highlight page
   cleanup, "Show with", the per-button Hover color. v1.2.0's release and tag deleted (Lewis):
   v1.3.0 is the only GitHub release.
