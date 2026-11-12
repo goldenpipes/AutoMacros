@@ -685,6 +685,126 @@ function KnownSpells(m)
             end
         end
     end
+    -- byName: cast the ID the game itself gives for the name (Forever's Alchemy
+    -- is 1240943), but show the icon of the one in our list (vanilla's 2259, the
+    -- flask: Forever's own has a gem, 134071)
+    if m.byName then
+        for _, o in ipairs(list) do
+            local known, id = KnowsSpellName(o.pick)
+            if known and id and id ~= o.id then
+                o.icon = SpellIcon(o.id)
+                o.id = id
+            end
+        end
+    end
+    -- spellNames: spells whose ID we don't know, found by name in your spellbook
+    for _, name in ipairs(m.spellNames or {}) do
+        local known, id = KnowsSpellName(name)
+        if known and id then
+            local dup = false
+            for _, o in ipairs(list) do if o.id == id then dup = true end end
+            if not dup then list[#list + 1] = { id = id } end
+        end
+    end
+    return list
+end
+
+-- Raid target icons 1 Star .. 8 Skull (icon files 137001 .. 137008).
+MARKER_NAMES = { "Star", "Circle", "Diamond", "Triangle", "Moon", "Square", "Cross", "Skull" }
+MARKER_FILE = 137000
+function MarkerTexture(i) return "Interface\\TargetingFrame\\UI-RaidTargetingIcon_" .. i end
+-- World markers in /wm order (1 Square .. 8 Skull): the raid icon each looks like.
+WORLD_MARKER_ICON = { 6, 4, 3, 7, 1, 2, 5, 8 }
+-- Pings: /ping type, name, its atlas (unverified; checked before use), and the
+-- raid icon that stands in for it as the macro's icon (macro icons can't be atlases).
+-- Each: key, name, the game's word for it, its Enum.PingSubjectType name, the
+-- raid icon standing in for it as the bar macro's icon. /ping matches the game's
+-- own (localized) PING_TYPE_* word: "onmyway" would send a plain ping (as
+-- AbiMark's notes found on Forever); the key is only the fallback.
+PING_TYPES = {
+    { "attack", "Attack", "PING_TYPE_ATTACK", "Attack", 8 },
+    { "warning", "Warning", "PING_TYPE_WARNING", "Warning", 7 },
+    { "assist", "Assist", "PING_TYPE_ASSIST", "Assist", 1 },
+    { "onmyway", "On My Way", "PING_TYPE_ON_MY_WAY", "OnMyWay", 4 },
+}
+
+-- the word a /ping command takes for ping p (a PING_TYPES entry)
+function PingToken(p)
+    local word = _G[p[3]]
+    if type(word) == "string" and word ~= "" then return word end
+    return p[1]
+end
+
+-- the ping wheel's own icon for ping p, if the game has it
+function PingAtlas(p)
+    local kinds = Enum and Enum.PingSubjectType
+    local kind = kinds and kinds[p[4]]
+    if kind == nil or not (C_Ping and C_Ping.GetTextureKitForType) then return nil end
+    local ok, kit = pcall(C_Ping.GetTextureKitForType, kind)
+    if not ok or not kit then return nil end
+    local atlas = "Ping_Wheel_Icon_" .. kit
+    return AtlasExists(atlas) and atlas or nil
+end
+CLEAR_TEXTURE = "Interface\\Buttons\\UI-GroupLoot-Pass-Up"
+
+function AtlasExists(atlas)
+    if not (C_Texture and C_Texture.GetAtlasInfo) then return false end
+    local ok, info = pcall(C_Texture.GetAtlasInfo, atlas)
+    return ok and info ~= nil
+end
+
+-- true where the game has world markers (/wm): not on every client
+function WorldMarkers()
+    return ClearRaidMarker ~= nil or PlaceRaidMarker ~= nil
+end
+
+-- A raid icon's macro: left-click marks your target (the game's /tm: an addon
+-- may not call SetRaidTarget on Forever, ADDON_ACTION_FORBIDDEN), right-click
+-- (where the game has world markers) places the same icon on the ground (/wm,
+-- with the targeting circle). The conditions sit on /tm and /stopmacro, so /wm
+-- and /cwm run plain. [nobtn:2] also works in the
+-- popout's own macros. 0 = Clear: /tm 0 clears the target, /cwm all the ground.
+function MarkerMacro(i)
+    if not WorldMarkers() then return "/tm " .. i end
+    local w = 0
+    for k, r in ipairs(WORLD_MARKER_ICON) do if r == i then w = k end end
+    -- (/cwm takes a marker number, or the game's word for "all" to clear them all:
+    -- "/cwm 0" asks for marker 0, which does nothing; Blizzard's SlashCommands.lua)
+    local place = (i == 0) and ("/cwm " .. (type(ALL) == "string" and ALL or "all")) or ("/wm " .. w)
+    return "/tm [nobtn:2] " .. i .. "\n/stopmacro [nobtn:2]\n" .. place
+end
+
+-- The Raid Marker popout: each entry is a macro (t "macro" in the popout), with
+-- its own picture and name: the eight icons, then the pings (where the game has
+-- them), then Clear. A click on the bar button runs the picked one; Clear is
+-- used, never picked.
+function IconList(m)
+    local list = {}
+    if m.icons == "marker" then
+        local world = WorldMarkers()
+        for i = 8, 1, -1 do
+            list[#list + 1] = { id = i, pick = i, name = MARKER_NAMES[i], texture = MarkerTexture(i),
+                macroIcon = MARKER_FILE + i, macro = MarkerMacro(i),
+                tip = world and "Left-click: mark your target. Right-click: place it on the ground"
+                    or "Click to mark your target" }
+        end
+        -- pings on your target (both clicks: a ping from a button has no spot on the ground)
+        if C_Ping then
+            for k, p in ipairs(PING_TYPES) do
+                -- left: your target, else the ground under the mouse; right: aim it
+                -- at the ground (PING_ARM: the next click on the ground pings there)
+                local word = PingToken(p)
+                list[#list + 1] = { id = 100 + k, pick = p[1], name = p[2], atlas = PingAtlas(p),
+                    texture = MarkerTexture(p[5]), macroIcon = MARKER_FILE + p[5],
+                    macro = "/ping [nobtn:2,@target,exists] " .. word .. "; [nobtn:2] " .. word
+                        .. "\n/click [btn:2] " .. PING_ARM .. k,
+                    tip = "Left-click: ping your target. Right-click: then click the ground to ping it" }
+            end
+        end
+        list[#list + 1] = { id = 0, pick = 0, name = "Clear", texture = CLEAR_TEXTURE, macro = MarkerMacro(0),
+            noPick = true, tip = world and "Left-click: clear your target's mark. Right-click: clear the ground markers"
+                or "Click to clear your target's mark" }
+    end
     return list
 end
 
@@ -749,6 +869,8 @@ function BodyMatches(m, body)
     if m.kind == "spells" then return body:find("/cast", 1, true) ~= nil end
     if m.kind == "travel" and body:find("/cast", 1, true) then return true end
     if m.kind == "fishing" and body:find("/amac fish", 1, true) then return true end
+    if m.kind == "icons" and (body:find("/tm ", 1, true) or body:find("/amac mark", 1, true) or body:find("/wm", 1, true)
+        or body:find("/ping", 1, true)) then return true end
     if m.kind == "trinket" and (body:find("/use " .. m.slot, 1, true) or body:find("/equipslot " .. m.slot, 1, true)) then
         return true
     end
@@ -757,7 +879,7 @@ function BodyMatches(m, body)
     local stem = m.label:gsub("s$", "")
     if body:find("No " .. stem, 1, true) then return true end
     -- Restore Health / Mana making a healthstone or mana gem; Bandage casting Cannibalize
-    if (MADE[m.set] or m.spells) and body:find("/cast", 1, true) then return true end
+    if (MADE[m.set] or m.spells or m.spellNames) and body:find("/cast", 1, true) then return true end
     -- Openable Items on a locked box: Pick Lock or a key, then the box's bag slot
     if m.set == "openable" and body:find("/use %d+ %d+") then return true end
     local id = tonumber(body:match("item:(%d+)"))
@@ -818,7 +940,7 @@ function Apply(m, body, icon, active)
     local curName, curIcon = GetMacroInfo(idx)
     -- with #showtooltip the shown icon is the item's, and the client may report that
     -- instead of the macro's own, so only the placeholder icons are compared
-    local sameIcon = active or type(curIcon) ~= "number" or curIcon == icon
+    local sameIcon = (active and icon == QUESTION_MARK) or type(curIcon) ~= "number" or curIcon == icon
     local sameName = curName == want
     if not sameName or (GetMacroBody(idx) or "") ~= body or not sameIcon then
         local ok, result = pcall(EditMacro, idx, want, icon, body)

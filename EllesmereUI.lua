@@ -65,10 +65,11 @@ function RegisterEUI()
                     local page = UI.FindPage(pageName)
                     if not page then return math.abs(y) end
                     local prebuild = EllesmereUI.IsSearchPrebuild and EllesmereUI.IsSearchPrebuild()
-                    -- a page with its preview on the right (Popout), as on
-                    -- Blizzard's page: the settings in a narrower column on the
-                    -- left, the preview in its own column right of them
-                    local side = page.header and page.previewSide == "right" and not prebuild
+                    -- (Lewis, 1.3.0: every page like EllesmereUI's own, the preview in
+                    -- the strip on top and the settings in full-width rows, so the
+                    -- Popout page no longer gets a narrower column with the preview
+                    -- on the right; Blizzard's page keeps that)
+                    local side = false
                     local into = parent
                     local sideH = 0
                     if side then

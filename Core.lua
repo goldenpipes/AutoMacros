@@ -1,4 +1,4 @@
--- AutoMacros 1.2.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 1.3.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -36,7 +36,7 @@ end
 
 HEARTHSTONE = 6948
 -- The spell and item ID lists that differ between games (TRAVEL_SPELLS,
--- PROFESSION_SPELLS, TRACKING_SPELLS, PORTAL_SPELLS, HS_RANK, CREATE_HS,
+-- PROFESSION_SPELLS, TRACKING_SPELLS, PORTAL_SPELLS, PET_SPELLS, ASPECT_SPELLS, HS_RANK, CREATE_HS,
 -- MANA_GEM_RANK, CONJURE_GEM, WATER_RANK, CONJURE_WATER, FOOD_RANK,
 -- CONJURE_FOOD) are in Games\<game>\Lists.lua; only the running game's file
 -- sets them (Game.lua).
@@ -150,7 +150,7 @@ end
 --   noComboFallback   Food / Water do not borrow Food & Drink items when out (0.136.0)
 -- ---------------------------------------------------------------------------
 SCHEMA = 2
-CLASSIFIER = 25 -- (25: fishing lures; 23 was a build never released, skipped so its saved results are redone) raise when the learning rules change, so items are checked again
+CLASSIFIER = 27 -- (27: items that steal life; 26: items that begin a quest; 25: fishing lures; 23 was a build never released, skipped so its saved results are redone) raise when the learning rules change, so items are checked again
 
 STYLE_DEFAULTS = {
     glowColor = { 1, 0.15, 0.15, 1 }, glowThickness = 3, glowTexture = "solid",
@@ -166,10 +166,17 @@ STYLE_DEFAULTS = {
     euiSkin = true,
 }
 
+-- A button's own hover color (Per-Button Overrides) is the style key
+-- "entryHover_<button key>": mode "global" (until set) = the global Hover color.
+function OwnHoverKey(key)
+    return type(key) == "string" and key:find("^entryHover_") ~= nil
+end
+
 function Style(key)
     local s = DB().style
     local v
     if type(s) == "table" then v = s[key] end   -- (a false value must survive, so no "and/or" here)
+    if v == nil and OwnHoverKey(key) then return StyleColor("entryHover") end   -- (none of its own yet)
     if v == nil then v = STYLE_DEFAULTS[key] end
     if type(v) == "function" then v = v() end   -- a default worked out when asked (entryHover)
     return v
@@ -226,12 +233,14 @@ function ColorMode(key)
     -- the saved choice stays for when EllesmereUI is back
     if m == "accent" and not EUIAccent() then return "default" end
     if m then return m end
+    if OwnHoverKey(key) then return "global" end   -- (a button's own hover: the global one until set)
     if type(s) == "table" and s[key] ~= nil then return "custom" end   -- picked before modes existed
     return "default"
 end
 
-function ColorModeChoices()
+function ColorModeChoices(key)
     local list = {}
+    if OwnHoverKey(key) then list[1] = { key = "global", label = "Global" } end
     for _, m in ipairs(COLOR_MODES) do
         if m.key ~= "accent" or EUIAccent() then list[#list + 1] = m end
     end
@@ -240,8 +249,9 @@ end
 
 -- the colour actually drawn for a colour setting, as { r, g, b, a }
 function StyleColor(key)
-    local c = Style(key)
     local mode = ColorMode(key)
+    if mode == "global" then return StyleColor("entryHover") end
+    local c = Style(key)
     if mode == "accent" then
         local r, g, b = EUIAccent()
         if r then return { r, g, b, c[4] or 1 } end
@@ -256,11 +266,23 @@ function StyleColor(key)
         if cc then return { cc.r, cc.g, cc.b, c[4] or 1 } end
     end
     if mode ~= "custom" then
-        local d = STYLE_DEFAULTS[key]
+        local d = STYLE_DEFAULTS[key] or (OwnHoverKey(key) and STYLE_DEFAULTS.entryHover)
         if type(d) == "function" then d = d() end   -- worked out when asked (entryHover)
         return { d[1], d[2], d[3], c[4] or d[4] or 1 }
     end
     return c
+end
+
+-- A colour setting's mode (Default / Accent / Class / Custom / Global) picked:
+-- its opacity goes back to full (Lewis: an opacity lowered for one mode carried
+-- over to the others, which all share the one saved alpha).
+function SetColorMode(key, mode)
+    local s = DB().style
+    local c = type(s) == "table" and s[key]
+    if type(c) == "table" then
+        s[key] = { c[1], c[2], c[3], 1 }
+    end
+    SetStyle(key .. "Mode", mode)
 end
 
 function SetStyle(key, value)
@@ -466,6 +488,7 @@ end
 
 -- not offered while the other kind of buff button is in use
 function HiddenButton(e)
+    if e.needs and not e.needs() then return true end   -- (World Marker, Ping: only where the game has them)
     if e.buffPart then return OneBuff() end
     if e.oneBuff then return not OneBuff() end
     return false
@@ -541,9 +564,10 @@ CATALOG = {
       set = "combo", default = true, placeholder = { item = 13724 } },   -- Enriched Manna Biscuit
     { key = "comprehend", name = "AM_Scroll", title = "Comprehend", empty = "Comprehend", label = "scrolls",
       special = "scroll", class = "MAGE", scope = "character", default = true },
-    -- spells: after the bandages, for whoever knows them (Undead: Cannibalize)
+    -- spells: after the bandages, for whoever knows them (Undead: Cannibalize;
+    -- Troll: Rapid Regeneration, by name: its ID isn't known here)
     { key = "bandage", name = "AM_Bandage", title = "Bandage", empty = "No Bandage", label = "bandages",
-      set = "bandage", spells = { 20577 }, placeholder = { item = 1251 } },
+      set = "bandage", spells = { 20577 }, spellNames = { "Rapid Regeneration" }, placeholder = { item = 1251 } },
     -- Anything whose "Use:" cures or removes a debuff: poison, disease, bleeding,
     -- curse, magic, stuns and snares. Potions, First Aid's Anti-Venom, poultices
     -- and tourniquets (Forever), quest rewards like Jungle Remedy. Was the
@@ -651,6 +675,22 @@ CATALOG = {
       label = "usable quest items", set = "quest", placeholder = { item = 1307 } },   -- Gold Pickup Schedule
     { key = "portals", name = "AM_Portal", title = "Portals", empty = "Portals", label = "portals",
       kind = "spells", spells = PORTAL_SPELLS, class = "MAGE", scope = "character" },
+    -- Warlock demons you can summon; the popout picks which one a click summons.
+    -- On by itself once you know one (autoSpells).
+    { key = "pets", name = "AM_Pet", title = "Summon Demon", empty = "Summon Demon", label = "demons",
+      kind = "spells", spells = PET_SPELLS, byName = true, autoSpells = true, class = "WARLOCK",
+      scope = "character" },
+    -- Hunter aspects; the popout picks which one a click casts. On by itself once
+    -- you know one (autoSpells).
+    { key = "aspects", name = "AM_Aspect", title = "Aspects", empty = "Aspects", label = "aspects",
+      kind = "spells", spells = ASPECT_SPELLS, byName = true, autoSpells = true, class = "HUNTER",
+      scope = "character" },
+    -- Raid target icons: left-click marks your target (/tm), right-click
+    -- places it as a world marker (/wm, where the game has them); pings (/ping)
+    -- in the same popout. The popout picks which one a click uses. Off until
+    -- switched on.
+    { key = "marker", name = "AM_Marker", title = "Raid Marker", empty = "Raid Marker", label = "markers",
+      kind = "icons", icons = "marker", placeholder = { icon = 137008 } },
     -- every profession window you know (each at its highest rank); clicking one
     -- in the popout opens it. On by itself once you know one (autoSpells).
     { key = "professions", name = "AM_Profession", title = "Professions", empty = "Professions",

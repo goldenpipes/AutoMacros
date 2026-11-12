@@ -1,4 +1,4 @@
-# Copies the addon (AutoMacros.toc, every file it lists, the Media icon) from this project
+# Copies the addon (AutoMacros.toc, every file it lists, the Media pictures) from this project
 # into the WoW Forever client's AddOns\AutoMacros as a plain folder, not a link: the
 # CurseForge app updates AutoMacros there and, through a link, deleted project files.
 # Run from the project folder:  & .\tools\sync_forever.ps1   (optionally another client folder)
@@ -14,7 +14,11 @@ foreach ($line in Get-Content (Join-Path $project "AutoMacros.toc")) {
     $l = $line.Trim()
     if ($l -and -not $l.StartsWith("#")) { $files += $l }
 }
-$files += "Media\AutoMacros.tga"
+# the pictures: the AddOn List icon and the rest of Media (the pushpin, ...)
+foreach ($p in Get-ChildItem (Join-Path $project "Media") -File) {
+    if ($p.Extension -in ".tga", ".blp") { $files += "Media\" + $p.Name }
+}
+if ($files -notcontains "Media\AutoMacros.tga") { throw "missing in the project: Media\AutoMacros.tga (nothing copied)" }
 foreach ($f in $files) {
     if (-not (Test-Path (Join-Path $project $f))) { throw "missing in the project: $f (nothing copied)" }
 }

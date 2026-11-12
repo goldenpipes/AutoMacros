@@ -42,16 +42,16 @@ you like: no extra bar to place, unlike AutoBar.
 
 ## Buttons
 
-| Recovery | Food & drink | Buffs and debuffs | Utility | Gear | Class |
-|---|---|---|---|---|---|
-| Restore Health | Food | Agility, Intellect, Stamina, Strength, Spirit | Hearth/Teleport | Trinket 1, Trinket 2 (use it; swap trinkets in the popout) | Mage portals |
-| Restore Mana | Water | Armor, Resistance, Haste, Spell Power | Quest Item | Weapon Swap (two-hander or one-hander and shield) | Mage Comprehend scrolls |
-| Rage Potion | Food & Drink | Other Buffs | Explosives | | |
-| Bandage | Buff Food | Flask | Professions | | |
-| Debuff Cure | | Weapon Buff | Tracking | | |
-| | | Enemy Debuff (nets, glue, Bag of Marbles) | Utility Buff (speed, immunity, escapes) | | |
-| | | | Openable Items (clams, crates, lockboxes) | | |
-| | | | Fishing (puts your pole on and your weapons back; lures in the popout) | | |
+| Recovery | Food & drink | Buffs and debuffs | Utility | Gear | Class | Group |
+|---|---|---|---|---|---|---|
+| Restore Health | Food | Agility, Intellect, Stamina, Strength, Spirit | Hearth/Teleport | Trinket 1, Trinket 2 (use it; swap trinkets in the popout) | Mage portals | Raid Marker (left-click marks your target, right-click places it on the ground; pings too) |
+| Restore Mana | Water | Armor, Resistance, Haste, Spell Power | Quest Item | Weapon Swap (two-hander or one-hander and shield) | Mage Comprehend scrolls |  |
+| Rage Potion | Food & Drink | Other Buffs | Explosives | | Warlock Summon Demon |  |
+| Bandage | Buff Food | Flask | Professions | | Hunter Aspects |  |
+| Debuff Cure | | Weapon Buff | Tracking | | |  |
+| | | Enemy Debuff (nets, glue, Bag of Marbles) | Utility Buff (speed, immunity, escapes) | | |  |
+| | | | Openable Items (clams, crates, lockboxes) | | |  |
+| | | | Fishing (puts your pole on and your weapons back; lures in the popout) | | |  |
 
 A button turns itself on the first time you carry (or know) something for it, and stays on
 after that. Switch buttons on or off on the Buttons page, or with `/amac add` / `/amac remove`.

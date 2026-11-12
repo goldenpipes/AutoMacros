@@ -108,7 +108,7 @@ function UpdateCore()
     end
     local emptyState = {}
     for _, m in ipairs(MACROS) do
-        local body, id, spellUsed, making
+        local body, id, spellUsed, making, fixedIcon
         if m.special == "scroll" then
             flyoutItems[m.name] = scrolls
             body, id = ScrollBody(m, scrolls)
@@ -117,6 +117,11 @@ function UpdateCore()
             flyoutItems[m.name] = list
             id = ChosenFor(m, list)   -- (Tracking: the one switched on)
             body = id and SpellBody(id) or nil
+            -- a spell whose name finds another ID than ours (Forever's Alchemy,
+            -- 1240943, has a gem icon): the macro's own icon is our spell's (the
+            -- flask), in place of the "?" that lets the game pick
+            local _, entry = ChosenFor(m, list)
+            if entry and entry.icon then fixedIcon = entry.icon end
         elseif m.order then
             -- a button of your own: what you carry or know of it, in your order
             local list = {}
@@ -146,6 +151,20 @@ function UpdateCore()
             for _, e in ipairs(list) do if e.pole then poles[#poles + 1] = e end end
             id = Chosen(m, poles)
             body = id and FishBody(id, have) or EmptyBody(m.label)
+        elseif m.kind == "icons" then
+            -- Raid Marker: always the skull (the list's first); the popout's other
+            -- icons and pings are used from there, never made the button's
+            local list = IconList(m)
+            flyoutItems[m.name] = list
+            local entry = list[1]
+            id = entry and entry.id
+            body = entry and entry.macro
+            -- (Raid Marker: always the skull, whichever icon or ping is picked)
+            fixedIcon = (m.icons == "marker") and (MARKER_FILE + 8) or (entry and entry.macroIcon)
+            -- (its tooltip says what a right-click does, see RightClickHint; not for a ping)
+            local isIcon = entry and type(entry.pick) == "number"
+            rightCast[m.name] = (isIcon and WorldMarkers()) and "place it on the ground"
+                or ((not isIcon and entry) and "ping the ground") or nil
         elseif m.kind == "trinket" then
             -- uses the trinket worn in its slot; the popout wears another there
             local list, worn = TrinketList(m.slot, have)
@@ -232,14 +251,16 @@ function UpdateCore()
         end
         -- spell and scroll buttons show the spell when there is nothing to use, so they are never "empty"
         -- (nor is one that makes a healthstone, mana gem or conjured water / food)
-        emptyState[m.name] = (id == nil) and not making and m.kind ~= "spells" and m.special ~= "scroll"
+        emptyState[m.name] = (id == nil) and not making and m.kind ~= "spells" and m.kind ~= "icons" and m.special ~= "scroll"
         if not inCombat then
             -- "?" and the real name while #showtooltip drives the icon; the
             -- placeholder icon and "No ..." name when it is not used.
             local active = body ~= nil and body:sub(1, 12) == "#showtooltip"
             local icon = QUESTION_MARK
             if body and not active then
-                icon = IconFor(m.placeholder)
+                icon = fixedIcon or IconFor(m.placeholder)
+            elseif body and fixedIcon and fixedIcon ~= QUESTION_MARK then
+                icon = fixedIcon
             end
             local result = Apply(m, body, icon, active)
             report[m.name] = { id = id, spell = spellUsed, result = result, size = body and #body or 0 }

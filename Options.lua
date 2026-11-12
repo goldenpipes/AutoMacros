@@ -63,6 +63,8 @@ function UI.CategoryIcon(e)
     local list = flyoutItems[e.name]
     local first = list and list[1]
     if first then
+        if first.macroIcon then return first.macroIcon end
+        if first.icon then return first.icon end
         if e.kind == "spells" or first.spell then return SpellIcon(first.id) end
         return IconFor({ item = first.id })
     end
@@ -361,7 +363,8 @@ UI.BUTTON_GROUPS = {
     { name = "Utility", keys = { "travel", "questitem", "explosives", "professions", "tracking", "utility",
         "openable", "fishing" } },
     { name = "Gear", keys = { "trinket1", "trinket2", "weaponswap" } },
-    { name = "Class", keys = { "portals", "comprehend" } },
+    { name = "Class", keys = { "portals", "comprehend", "pets", "aspects" } },
+    { name = "Group", keys = { "marker" } },
 }
 
 -- the buttons switched on for this character
@@ -604,7 +607,14 @@ function UI.OwnPopoutItems()
                 db.popClick[e.key] = (v ~= "default") and v or nil
                 UI.PopoutChanged()
             end },
-        UI.OwnPopoutNumber("Item size", "popSize", "itemScale", 50, 200, 10, "%d%%"),
+        -- its own hover color ("Global" = the one under Global Behavior)
+        { type = "color", label = "Hover", key = "entryHover_" .. UI.PopoutEntry().key, alpha = true },
+        -- (100 in the middle: half size left, double right, stops at 50)
+        (function()
+            local it = UI.OwnPopoutNumber("Item size", "popSize", "itemScale", 0, 200, 10, "%d%%")
+            it.floor = 50
+            return it
+        end)(),
         UI.OwnPopoutNumber("Item spacing", "popGap", "entrySpacing", 0, 10, 1, nil,
             function() return BLIZZ_ART.PopupArt() end),   -- (as the global one: the bar's gap with the background on)
         { type = "button", label = "Use global size and spacing",
@@ -822,9 +832,9 @@ function UI.DemoPopout()
             local it = list[i]
             local isSpell = e.kind == "spells" or it.spell == true
             local count = (not isSpell) and CountOf(it.id) or nil
-            local s = { icon = isSpell and SpellIcon(it.id) or IconFor({ item = it.id }),
+            local s = { icon = it.macroIcon or (isSpell and SpellIcon(it.id) or IconFor({ item = it.id })),
                 count = (count and count > 1) and tostring(count) or "",
-                selected = chosen ~= nil and (it.pick or it.id) == chosen }
+                selected = chosen ~= nil and (it.pick or it.id) == chosen and e.kind ~= "icons" }
             shown[i] = s
             if s.selected or not icon then icon = s.icon end
         end
@@ -852,8 +862,9 @@ UI.HEADERS.flyout = function(f, width)
     end
     local e = UI.PopoutEntry()
     BLIZZ_ART.scaleFor, BLIZZ_ART.gapFor = PopoutSize(e), PopoutGap(e)
+    BLIZZ_ART.hoverFor = e and ("entryHover_" .. e.key)
     local ok, h = pcall(UI.LayoutDemo, f, width)
-    BLIZZ_ART.scaleFor, BLIZZ_ART.gapFor = nil, nil
+    BLIZZ_ART.scaleFor, BLIZZ_ART.gapFor, BLIZZ_ART.hoverFor = nil, nil, nil
     if not ok then error(h, 0) end
     return h
 end

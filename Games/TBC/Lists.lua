@@ -39,6 +39,11 @@ TRACKING_SPELLS = {
     2383, 2580, 43308, 2481, 5502, 5500, 5225,
     1494, 19883, 19884, 19885, 19880, 19878, 19882, 19879,
 }
+-- Warlock pets: Imp, Voidwalker, Succubus, Felhunter, Felguard, Inferno (the
+-- first one is the button's icon). IDs from memory, unverified.
+PET_SPELLS = { 688, 697, 712, 691, 30146, 1122 }
+-- Hunter aspects (every rank; the button keeps the best one of each name).
+ASPECT_SPELLS = { 13165, 14318, 14319, 14320, 14321, 14322, 25296, 27044, 13163, 5118, 13159, 13161, 34074, 20043, 20190, 27045 }
 -- Mage portals (the first one is the button's icon).
 PORTAL_SPELLS = {
     10059, 11417, 11416, 11418, 11419, 11420,

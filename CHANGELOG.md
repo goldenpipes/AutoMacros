@@ -4,6 +4,49 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): the middle number go
 features or changes, the last number for bug fixes only. Versions starting with `0.` were
 the beta.
 
+## 1.3.0 - 2026-11-11
+
+### Added
+- **Summon Demon** button for Warlocks (Class group): summons your demon. The popout lists
+  every demon you know (Imp, Voidwalker, Succubus, Felhunter, and Felguard and Infernal where
+  the game has them); click one to summon it and make it the button's demon. Turns itself on
+  once you know a summon.
+- **Aspects** button for Hunters (Class group): casts your aspect. The popout lists every
+  aspect you know, at its best rank; click one to cast it and make it the button's aspect.
+  Turns itself on once you know an aspect. While an aspect is on, the button shows that aspect's
+  own icon with the game's "active" icon over it at half strength, so you can tell which it is.
+- **Raid Marker** button (new Group group). The bar button is always Skull: left-click puts
+  it on your target, right-click places it on the ground as a world marker (on game versions
+  that have them). Its popout has all eight raid icons and Clear with the same left- and
+  right-click, and, on game versions that have pings, Attack, Warning, Assist and On My Way:
+  left-click pings your target (or the ground under the mouse without one), right-click and
+  then a click on the ground pings that spot (right-click again to cancel). Works in combat.
+- The **Bandage** button also lists the Troll racial Rapid Regeneration for Trolls who have
+  it, after your bandages (like Cannibalize for Undead).
+
+### Changed
+- Highlight settings show only what applies: nothing else while **Highlight empty buttons**
+  is off, and **Pulse time** only while it pulses. Reordered: Texture, Color, Thickness, then Pulse.
+- Popout settings: **Show with** (None, Shift, Control, Alt) makes popouts open on hover only
+  while that key is held. **Hover** color moved up to Global Behavior, and each button can have
+  its own under Per-Button Overrides ("Global" uses the global one).
+- The Popout settings page on EllesmereUI's window is laid out like its own pages: the
+  preview on top and every setting in even, full-width two-column rows, with no cut-off labels.
+- A small **pin button** at the end of every popout pins it open: it stays open while you
+  click its items, move the mouse away or click in the world, so you can use several things
+  in a row (works in combat too). It stays open until you click the pin again to unpin it.
+  **Ctrl+click** on an item pins it too; the pin takes the Selected border color while pinned.
+  Drag the pin to move a popout anywhere; it is pinned where you let go. In combat it can't
+  follow the mouse: drag the pin, then click where the popout should go.
+- **Explosives** also takes items that steal life from an enemy, such as Faintly Glowing Skull.
+- The **Quest Item** button also lists items that begin a quest ("This Item Begins a
+  Quest"); click to start the quest.
+
+### Fixed
+- Changing a color setting's mode (Default, Class, Custom, ...) resets its opacity to full,
+  instead of keeping an opacity you lowered for another mode.
+- The **Professions** button showed the wrong icon for a profession on WoW Forever (Alchemy).
+
 ## 1.2.0 - 2026-11-08
 
 ### Added

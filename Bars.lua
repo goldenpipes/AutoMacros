@@ -183,14 +183,17 @@ end
 -- How many items button m's popout shows (at most 10), for POPOUT.Auto
 function POPOUT.Count(m)
     local list = m and flyoutItems[m.name]
-    return list and math.max(1, math.min(#list, 10)) or nil
+    return list and math.max(1, math.min(#list, MAX_ENTRIES or 10)) or nil
 end
 
 -- The popup items' size in frame f's units: Item size, a percentage like Edit
 -- Mode's Icon Size, of a stock action button (Blizzard's template at its own
 -- size); with EllesmereUI's look, of your EllesmereUI buttons.
 function BLIZZ_ART.ItemSize(f)
-    local base = EUIButtonLook() and (BLIZZ_ART.BarButtonSize()) or BLIZZ_ART.native or 36
+    -- 100% = your action bar buttons' size (the one the popout opens from, while
+    -- it is worked out: BLIZZ_ART.barFor), with either look: EllesmereUI's 32 px
+    -- buttons give 32 px items, not Blizzard's template size
+    local base = BLIZZ_ART.BarButtonSize(BLIZZ_ART.barFor) or BLIZZ_ART.native or 36
     -- (BLIZZ_ART.scaleFor: one button's own Item size while its popout is worked out, see PopoutLook)
     return BarUnits(f, base * (tonumber(BLIZZ_ART.scaleFor or Style("itemScale")) or 100) / 100)
 end

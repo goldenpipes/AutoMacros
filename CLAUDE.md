@@ -51,7 +51,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 1.2.0.**
+- **Current version: 1.3.0.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   version** (once per session, not per iteration) (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -242,6 +242,261 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   notes in the CurseForge section are out of date.
 - .build.info now (2026-10-29): Forever 1.60.1.70685, retail 12.1.5.70575, Era
   1.15.9.70576, Anniversary 2.5.6.70577, MoP 5.5.4.70631.
+
+## 1.3.0 — Summon Demon, Aspects, Raid Marker, pinned popouts (2026-11-09 to 11-11)
+- Lewis: "we need a button for warlock pet summons". CATALOG `pets` (AM_Pet, "Summon
+  Demon", kind "spells", `PET_SPELLS`, byName, autoSpells, class WARLOCK, character scope),
+  Class group, like Professions/Portals (no new code paths). `PET_SPELLS` per game
+  (Games\*\Lists.lua; **IDs from memory, unverified**): vanilla 688 Imp, 697 Voidwalker,
+  712 Succubus, 691 Felhunter, 1122 Inferno; TBC + 30146 Felguard; MoP + Grimoire of
+  Supremacy 112866-112870; retail 688, 697, 366222 Sayaad, 691, 30146 (no Infernal: a
+  cooldown there). Ritual of Doom left out (needs a group, summons a hostile Doomguard).
+  The click summons the picked demon (not the one out now). README Class column: **paste
+  README into CurseForge again.** Untested in game.
+
+- Lewis: "aspects for hunters?" CATALOG `aspects` (AM_Aspect, "Aspects", kind "spells",
+  `ASPECT_SPELLS`, byName, autoSpells, class HUNTER, character scope), Class group, same
+  shape as Summon Demon. **IDs from memory, unverified**: vanilla Hawk 13165, 14318-14322,
+  25296, Monkey 13163, Cheetah 5118, Pack 13159, Beast 13161, Wild 20043, 20190; TBC + Hawk
+  27044, Viper 34074, Wild 27045; MoP Hawk 13165, Iron Hawk 109260, Cheetah, Pack; retail
+  Cheetah 186257, Turtle 186265, Eagle 186289, Wild 193530, Chameleon 61648 (cooldowns
+  there, not stances). README Class column: paste into CurseForge. Untested in game.
+- Lewis: "can we make a macro for the raid icons? and pings and stuff?" New kind "icons"
+  (`icons` = "marker" / "world" / "ping"), group "Group": CATALOG `marker` (AM_Marker, "Raid
+  Marker"), `worldmarker` (AM_WorldMarker), `ping` (AM_Ping), general tab, off until switched
+  on (Stocked 0). `IconList(m)` (Macros.lua): entries { id, pick, name, texture / atlas,
+  macroIcon, macro, tip }, Clear entries noPick. UpdateCore: body = the picked entry's macro,
+  macro icon = its macroIcon (raid icon file IDs 137000 + i, **from memory**). Popout:
+  entries with texture/atlas draw that, tooltip = name (`e.label`); t "macro" as for lures.
+  Raid Marker = `/amac mark N` -> `MarkTarget` (SetRaidTarget on target; same icon again or 0
+  clears). World Marker = `/wm N` (reticle) / `/cwm 0`; World marker order 1 Square, 2
+  Triangle, 3 Diamond, 4 Cross, 5 Star, 6 Circle, 7 Moon, 8 Skull (WORLD_MARKER_ICON).
+  Ping = `/ping [@target] attack|warning|assist|onmyway`, atlases Ping_Marker_Icon_* guessed
+  (checked with GetAtlasInfo, else a raid icon). CATALOG `needs` (HiddenButton): World
+  Marker needs ClearRaidMarker / PlaceRaidMarker, Ping needs C_Ping. README got a Group
+  column: paste into CurseForge. Untested in game.
+- Lewis: quest items that begin a quest on the Quest Item button. Classify flag
+  `startsQuest` (a tooltip line equal to ITEM_STARTS_QUEST, or containing "begins a quest",
+  case- and color-blind) -> `{ "quest" }`, right after openable; such items need no Use
+  line (the GetItemSpell wait skips them). CLASSIFIER 26. Untested in game.
+- Lewis: Professions button showed the wrong icon for Alchemy (Forever). His /run: GetSpellInfo
+  ("Alchemy") = 1240943, icon 134071; GetSpellTexture(2259) = 136240 (vanilla ID, also known).
+  KnownSpells: for byName buttons each entry's id = the ID KnowsSpellName(name) answers, so
+  icons (popout, Buttons page) and SpellBody use the spell the game casts by name. Untested.
+  **Still wrong on the bar** (Lewis). Now UpdateCore gives byName spell macros their own
+  icon = SpellIcon(id) (fixedIcon) while keeping #showtooltip (the game only picks the
+  icon itself while the macro icon is the question mark; from memory). Apply's sameIcon
+  now compares icons when an active macro has a non-"?" icon. Untested.
+  **Still a gem** (Lewis: should be the flask, icon 134071): Forever shows the icon of the
+  spell named by #showtooltip whatever the macro icon. Now byName spell macros are
+  "/cast <name>" only, icon = SpellIcon(id); `spellTip[macro name] = id` (Update.lua) and
+  `SpellTip(tip)` (Bars.lua, in the tooltip build hook before RightClickHint) puts the
+  spell's tooltip on the button (SetSpellByID, guarded by tip.amSpellTip). Untested.
+  **Still a gem**: Lewis's GetMacroInfo showed the macro right (icon 134071, "/cast
+  Alchemy"), so Forever draws a macro's bar icon from the spell its /cast resolves to (vanilla
+  2259), ignoring the macro icon. Now CATALOG `clickCast` (Professions only; the other byName
+  buttons are back to SpellBody with #showtooltip): body "/click AMCast_<key>", a hidden
+  SecureActionButtonTemplate (`CastButton(m)`, Macros.lua; type spell, attribute spell = the
+  ID, set out of combat in UpdateCore; LeftButtonUp + useOnKeyDown false like the popout
+  items), macro icon = SpellIcon(id), tooltip by SpellTip. BodyMatches accepts "/click
+  AMCast_". Untested in game.
+  **Then found:** 134071 is the *gem* (Forever's Alchemy 1240943's own icon, shown in its
+  tooltip); the flask Lewis wants is **136240**, vanilla 2259's. So KnownSpells keeps
+  `o.icon` = SpellIcon(listed ID) when the name gives another ID; the clickCast macro icon,
+  popout and Buttons page use it. Casting stays 1240943. **Flask confirmed** (Lewis).
+  The tooltip flashed (SetSpellByID over the action button's own rebuilds); SpellTip now
+  edits the built tooltip in place: line 1 = spell name, + GetSpellDescription. **Confirmed**
+  (Lewis, 2026-11-10: "works now").
+  Then Lewis: drop the workaround, the normal way. The two "failed" tries (#showtooltip with
+  own icon; plain /cast) had both set 134071, the gem, so they proved nothing. Removed
+  clickCast, CastButton, spellTip / SpellTip. Now SpellBody (#showtooltip Alchemy / /cast
+  Alchemy) with the macro icon = the chosen entry's `icon` (flask) instead of "?" (Update.lua
+  spells branch, fixedIcon; Apply compares icons for that case). **Confirmed** (Lewis,
+  2026-11-10: flask on the bar and the normal Alchemy tooltip).
+- Lewis: Faintly Glowing Skull 4945 (0.8 "Consumable - Other", "Steals 75 to 125 life from
+  target enemy.") on Explosives. `hurts` also on steals/drains + life/health; sub 0 takes
+  hurts too. CLASSIFIER 27. Untested in game.
+- Lewis: Troll Rapid Regeneration on the Bandage button (with Cannibalize). Its spell ID
+  isn't known here (not a vanilla spell), so CATALOG entries may have `spellNames`:
+  KnownSpells adds each name KnowsSpellName finds (GetSpellInfo by name: spellbook only,
+  answers with the ID), after `spells`, skipping IDs already listed. enUS name only.
+  BodyMatches counts /cast for spellNames too. Untested in game.
+
+- Lewis (2026-11-11): left-click an icon = on the target, right-click = place it in the
+  world; all on one button. World Marker button removed; `MarkerMacro(i)` (Macros.lua) =
+  "/wm [btn:2] W" (W = the world marker showing raid icon i, WORLD_MARKER_ICON) or "/cwm
+  [btn:2] 0" for Clear, "/stopmacro [btn:2]", "/amac mark i"; only the /amac line where
+  `WorldMarkers()` is false. Used for the bar macro and the popout entries (their macrotext;
+  [btn:2] reads the click on the popout button). rightCast[name] = "place it on the ground"
+  for the bar tooltip. README/changelog updated. Untested in game.
+- Lewis: pings belong on Raid Marker too. Ping button removed; IconList("marker") adds
+  PING_TYPES entries (id 101-104, pick = the ping type string) before Clear when C_Ping
+  exists, macro "/ping [@target] <type>" for both clicks; rightCast only for an icon pick.
+  MAX_ENTRIES 10 -> 14 (Popout.lua; POPOUT.Count uses it). Untested in game.
+- Lewis: an option to keep a popout open, e.g. Ctrl+click. The entries' wrapped OnClick post
+  snippet now hides the flyout only `if not IsControlKeyDown()` (restricted env function,
+  from memory); PostClick with Ctrl redraws it a frame later (SafeOpen) so the selected
+  border follows; entry tooltip last line "Ctrl+click keeps the popout open". It still
+  closes on leaving (auto-hide). Untested in game.
+- Lewis: picking a marker in the popout should use it at once and never re-order the
+  popout. Order: IconList is fixed (Skull..Star, pings, Clear) and nothing sorts the pick
+  to the front (checked). PrepareSecure sets attribute u<id>_<i> for every kind "icons"
+  entry, so they are used even with the button set to "Set only". Untested in game.
+- Lewis: the Raid Marker button's icon stays the skull whatever is picked (UpdateCore:
+  fixedIcon = MARKER_FILE + 8 for icons "marker"). The pick still decides what a click does.
+  Ctrl+click closing the marker popout: cause not found yet (IsControlKeyDown is in the
+  restricted env per Gethe/wow-ui-source); asked Lewis whether other popouts stay open.
+- Ctrl+click "closes there too" (every popout). `/amac popdebug` (temporary, Events.lua:
+  hooks flyout OnHide, prints IsControlKeyDown + debugstack) showed the hide came from
+  SecureHoverDriver (RegisterAutoHide: hides once the cursor leaves the rect set for the
+  delay), with Ctrl already up: the click itself never closed it. Now Ctrl+click pins it:
+  post snippet `f:UnregisterAutoHide()` (HANDLE method, checked in RestrictedFrames.lua),
+  `flyout.amPinned` (PostClick) makes the GLOBAL_MOUSE_DOWN closer skip; cleared OnHide and
+  in OpenFlyout (a new hover re-registers auto-hide). Untested. Remove popdebug when done.
+- Lewis: a little pushpin in the top-right corner of the button while pinned. Drawn by
+  `tools\make_pin.ps1` (System.Drawing; now a **white silhouette** push pin like Lewis's reference: cap, neck, curved collar, base plate, needle, turned 45 degrees; TGA 64x64; a .png path
+  writes a preview on dark gray) -> `Media\Pin.tga`. sync_forever.ps1 and build_zip.py now take every
+  Media\*.tga/.blp. `ShowPin(button)` (Popout.lua): one frame `pinMark` (DIALOG strata,
+  scaled to the button's effective scale, 45% of its width, centred 12% in from the
+  TOPRIGHT); shown by PostClick on Ctrl, hidden on flyout OnHide and in OpenFlyout.
+  Untested in game.
+- Lewis (after a restart): no pin seen; and no yellow selected outline on Raid Marker's
+  popout, only the pin on the bar button, inside its top-right corner. Cause of the missing
+  pin: PostClick's Ctrl redraw (SafeOpen -> OpenFlyout) cleared amPinned + the pin a frame
+  later; the redraw now sets both again. Pin: TOPRIGHT -1,-1 inside the button, 40% of its
+  width, frame level 100. OpenFlyoutItems / UI.DemoPopout: `selected` never for kind "icons".
+  Untested in game.
+- Lewis: a small clickable pin/unpin button at the end of the popout, so no Ctrl needed.
+  `BuildPinButton()` (Popout.lua, from BuildFlyout): `pinButton` = AutoMacrosPinButton,
+  SecureHandlerClickTemplate child of the flyout, Pin.tga; `_onclick` toggles attribute
+  "pinned": Unregister/RegisterAutoHide(+AddToAutoHide(self)) on the flyout (frame ref).
+  Header frame ref "pin": OPEN_SNIPPET places it (attributes pe/pa/pox/poy/ps per bar
+  button from PrepareSecure: PIN_ENDS[dir], half an item, 2 px out), clears "pinned" and
+  adds it to the auto-hide rects; the Ctrl entry snippet sets "pinned". `PinChanged(on)`
+  = amPinned + ShowPin (bar pushpin) + pin button gold/alpha; GLOBAL_MOUSE_DOWN closer
+  skips clicks on it. Untested in game (incl. SecureHandlerClickTemplate on Forever).
+- Pin button **works** (Lewis), but a click on an item closed the pinned popout. The
+  entries' post snippet now hides only when the pin button's "pinned" attribute is unset;
+  PostClick redraws whenever flyout.amPinned. Untested in game.
+- Lewis: no pushpin on the bar button any more (the pin button is enough): ShowPin and
+  pinMark removed; PinChanged only sets amPinned and the pin button's look.
+- Lewis (EUI Popout page screenshot vs EllesmereUI's Action Bars page): even spacing,
+  uniform widths, no truncated labels ("Height (pix...", "Selected bor..."). The EUI page
+  no longer uses the right-hand preview column (EllesmereUI.lua: side = false, header strip
+  like other pages; Blizzard's page keeps previewSide). BuildPage on EUI: any pairable item
+  left alone gets a DualRow with a spacer (was only `half` items). "Height (pixels)" ->
+  "Height". Pin button colour while pinned = StyleColor("selectedColor"). **Confirmed**
+  (Lewis, 2026-11-11: "Looks even").
+- Lewis (Forever): marking failed, BugGrabber ADDON_ACTION_FORBIDDEN: **SetRaidTarget is
+  protected on Forever** (from /amac mark via the popout's macrotext). And right-click
+  Clear ("/cwm [btn:2] 0") did nothing. MarkerMacro now = "/tm [nobtn:2] i", "/stopmacro
+  [nobtn:2]", then plain "/wm W" or "/cwm 0" (no conditions on /wm, /cwm); only "/tm i"
+  without world markers. MarkTarget and /amac mark removed. The same icon again no longer
+  takes it off (Clear does). /tm with conditions unverified on Forever. Untested.
+- Lewis: pings can't go on the ground; AbiMark (VainWoW, CurseForge; installed in
+  _forever_\Interface\AddOns\AbiMark) can. Its way: a full-screen secure button whose click
+  runs "/ping [@cursor] <ping>" ([@cursor] = world under the mouse); C_Ping.SendMacroPing
+  is protected like SetRaidTarget. Its notes: /ping wants the localized PING_TYPE_* word
+  ("onmyway" sends an untyped ping); Forever's Enum.PingSubjectType order differs from
+  retail; icons atlas "Ping_Wheel_Icon_" .. C_Ping.GetTextureKitForType(kind).
+  Ours: PING_TYPES { key, name, PING_TYPE_ global, enum name, raid icon }, PingToken,
+  PingAtlas (Macros.lua). Entry macro "/ping [nobtn:2,@target,exists] W; [nobtn:2] W" +
+  "/click [btn:2] AutoMacrosPingArm<k>". BuildPingPlacer (Popout.lua, from BuildFlyout):
+  `pingPlacer` AutoMacrosPingPlace (SecureActionButtonTemplate, all of UIParent,
+  FULLSCREEN_DIALOG, type macro, hint text, OnClick wrapped: post self:Hide()), arm
+  buttons AutoMacrosPingArm1-4 (SecureHandlerClickTemplate, hidden; _onclick sets the
+  placer's macrotext "/ping [nobtn:2,@cursor] W" and shows it). Bar tooltip "Right-click:
+  ping the ground" when a ping is picked. **Ground pings confirmed** (Lewis, 2026-11-11).
+  /tm marking and clearing the target **confirmed**. Right-click Clear still failed: Blizzard's
+  /cwm handler (SlashCommands.lua) does ClearRaidMarker(tonumber(x)), and only the localized
+  ALL word clears every marker; "/cwm 0" asks for marker 0. Now "/cwm " .. ALL. **Confirmed**
+  (Lewis, 2026-11-11: "Clears them").
+- Lewis: the bar button did whatever was last clicked in the popout; it should always be
+  Skull. UpdateCore's icons branch uses list[1] (skull), not Chosen; PostClick returns
+  before ChooseItem for kind "icons" (old saved picks are ignored). `/amac popdebug`
+  removed. **Confirmed** (Lewis, 2026-11-11: "Always Skull").
+- Lewis: move a pinned popout anywhere ("drag the pin and it redraws it there").
+  `MovableBy(frame)` (Popout.lua), on the pin button only: RegisterForDrag LeftButton; OnDragStart (only while flyout.amPinned, out
+  of combat, else a Print) SetMovable + StartMoving on the secure flyout; OnDragStop
+  StopMovingOrSizing + SetUserPlaced(false). The next hover re-anchors it (OPEN_SNIPPET).
+  Untested in game.
+- Lewis: pinned stays pinned until unpinned, no exceptions. OPEN_SNIPPET returns at once
+  while the pin button is "pinned" and the flyout shown (no re-anchor, no other button's
+  popout, no RegisterAutoHide); OpenFlyout(button, redraw) skips hovers while pinned (the
+  PostClick redraw passes redraw = true); RefreshArrows never hides a pinned one. Still
+  closes on: the pin button, a plain click while unpinned. **Confirmed** (Lewis, 2026-11-11:
+  "Stays put"). Dragging by the pin not confirmed yet.
+- Dragging by the pin **confirmed** (Lewis). Then: drag straight away (not only when
+  pinned), click without moving = pin/unpin, a drag pins when it stops. MovableBy: drag
+  start sets the pin button's "dragged" attribute (its _onclick skips one click then:
+  the release may count as a click), drag stop sets "pinned" + UnregisterAutoHide (out of
+  combat, insecure: both allowed then; pcall'd) + PinChanged(true), clears "dragged" 0.2 s
+  later if no click took it. Lewis: it "starts moving but then disappears" (the hover
+  timer mid-drag). Now the pin and UnregisterAutoHide happen at drag start (the global
+  UnregisterAutoHide works from insecure code out of combat via SecureHoverDriverManager's
+  attribute, per SecureHoverDriver.lua). **Confirmed** (Lewis, 2026-11-11: "Stays now").
+- Lewis: moving in combat too. Blizzard's SecureHandlers.lua wraps OnDragStart (not
+  OnDragStop); SecureHandlerMouseUpDownTemplate gives "_onmouseup"; HANDLE:GetMousePosition
+  = cursor as 0-1 fractions of the frame (nil outside); ENV.PlayerInCombat exists. Pin
+  button now "SecureHandlerClickTemplate, SecureHandlerMouseUpDownTemplate" (fallback click
+  only); OnDragStart wrap: in combat set "cdrag", pin + UnregisterAutoHide; _onmouseup with
+  cdrag: flyout CENTER at the mouse on `AutoMacrosMoveRef` (SecureHandlerBaseTemplate frame,
+  all of UIParent, mouse off), clears "dragged". Insecure OnDragStart in combat only
+  PinChanged(true). **Did not move** (Lewis: pins, no error): the drag's release never
+  reaches _onmouseup on Forever. Replaced: OnDragStart wrap in combat pins and shows
+  `AutoMacrosMovePlace` (SecureHandlerClickTemplate, all of UIParent, FULLSCREEN_DIALOG,
+  hint text); its _onclick hides it and, on a left-click, anchors the flyout's CENTER to
+  itself at its GetMousePosition. AutoMacrosMoveRef and the MouseUpDown template removed.
+  The click works (Lewis), but he wants the drop where he lets go. Try: mover OnEnter wrapped
+  (after the drag's mouse capture ends the mouse "enters" the mover) -> place + hide; the
+  drag start stores the mouse as mover attributes sx/sy and an enter within 0.003 of it is
+  ignored. **Didn't work** (Lewis: "Still needs a click"); removed. On Forever the end of
+  a drag reaches no secure handler (neither _onmouseup nor the mover's OnEnter), so in
+  combat it is drag + click; the click is **confirmed** to work. Lewis: it landed higher
+  than the click (the popout's centre went there, the pin sits at its far end): now the
+  far edge (pe) is anchored so the pin's centre is at the click (header attributes
+  pe/ps/pox/poy of flyout attribute "open"). **Confirmed** (Lewis, 2026-11-11: "Lands right").
+- Lewis (2026-11-11): Summon Demon, Aspects and the rest **confirmed**. While an aspect is
+  on, the bar button shows the game's "active" icon; wanted: the aspect's icon with that
+  one over it at 50%. `RefreshActiveOverlays()` (Popout.lua; from RefreshArrows and
+  `ActiveIconFrame` on UNIT_AURA player / shapeshift / ACTIONBAR_UPDATE_STATE / SLOT_CHANGED /
+  PLAYER_ENTERING_WORLD, a frame later): for buttons holding `aspects` whose icon texture
+  differs from the chosen aspect's (entry.icon or SpellIcon), an own frame over the icon:
+  base = aspect icon, top = the shown icon at ACTIVE_OVERLAY_ALPHA 0.5, same texcoords.
+  **Confirmed** (Lewis, 2026-11-11: "Looks right").
+- Lewis: hover modifier options (EllesmereUI's: None / Shift / Control / Alt, as in its
+  EUI_BlizzardSkin_Options "Use Modifier" dropdowns); Hover color up to Global Behavior and
+  overridable per button. `db.popMod` + POPOUT_MODIFIERS / PopoutModifier() (Popout.lua),
+  header attribute "hovermod"; OPEN_SNIPPET returns unless IsShift/Control/AltKeyDown
+  (all in the restricted env, checked). Global Behavior: "Show with" choice + Hover color.
+  Per-button hover = style key "entryHover_<key>" (OwnHoverKey, Core.lua): ColorMode
+  "global" until set (ColorModeChoices(key) adds Global), Style/StyleColor fall back to
+  entryHover; ApplyHover reads BLIZZ_ART.hoverFor (set with scaleFor in OpenFlyout and the
+  settings demo). Per-Button Overrides got a Hover color row. Untested in game.
+- Lewis: Item size slider centred on 100 (= the action bar button size), half to the left,
+  double to the right, 10% steps. EllesmereUI's BuildSliderCore is linear in the value and
+  shows the value (EllesmereUI_Widgets.lua; DualRow passes cfg.snapPoints / cfg.valueSnap), so
+  the track is 0-200 with `floor = 50` on the range item: NativeCfg clamps set() and passes
+  valueSnap = max(floor, v); the knob never goes below the quarter mark. Global and
+  per-button Item size. Untested in game.
+- Lewis (EUI bars at 32 px, Blizzard look on the popout items): items far bigger than the
+  buttons. BLIZZ_ART.ItemSize only used the bar size with the EUI look, else the template's
+  native size (~45). Now base = BLIZZ_ART.BarButtonSize(BLIZZ_ART.barFor) always, barFor =
+  the bar button being worked out (PrepareSecure per button, OpenFlyout); BarButtonSize(b)
+  takes a button (default buttons[1]). **Confirmed** (Lewis, 2026-11-11: "looks good"), as
+  is the centred Item size slider.
+- Lewis: Highlight page shows only what applies, in a logical order. Items: Highlight empty
+  buttons, then (when UI.GlowOn) Texture, Color, Thickness, Pulse, and Pulse time (when
+  UI.GlowPulses too); the old "row" is gone. Page stamp = both switches, setters call
+  `UI.LayoutChanged()` (RefreshPanels + RefreshEUIPage(true)). Untested in game.
+- Lewis: changing a colour's mode kept the opacity set for another (every mode shares the
+  saved colour's alpha). He chose: reset to full. `SetColorMode(key, mode)` (Core.lua) sets
+  the saved colour's alpha to 1, then the mode; used by both pages' mode dropdowns
+  (NativeCfg, MakeColor). All colour settings. **Confirmed** (Lewis, 2026-11-11).
+- **Released** 2026-11-11 as a **full release** v1.3.0 (Lewis: "commit and push it as release
+  to both GH and CF"; notes: its changelog section). The ping work that held the commit is
+  done (pings are part of Raid Marker). Unconfirmed in game at release: the Highlight page
+  cleanup, "Show with", the per-button Hover color.
 
 ## 1.2.0 — Fishing button; popout direction resets on bar orientation (2026-11-08)
 - Lewis: moving a button from a vertical bar to a horizontal one should reset its popout

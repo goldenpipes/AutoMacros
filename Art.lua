@@ -208,9 +208,12 @@ end
 -- glow, fill or border; Blizzard's texture, desaturated) in that color. Its
 -- opacity applies in every mode (o.hoverAlpha with Blizzard's look).
 function ApplyHover(o)
-    local c = StyleColor("entryHover")
+    -- (BLIZZ_ART.hoverFor: a button's own hover color while its popout is dressed)
+    local key = BLIZZ_ART.hoverFor
+    if not key or ColorMode(key) == "global" then key = "entryHover" end
+    local c = StyleColor(key)
     local alpha = c[4] or 1
-    local tint = ColorMode("entryHover") ~= "default"
+    local tint = ColorMode(key) ~= "default"
     local h = o.look and o.look.hover
     if h then
         if tint then h.r, h.g, h.b = c[1], c[2], c[3] end
@@ -737,8 +740,8 @@ buttons = {}        -- action buttons found on screen
 -- The width and height of your action buttons in UI units, the number
 -- EllesmereUI's Icon Size shows (its border is inside the button, so it is
 -- included), as they are on screen (bars may be scaled).
-function BLIZZ_ART.BarButtonSize()
-    local b = buttons[1] or _G.ActionButton1
+function BLIZZ_ART.BarButtonSize(b)
+    b = b or buttons[1] or _G.ActionButton1
     local w, h = b and b:GetWidth(), b and b:GetHeight()
     if type(w) ~= "number" or w <= 0 then return 45, 45 end
     if type(h) ~= "number" or h <= 0 then h = w end

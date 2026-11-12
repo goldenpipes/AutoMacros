@@ -19,6 +19,16 @@ UI.FALLBACK_CHOICES = {
     { key = "empty", label = "Leave the button empty" },
 }
 
+-- the Highlight page's switches (its other settings show only while they apply)
+function UI.GlowOn() return DB().glow ~= false end
+function UI.GlowPulses() return Style("glowPulse") and true or false end
+
+-- a setting that shows or hides others changed: the open page is built again
+function UI.LayoutChanged()
+    if UI.RefreshPanels then pcall(UI.RefreshPanels) end
+    if RefreshEUIPage then pcall(RefreshEUIPage, true) end
+end
+
 function UI.SToggle(label, key)
     return { type = "toggle", label = label,
         get = function() return Style(key) and true or false end,
@@ -359,20 +369,27 @@ PAGES = {
     -- (a page may also have build = fn(parent, width) -> y: one that lays itself out)
     { name = "Buttons", header = "buttons", previewH = 160, sections = UI.ButtonSections,
         stamp = function() return UI.ButtonsStamp() .. "|" .. UI.CustomStamp() end },
-    { name = "Highlight", header = "glow", previewH = 120, sections = {
+    -- Only what applies is shown (Lewis): with the highlight off nothing else, and
+    -- Pulse time only while it pulses. stamp: built again when either changes.
+    { name = "Highlight", header = "glow", previewH = 120,
+      stamp = function() return tostring(UI.GlowOn()) .. tostring(UI.GlowPulses()) end,
+      sections = {
         { name = "Highlight", items = {
             { type = "toggle", label = "Highlight empty buttons",
-                get = function() return DB().glow ~= false end,
-                set = function(v) DB().glow = v; RefreshGlow() end },
-            -- one row: "Pulse [x]   Pulse time <slider>"
-            { type = "row", items = {
-                UI.SToggle("Pulse", "glowPulse"),
-                { type = "range", label = "Pulse time", key = "glowSpeed", min = 0.2, max = 2, step = 0.1 },
-            } },
-            { type = "color", label = "Color", key = "glowColor", alpha = true },
+                get = function() return UI.GlowOn() end,
+                set = function(v) DB().glow = v; RefreshGlow(); UI.LayoutChanged() end },
+            -- the look: texture and color, then how thick
+            { type = "choice", label = "Texture", key = "glowTexture", when = UI.GlowOn,
+                list = function() return TextureChoices(true) end },
+            { type = "color", label = "Color", key = "glowColor", alpha = true, when = UI.GlowOn },
             -- solid: the border's width, inside the button; soft glow: how far it reaches in
-            { type = "range", label = "Thickness", key = "glowThickness", min = 1, max = 5, step = 1 },
-            { type = "choice", label = "Texture", key = "glowTexture", list = function() return TextureChoices(true) end },
+            { type = "range", label = "Thickness", key = "glowThickness", min = 1, max = 5, step = 1, when = UI.GlowOn },
+            -- then the pulse, and how long one takes
+            { type = "toggle", label = "Pulse", when = UI.GlowOn,
+                get = function() return UI.GlowPulses() end,
+                set = function(v) SetStyle("glowPulse", v); UI.LayoutChanged() end },
+            { type = "range", label = "Pulse time", key = "glowSpeed", min = 0.2, max = 2, step = 0.1,
+                when = function() return UI.GlowOn() and UI.GlowPulses() end },
         } },
     } },
     -- (which way each popout opens: right-click its icon on the Buttons page)
@@ -396,11 +413,22 @@ PAGES = {
                     DB().popoutClick = (v ~= "useset") and v or nil
                     pcall(PrepareSecure)
                 end },
+            -- a key to hold for a popout to open on hover (none = always)
+            { type = "choice", label = "Show with", list = function() return POPOUT_MODIFIERS end,
+                get = function() return PopoutModifier() end,
+                set = function(v)
+                    DB().popMod = (v ~= "none") and v or nil
+                    pcall(PrepareSecure)
+                end },
+            -- the hover on everything drawn like an action button (items, previews);
+            -- Default is your action bars' own hover; its opacity applies to every mode.
+            -- A button can have its own (Per-Button Overrides).
+            { type = "color", label = "Hover", key = "entryHover", alpha = true },
         } },
         { name = "Popout indicator", items = {
             { type = "color", label = "Color", key = "tabColor", alpha = true },
             { type = "range", label = "Width", key = "tabWidth", min = 0, max = UI.TabMaxWidth, step = 1 },
-            { type = "range", label = "Height (pixels)", key = "tabHeight", min = 1, max = 5, step = 1 },
+            { type = "range", label = "Height", key = "tabHeight", min = 1, max = 5, step = 1 },
             { type = "choice", label = "Texture", key = "tabTexture", list = function() return TextureChoices(false) end },
         } },
         { name = "Items", items = {
@@ -408,15 +436,15 @@ PAGES = {
             { type = "text", height = 34, when = function() return EUIButtonLook() ~= nil end,
                 text = function() return "Items look like your EllesmereUI action bars: border, icon zoom, and the hover"
                     .. " and pushed effects from its Bar Animations page." end },
-            -- the hover on everything drawn like an action button (items, previews);
-            -- Default is your action bars' own hover; its opacity applies to every mode
-            { type = "color", label = "Hover", key = "entryHover", alpha = true },
             -- with Blizzard's look the selected item shows the button's checked
             -- border (as the pet bar marks its active button), Default its own color
             { type = "color", label = "Selected border", key = "selectedColor", alpha = true },
             { type = "range", label = "Selected border size", key = "selectedSize", min = 1, max = 6, step = 1,
                 when = function() return EUIButtonLook() ~= nil end },
-            { type = "range", label = "Item size", key = "itemScale", min = 50, max = 200, step = 10, fmt = "%d%%" },
+            -- 0..200 so 100 (your action bar buttons' size) sits in the middle, half
+            -- size to the left, double to the right; it stops at 50 (floor)
+            { type = "range", label = "Item size", key = "itemScale", min = 0, max = 200, step = 10, fmt = "%d%%",
+                floor = 50 },
             -- the popup's background: Blizzard's action bar art, on or off as the
             -- bar art can be in Edit Mode (EllesmereUI's look has none)
             { type = "toggle", label = "Show background", when = UI.BlizzLook,
@@ -542,10 +570,10 @@ end
 function UI.NativeCfg(item)
     if item.type == "color" then
         local key = item.key
-        local values, order = UI.Choices(ColorModeChoices())
+        local values, order = UI.Choices(ColorModeChoices(key))
         return { type = "dropdown", text = item.label, values = values, order = order,
             getValue = function() return ColorMode(key) end,
-            setValue = function(v) SetStyle(key .. "Mode", v); RefreshEUIPage() end }
+            setValue = function(v) SetColorMode(key, v); RefreshEUIPage() end }
     end
     if item.type == "toggle" then
         return { type = "toggle", text = item.label, getValue = item.get, setValue = item.set }
@@ -558,8 +586,12 @@ function UI.NativeCfg(item)
     local get = item.get or function() return Style(item.key) end
     local set = item.set or function(v) SetStyle(item.key, v) end
     if item.type == "range" then
+        -- floor: the track starts lower (to centre a value) but stops there
+        local floor = item.floor
+        local setter = floor and function(v) set(math.max(floor, tonumber(v) or floor)) end or set
         return { type = "slider", text = item.label, min = item.min, max = UI.Num(item.max), step = item.step,
-            getValue = get, setValue = set }
+            getValue = get, setValue = setter,
+            valueSnap = floor and function(v) return math.max(floor, v) end or nil }
     end
     local values, order = UI.Choices(item.list())
     return { type = "dropdown", text = item.label, values = values, order = order, getValue = get, setValue = set }
@@ -830,8 +862,9 @@ function BuildPage(parent, group, x0, y0, native)
                 UI.MultiDropdown(row and row._rightRegion, nxt)
                 i = i + 1
             end
-        elseif W and item.half and UI.Pairable(item) then
-            -- on a half-width row of its own (EllesmereUI's "spacer" fills the other half)
+        elseif W and UI.Pairable(item) then
+            -- alone: on a half-width row of its own (EllesmereUI's "spacer" fills the
+            -- other half), so every control has the same width, as on its own pages
             local row
             rowH, row = Native("DualRow", y, UI.NativeCfg(item), { type = "spacer" })
             if rowH then

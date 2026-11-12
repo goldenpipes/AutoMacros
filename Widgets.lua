@@ -247,9 +247,9 @@ function MakeColor(parent, x, y, key, hasAlpha)
     local b
     local L = RowLayout(parent)
     local dw = L.dropW
-    local mode = MakeChoice(parent, x, y, dw, ColorModeChoices,
+    local mode = MakeChoice(parent, x, y, dw, function() return ColorModeChoices(key) end,
         function() return ColorMode(key) end,
-        function(v) SetStyle(key .. "Mode", v); if b then b.refresh() end end)
+        function(v) SetColorMode(key, v); if b then b.refresh() end end)
     -- the swatch Blizzard uses for chat colors: a white-edged square in the color
     b = CreateFrame("Button", nil, parent)
     b:SetSize(22, 22)

@@ -167,6 +167,8 @@ function Classify(id)
     -- crates) or "Locked" (lockboxes); and what opens a lock: "Allows opening of
     -- simple locks" (Blacksmithing's skeleton keys)
     local openable, lockKey = false, false
+    -- "This Item Begins a Quest": a click starts its quest (the Quest Item button)
+    local startsQuest = false
     local lure, fishBuff = false, false   -- (the Fishing button's popout)
     for _, text in ipairs(lines) do
         local low = text:lower()
@@ -176,6 +178,9 @@ function Classify(id)
         local plain = low:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
         if plain == (ITEM_OPENABLE or "<Right Click to Open>"):lower() or plain:find("right click to open", 1, true)
             or plain == (LOCKED or "Locked"):lower() then openable = true end
+        if plain == (ITEM_STARTS_QUEST or "This Item Begins a Quest"):lower() or plain:find("begins a quest", 1, true) then
+            startsQuest = true
+        end
         if text:find(use, 1, true) and HasWord(low, "opening of") and HasWord(low, "locks") then lockKey = true end
         -- fishing: a lure, "When applied to your fishing pole, increases Fishing by 25
         -- for 10 min." (put on the pole), or something used by itself, Forever's
@@ -223,6 +228,8 @@ function Classify(id)
                 if low:find("%f[%a]rage%f[%A]") then rage = true end   -- the word, not "average"
                 if HasWord(low, "damage") then damage = true end
                 if damage and HasWord(low, "inflict", "does ", "causes", "burning", "deals") then hurts = true end
+                -- "Steals 75 to 125 life from target enemy." (Faintly Glowing Skull 4945)
+                if HasWord(low, "steals", "drains") and HasWord(low, "life", "health") then hurts = true end
                 -- a potion that heals, not one that raises health ("heals 2100 health and
                 -- 2100 mana": Greater Dreamless Sleep; bandages, "heals 301 damage", go first)
                 -- (not a Mechanical Repair Kit: "restores 700 health to a friendly mechanical target")
@@ -278,7 +285,7 @@ function Classify(id)
             end
         end
     end
-    if not hasUse and not openable then
+    if not hasUse and not openable and not startsQuest then
         -- The item has a use effect but its "Use:" text has not arrived yet (the
         -- game loads the spell's text after the item): ask for it, try again later.
         local getSpell = (C_Item and C_Item.GetItemSpell) or GetItemSpell
@@ -296,6 +303,7 @@ function Classify(id)
     if fishBuff then return { "fishing_buff" }, sig end
     -- (before the class rules: clams are Trade Goods 7.11, crates and lockboxes Misc 15.4)
     if openable then return { "openable" }, sig end
+    if startsQuest then return { "quest" }, sig end
     -- a cure, from anything you carry: potions, First Aid's poultices and
     -- tourniquets (trade goods), quest rewards
     if cure and not quest then return { "cure" }, sig end   -- (a quest item that "cures a sickly animal" is the quest's)
@@ -369,7 +377,7 @@ function Classify(id)
         sets[#sets + 1] = "quest"
     elseif weapon and own then
         sets[#sets + 1] = "weapon_buff"
-    elseif sub == 0 and damage and not buff then
+    elseif sub == 0 and (damage or hurts) and not buff then
         sets[#sets + 1] = "explosives"
     elseif sub == 8 and hurts and not buff then
         -- retail's Other consumables (0.8): Explosive Rocket, M73 Frag Grenade

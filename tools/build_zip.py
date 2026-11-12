@@ -72,6 +72,15 @@ for line in lines:
         files.append(found[0])
 
 
+# the other pictures the code uses (Media\*.tga / .blp: the pushpin, ...)
+media = os.path.join(here, "Media")
+if os.path.isdir(media):
+    for name in sorted(os.listdir(media)):
+        f = "Media\\" + name
+        if name.lower().endswith((".tga", ".blp")) and f not in files and os.path.isfile(disk(f)):
+            files.append(f)
+
+
 missing = [f for f in files if not os.path.exists(disk(f))]
 if missing:
     sys.exit("listed in the .toc but not found: " + ", ".join(missing))
