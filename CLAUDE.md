@@ -494,7 +494,9 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   the saved colour's alpha to 1, then the mode; used by both pages' mode dropdowns
   (NativeCfg, MakeColor). All colour settings. **Confirmed** (Lewis, 2026-11-11).
 - **Released** 2026-11-11 as a **full release** v1.3.0 (Lewis: "commit and push it as release
-  to both GH and CF"; notes: its changelog section). The ping work that held the commit is
+  to both GH and CF"; notes: its changelog section). Commit dbecf30; Latest on GitHub;
+  CurseForge upload run 43139253035, file id 9568051, type release. README changed (Class
+  and Group columns): Lewis to paste it into CurseForge. The ping work that held the commit is
   done (pings are part of Raid Marker). Unconfirmed in game at release: the Highlight page
   cleanup, "Show with", the per-button Hover color.
 
