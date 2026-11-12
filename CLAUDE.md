@@ -498,7 +498,8 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   CurseForge upload run 43139253035, file id 9568051, type release. README changed (Class
   and Group columns): Lewis to paste it into CurseForge. The ping work that held the commit is
   done (pings are part of Raid Marker). Unconfirmed in game at release: the Highlight page
-  cleanup, "Show with", the per-button Hover color.
+  cleanup, "Show with", the per-button Hover color. v1.2.0's release and tag deleted (Lewis):
+  v1.3.0 is the only GitHub release.
 
 ## 1.2.0 — Fishing button; popout direction resets on bar orientation (2026-11-08)
 - Lewis: moving a button from a vertical bar to a horizontal one should reset its popout
