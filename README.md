@@ -11,6 +11,34 @@ AutoMacros keeps one macro for each kind of consumable (health and mana items, f
 bandages, buffs and more) pointed at the best item you carry. Put the macros on any action bar
 you like: no extra bar to place, unlike AutoBar.
 
+## New features
+
+**1.4.0** (2026-11-21)
+- **Bandage** switches to your best bandage while Cannibalize or Rapid Regeneration is on
+  cooldown, then back to the spell when it's ready.
+- **Mini cooldowns:** small icons over a button with the seconds left: Recently Bandaged,
+  Cannibalize / Rapid Regeneration, and the Healthstone's cooldown. Switch them off on the
+  Popout page, for all buttons or one at a time.
+- **Restore Health** flashes while a Warlock carries no Healthstone.
+- Cooldowns on AutoMacros buttons count in plain seconds from 99 down instead of "1:29".
+
+**1.3.0** (2026-11-11)
+- **Summon Demon** (Warlocks) and **Aspects** (Hunters) buttons.
+- **Raid Marker** button: raid icons on your target or the ground, plus pings.
+- **Pin a popout** open with the pin at its end, and drag the pin to move it anywhere.
+- Popout settings: **Show with** a modifier key, and a Hover color per button.
+
+**1.2.0** (2026-11-08)
+- **Fishing**, **Trinket 1 / 2** and **Weapon Swap** buttons.
+- Popouts open away from your other bars by themselves.
+
+**1.1.0** (2026-11-07)
+- **Openable Items** button: clams, crates and boxes, with Pick Lock or the cheapest
+  skeleton key for locked ones.
+
+See the [full changelog](https://github.com/goldenpipes/AutoMacros/blob/master/CHANGELOG.md)
+for every version.
+
 > Versions starting with `0.` are still in development, so expect changes. See the
 > [changelog](https://github.com/goldenpipes/AutoMacros/blob/master/CHANGELOG.md) for what
 > changed in each version.
