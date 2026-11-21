@@ -294,6 +294,9 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   cooldowns" Global / On / Off (`db.popMini[key]` true / false / nil), shown only for
   `MINI_BUTTONS` (bandage, healthpot); `MiniCooldownsOn(m)` = own else not noMiniCooldowns.
   Untested.
+- Lewis: Bandage and Raid Marker showed labels and Raid Marker didn't work: they had been
+  switched off (cause unknown; switching them on fixed it).
+- **Committed and pushed** 2026-11-21 (d1d5960). Not released yet.
 
 ## 1.3.0 — Summon Demon, Aspects, Raid Marker, pinned popouts (2026-11-09 to 11-11)
 - Lewis: "we need a button for warlock pet summons". CATALOG `pets` (AM_Pet, "Summon
