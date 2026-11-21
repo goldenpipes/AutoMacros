@@ -303,7 +303,8 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   CHANGELOG.md** (minus its title line), not just the current version's section.
 - **Released** 2026-11-21 as a **full release** v1.4.0 (Lewis: "full release"; notes: the full
   changelog), Latest on GitHub; CurseForge upload run 44938945954, file id 9737806, type
-  release (the 43 KB changelog went through). README
+  release (the 43 KB changelog went through). v1.3.0's release and tag deleted: v1.4.0 is
+  the only GitHub release. README
   changed (New features): Lewis to paste it into CurseForge.
 
 ## 1.3.0 — Summon Demon, Aspects, Raid Marker, pinned popouts (2026-11-09 to 11-11)
