@@ -4,6 +4,25 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): the middle number go
 features or changes, the last number for bug fixes only. Versions starting with `0.` were
 the beta.
 
+## 1.4.0 - 2026-11-21
+
+### Changed
+- **Bandage**: when you've picked Cannibalize or Rapid Regeneration and it's on cooldown, the
+  button switches to your best bandage, then back to the spell as soon as it's ready. In
+  combat the switch waits until combat ends (the game doesn't let addons change macros
+  during combat).
+- **Bandage**: while you have Recently Bandaged, a small icon of it sits in the button's
+  top-left corner (half above the button, the seconds left on it), so you can see when you can bandage again.
+  Cannibalize or Rapid Regeneration on cooldown shows the same way in the top-right corner.
+- The cooldown countdown on a bar button holding an AutoMacros macro now counts plain seconds
+  from 99 down instead of showing "1:29"; longer cooldowns show as before until they get there.
+- **Restore Health** (Warlocks): while you carry no Healthstone and the button would create
+  one, it flashes. When the button does something other than use a Healthstone, the Healthstone's
+  cooldown shows as a small icon in its top-right corner; on the Healthstone itself the button
+  shows the cooldown as usual.
+- Popout settings: **Mini cooldowns** switches these small icons off (on by default), and
+  Per-Button Overrides can set it for Bandage and Restore Health on their own.
+
 ## 1.3.0 - 2026-11-11
 
 ### Added

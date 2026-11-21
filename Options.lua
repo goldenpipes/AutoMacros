@@ -607,6 +607,27 @@ function UI.OwnPopoutItems()
                 db.popClick[e.key] = (v ~= "default") and v or nil
                 UI.PopoutChanged()
             end },
+        -- its own Mini cooldowns, only on the buttons that have them
+        { type = "choice", label = "Mini cooldowns",
+            when = function() local e = UI.PopoutEntry(); return e ~= nil and MINI_BUTTONS[e.key] == true end,
+            list = function()
+                return { { key = "default", label = "Global" }, { key = "on", label = "On" }, { key = "off", label = "Off" } }
+            end,
+            get = function()
+                local e = UI.PopoutEntry()
+                local v = e and type(DB().popMini) == "table" and DB().popMini[e.key]
+                return (v == true and "on") or (v == false and "off") or "default"
+            end,
+            set = function(v)
+                local e = UI.PopoutEntry()
+                if not e then return end
+                local db = DB()
+                if type(db.popMini) ~= "table" then db.popMini = {} end
+                if v == "on" then db.popMini[e.key] = true
+                elseif v == "off" then db.popMini[e.key] = false
+                else db.popMini[e.key] = nil end
+                pcall(RefreshBandageMarks)
+            end },
         -- its own hover color ("Global" = the one under Global Behavior)
         { type = "color", label = "Hover", key = "entryHover_" .. UI.PopoutEntry().key, alpha = true },
         -- (100 in the middle: half size left, double right, stops at 50)

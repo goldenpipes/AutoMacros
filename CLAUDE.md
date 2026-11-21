@@ -51,7 +51,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 1.3.0.**
+- **Current version: 1.4.0.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   version** (once per session, not per iteration) (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -242,6 +242,58 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   notes in the CurseForge section are out of date.
 - .build.info now (2026-10-29): Forever 1.60.1.70685, retail 12.1.5.70575, Era
   1.15.9.70576, Anniversary 2.5.6.70577, MoP 5.5.4.70631.
+
+## 1.4.0 - Bandage swaps while its spell cools down (2026-11-21)
+- Lewis: if Cannibalize or (Rapid) Regeneration is on cooldown, the Bandage button uses
+  bandages, then swaps back when the spell is ready. CATALOG bandage `cooldownSwap = true`.
+  `SpellCooldownLeft(id)` (Macros.lua: C_Spell.GetSpellCooldown table / GetSpellCooldown,
+  Readable-guarded, duration <= 1.5 = GCD = ready). `CooldownSwap(m, list, ...)` (Update.lua,
+  after Chosen in the set branch): picked spell cooling -> first non-spell list entry (best
+  bandage); C_Timer wake-up at left + 0.2 s -> Schedule (cooldownWake token). No bandages ->
+  keeps the spell. `CooldownWatch` on SPELL_UPDATE_COOLDOWN (CooldownFrame) Schedules when a
+  watched spell's cooling state differs from `cooldownSeen`. In combat the macro isn't
+  rewritten (pending -> after combat), so the swap is out of combat only. The pick stays the
+  spell (popout's selected border too). Untested in game.
+- Lewis: show Recently Bandaged on the Bandage button; he chose a small debuff icon (over a
+  cooldown sweep). `RefreshBandageMarks()` (Popout.lua, end of RefreshActiveOverlays, so on
+  UNIT_AURA player etc. and RefreshArrows): `RecentlyBandaged()` = C_UnitAuras.
+  GetPlayerAuraBySpellID(11196, from memory) or a UnitDebuff scan by spellId / name (SpellName
+  or "Recently Bandaged"), Readable-guarded. Per bar button holding `bandage`: own frame
+  (UIParent child, button's effective scale) TOPLEFT 2,-2, 42% of the button's width, icon +
+  NumberFontNormalSmall seconds under it (OnUpdate every 0.2 s, hides itself at 0). Untested.
+- Lewis: Cannibalize's cooldown too. `BandageMark(store, b, corner, icon, expires)` builds
+  either mark; `spellCooldownMarks` TOPRIGHT = `BandageSpellCooling(m)`: first spell entry in
+  flyoutItems with SpellCooldownLeft > 0 (any known one, picked or not). Update.lua's
+  CooldownFrame (SPELL_UPDATE_COOLDOWN) also calls RefreshBandageMarks. Untested.
+- Lewis: marks half above the button (y offset + size / 2), seconds centred on the icon.
+- Lewis (DaylightUI bars): the bar button's countdown showed "1:29"; wanted seconds from 99.
+  The numbers are the game's (DaylightUI only sets font/place). His /run test: Cooldown:
+  SetCountdownAbbrevThreshold(0) **works** (plain seconds); 99 did not. `RefreshCountdowns()`
+  (Popout.lua, CountdownFrame on ACTIONBAR/SPELL/BAG_UPDATE_COOLDOWN, SLOT_CHANGED, PEW): every
+  bar button holding one of our macros, GetActionCooldown(ButtonSlot) left <= 99.5 -> threshold
+  0 (old value kept in countdownOrig, put back above 99 / when done); a timer at left - 99
+  (countdownWake token). ButtonCooldownFrame(b): .cooldown / .Cooldown / <name>Cooldown / a
+  Cooldown child. Untested in game.
+- Lewis: Restore Health flashes while a warlock carries no healthstone (it would create one);
+  the healthstone's use cooldown as the small top-right mark when the button's action isn't a
+  healthstone. report[name].making (UpdateCore, out of combat = what the macro does);
+  RefreshBandageMarks also runs at the end of Update(). `HealthstoneCooling(m)`: MADE.hpot.rank
+  IDs, `ItemCooldownLeft(id)` (C_Container.GetItemCooldown / GetItemCooldown, GCD ignored; by
+  item ID, unverified that it answers for one not carried). `MakeFlash(b, on)`: own frame over
+  the button, the button's Flash art (atlas / file, else UI-QuickslotRed), ADD, on/off every
+  0.4 s like auto attack's flash. Untested in game.
+- Lewis: the healthstone cooldown is always 2 min. Kept ourselves too: `HealthstoneWatch`
+  (UNIT_SPELLCAST_SUCCEEDED player, spellID in `HealthstoneSpells()` = GetItemSpell of each
+  MADE.hpot.rank ID) sets healthstoneReady = now + HEALTHSTONE_COOLDOWN 120; HealthstoneCooling
+  uses it when ItemCooldownLeft finds nothing (last stone used). **Confirmed** (Lewis,
+  2026-11-21: "perfect!"), with the flash and the healthstone cooldown icon.
+- Lewis: an option to turn the "mini cooldowns" off, on the Popout page. Global Behavior
+  toggle "Mini cooldowns" (after Hover) -> `db.noMiniCooldowns`; RefreshBandageMarks shows no
+  marks while set (the healthstone flash stays). Untested.
+- Lewis: per button too (he chose global + per-button). Per-Button Overrides choice "Mini
+  cooldowns" Global / On / Off (`db.popMini[key]` true / false / nil), shown only for
+  `MINI_BUTTONS` (bandage, healthpot); `MiniCooldownsOn(m)` = own else not noMiniCooldowns.
+  Untested.
 
 ## 1.3.0 — Summon Demon, Aspects, Raid Marker, pinned popouts (2026-11-09 to 11-11)
 - Lewis: "we need a button for warlock pet summons". CATALOG `pets` (AM_Pet, "Summon

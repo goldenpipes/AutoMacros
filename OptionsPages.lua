@@ -424,6 +424,11 @@ PAGES = {
             -- Default is your action bars' own hover; its opacity applies to every mode.
             -- A button can have its own (Per-Button Overrides).
             { type = "color", label = "Hover", key = "entryHover", alpha = true },
+            -- the small icons over a button (Recently Bandaged, Cannibalize's and
+            -- the healthstone's cooldown); on unless switched off
+            { type = "toggle", label = "Mini cooldowns",
+                get = function() return not DB().noMiniCooldowns end,
+                set = function(v) DB().noMiniCooldowns = (not v) or nil; pcall(RefreshBandageMarks) end },
         } },
         { name = "Popout indicator", items = {
             { type = "color", label = "Color", key = "tabColor", alpha = true },

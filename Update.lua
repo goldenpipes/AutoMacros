@@ -56,6 +56,60 @@ function AutoEnable(have)
     return changed
 end
 
+-- Buttons with cooldownSwap (Bandage): while the picked spell is cooling down
+-- the button uses the first item in its list (your best bandage) instead, and
+-- an update is set for the moment the spell is ready, which puts it back.
+-- Macros can't be rewritten in combat, so there the swap waits for combat to
+-- end like any other change. CooldownWatch notices a cooldown starting.
+cooldownSpell = {}   -- macro name -> the picked spell's ID (watched for its cooldown)
+cooldownSwapped = {} -- macro name -> true while the button stands in with an item
+cooldownSeen = {}    -- macro name -> whether the spell was cooling at the last update
+cooldownWake = 0     -- a newer wake-up timer replaces older ones
+
+function CooldownSwap(m, list, id, entry, spellUsed)
+    cooldownSpell[m.name] = spellUsed and id or nil
+    cooldownSwapped[m.name] = nil
+    cooldownSeen[m.name] = nil
+    if not spellUsed then return id, entry, spellUsed end
+    local left = SpellCooldownLeft(id)
+    cooldownSeen[m.name] = left > 0
+    if left <= 0 then return id, entry, spellUsed end
+    for _, e in ipairs(list) do
+        if not e.spell then
+            cooldownSwapped[m.name] = true
+            -- look again once the spell is ready (a little after, so it reads as ready)
+            if C_Timer and C_Timer.After then
+                cooldownWake = cooldownWake + 1
+                local mine = cooldownWake
+                C_Timer.After(left + 0.2, function()
+                    if mine == cooldownWake then Schedule() end
+                end)
+            end
+            return e.id, e, false
+        end
+    end
+    return id, entry, spellUsed   -- no bandages: keep the spell (its cooldown shows)
+end
+
+-- A cooldown started or ended: update when a watched button's state no longer
+-- matches what it shows (only the few cooldownSwap buttons are looked at).
+function CooldownWatch()
+    for name, spell in pairs(cooldownSpell) do
+        local cooling = SpellCooldownLeft(spell) > 0
+        if cooling ~= (cooldownSeen[name] == true) then
+            Schedule()
+            return
+        end
+    end
+end
+
+CooldownFrame = CreateFrame("Frame")
+pcall(CooldownFrame.RegisterEvent, CooldownFrame, "SPELL_UPDATE_COOLDOWN")
+CooldownFrame:SetScript("OnEvent", function()
+    if next(cooldownSpell) then pcall(CooldownWatch) end
+    pcall(RefreshBandageMarks)   -- (the Bandage button's cooldown icon, Popout.lua)
+end)
+
 function UpdateCore()
     timerSet = false
     pcall(RebuildMacros)
@@ -223,6 +277,11 @@ function UpdateCore()
             local entry
             id, entry = Chosen(m, list)
             spellUsed = entry ~= nil and entry.spell == true
+            -- Bandage: the picked spell (Cannibalize, Rapid Regeneration) cooling
+            -- down -> your best bandage until it is ready (CooldownSwap)
+            if m.cooldownSwap then
+                id, entry, spellUsed = CooldownSwap(m, list, id, entry, spellUsed)
+            end
             -- Water and Food (made.rightClick): a right-click always makes more
             local right = create and made and made.rightClick
             rightCast[m.name] = right and create or nil   -- (for its tooltip, see RightClickHint)
@@ -263,7 +322,8 @@ function UpdateCore()
                 icon = fixedIcon
             end
             local result = Apply(m, body, icon, active)
-            report[m.name] = { id = id, spell = spellUsed, result = result, size = body and #body or 0 }
+            report[m.name] = { id = id, spell = spellUsed, result = result, size = body and #body or 0,
+                making = making or nil }   -- (making: the button makes one, e.g. Create Healthstone)
         end
     end
     local ok, err = pcall(SetEmpty, emptyState)
@@ -274,6 +334,7 @@ function Update()
     local ok, err = pcall(UpdateCore)
     if not ok then Fail("update", err) end
     if report.afterUpdate then pcall(report.afterUpdate) end   -- the settings page, if open
+    pcall(RefreshBandageMarks)   -- (small icons and the healthstone flash follow the macros)
     -- items still waiting for their data: look again in a second
     if report.learnWaiting and not report.learnRetry and C_Timer and C_Timer.After then
         report.learnRetry = true

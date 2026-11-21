@@ -1,4 +1,4 @@
--- AutoMacros 1.3.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 1.4.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -565,9 +565,12 @@ CATALOG = {
     { key = "comprehend", name = "AM_Scroll", title = "Comprehend", empty = "Comprehend", label = "scrolls",
       special = "scroll", class = "MAGE", scope = "character", default = true },
     -- spells: after the bandages, for whoever knows them (Undead: Cannibalize;
-    -- Troll: Rapid Regeneration, by name: its ID isn't known here)
+    -- Troll: Rapid Regeneration, by name: its ID isn't known here).
+    -- cooldownSwap: while the picked spell cools down the button uses your best
+    -- bandage, and goes back to the spell once it is ready (CooldownSwap, Update.lua)
     { key = "bandage", name = "AM_Bandage", title = "Bandage", empty = "No Bandage", label = "bandages",
-      set = "bandage", spells = { 20577 }, spellNames = { "Rapid Regeneration" }, placeholder = { item = 1251 } },
+      set = "bandage", spells = { 20577 }, spellNames = { "Rapid Regeneration" }, cooldownSwap = true,
+      placeholder = { item = 1251 } },
     -- Anything whose "Use:" cures or removes a debuff: poison, disease, bleeding,
     -- curse, magic, stuns and snares. Potions, First Aid's Anti-Venom, poultices
     -- and tourniquets (Forever), quest rewards like Jungle Remedy. Was the

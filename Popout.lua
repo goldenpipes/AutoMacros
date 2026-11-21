@@ -987,7 +987,317 @@ function RefreshActiveOverlays()
         end
         if o then o:SetShown(show) end
     end
+    pcall(RefreshBandageMarks)
 end
+
+-- Bandage: while you have Recently Bandaged, a small icon of it in the bar
+-- button's top-left corner (half above it) with the seconds on it, and while its spell
+-- (Cannibalize, Rapid Regeneration) cools down, that one top right (Lewis). Our own
+-- frame over the button, so it works in combat too.
+RECENTLY_BANDAGED = 11196        -- the debuff's spell ID (vanilla)
+BANDAGE_MARK_SIZE = 0.42         -- of the button's width
+bandageMarks = {}
+spellCooldownMarks = {}   -- the Bandage button's spell cooldown, top right
+
+-- The debuff on you: icon, expiration time (GetTime() based), or nil.
+function RecentlyBandaged()
+    if C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
+        local ok, a = pcall(C_UnitAuras.GetPlayerAuraBySpellID, RECENTLY_BANDAGED)
+        if ok and type(a) == "table" then
+            local icon, expires = a.icon, a.expirationTime
+            if Readable(icon) and Readable(expires) then return icon, expires end
+        end
+    end
+    -- (else by name too: the debuff's ID may differ on Forever)
+    if not UnitDebuff then return nil end
+    local want = SpellName(RECENTLY_BANDAGED) or "Recently Bandaged"
+    for i = 1, 40 do
+        local ok, name, icon, _, _, _, expires, _, _, _, spellId = pcall(UnitDebuff, "player", i)
+        if not ok or not name then break end
+        if Readable(name) and Readable(spellId) and (spellId == RECENTLY_BANDAGED or name == want) then
+            return icon, Readable(expires) and expires or nil
+        end
+    end
+    return nil
+end
+
+function BandageMarkTick(f)
+    local left = f.expires and (f.expires - GetTime()) or 0
+    if f.expires and left <= 0 then
+        f:Hide()
+        return
+    end
+    f.time:SetText(f.expires and tostring(math.ceil(left)) or "")
+end
+
+-- One small mark (icon + seconds left under it) per bar button and corner.
+function BandageMark(store, b, corner, icon, expires)
+    local f = store[b]
+    if not f then
+        f = CreateFrame("Frame", nil, UIParent)
+        f.icon = f:CreateTexture(nil, "OVERLAY")
+        f.icon:SetAllPoints()
+        f.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        f.time = f:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall")
+        f.time:SetPoint("CENTER", f, "CENTER", 0, 0)   -- (the seconds on the icon)
+        f.time:SetTextColor(1, 0.82, 0)
+        local acc = 0
+        f:SetScript("OnUpdate", function(self, elapsed)
+            acc = acc + elapsed
+            if acc < 0.2 then return end
+            acc = 0
+            BandageMarkTick(self)
+        end)
+        store[b] = f
+    end
+    local size = b:GetWidth() * BANDAGE_MARK_SIZE
+    f:SetFrameStrata(b:GetFrameStrata())
+    f:SetFrameLevel(b:GetFrameLevel() + 6)
+    f:SetScale(b:GetEffectiveScale() / UIParent:GetEffectiveScale())
+    f:SetSize(size, size)
+    f:ClearAllPoints()
+    -- half above the button's top edge, so it covers only half as much (Lewis)
+    f:SetPoint(corner, b, corner, corner == "TOPLEFT" and 2 or -2, size / 2)
+    f.icon:SetTexture(icon)
+    f.expires = expires
+    BandageMarkTick(f)
+    if f.expires == nil or f.expires > GetTime() then f:Show() end
+end
+
+-- The first of the Bandage button's spells (Cannibalize, Rapid Regeneration)
+-- that is cooling down: icon, time it is ready again, or nil.
+function BandageSpellCooling(m)
+    for _, e in ipairs(flyoutItems[m.name] or {}) do
+        if e.spell then
+            local left = SpellCooldownLeft(e.id)
+            if left > 0 then return e.icon or SpellIcon(e.id), GetTime() + left end
+        end
+    end
+    return nil
+end
+
+-- The buttons with mini cooldowns, and whether button m shows them: its own
+-- choice (Per-Button Overrides) else the global one (Popout page, on by default).
+MINI_BUTTONS = { bandage = true, healthpot = true }
+
+function MiniCooldownsOn(m)
+    local own = type(DB().popMini) == "table" and DB().popMini[m.key]
+    if own ~= nil then return own == true end
+    return not DB().noMiniCooldowns
+end
+
+function RefreshBandageMarks()
+    local icon, expires = RecentlyBandaged()
+    for _, b in ipairs(buttons or {}) do
+        local m = MacroOnButton(b)
+        local minis = m ~= nil and MiniCooldownsOn(m)
+        local mine = minis and m.key == "bandage" and b:IsVisible()
+        -- top left: Recently Bandaged
+        if mine and icon then
+            BandageMark(bandageMarks, b, "TOPLEFT", icon, expires)
+        elseif bandageMarks[b] then
+            bandageMarks[b]:Hide()
+        end
+        -- top right: the spell's cooldown (Lewis)
+        local sIcon, sReady
+        if mine then sIcon, sReady = BandageSpellCooling(m) end
+        -- Restore Health: the healthstone's cooldown while the button does
+        -- something else (makes one, or a potion); on the healthstone the
+        -- button shows its own cooldown (Lewis)
+        local health = m ~= nil and m.key == "healthpot" and b:IsVisible()
+        if health and minis then sIcon, sReady = HealthstoneCooling(m) end
+        if sIcon then
+            BandageMark(spellCooldownMarks, b, "TOPRIGHT", sIcon, sReady)
+        elseif spellCooldownMarks[b] then
+            spellCooldownMarks[b]:Hide()
+        end
+        -- and it flashes while it would make a healthstone (none carried)
+        local r = health and report[m.name]
+        MakeFlash(b, r and r.making == true)
+    end
+end
+
+-- Seconds until item id can be used again (not the global cooldown), 0 = ready.
+function ItemCooldownLeft(id)
+    local get = (C_Container and C_Container.GetItemCooldown) or GetItemCooldown
+    if not get then return 0 end
+    local ok, start, duration = pcall(get, id)
+    if not ok or not (Readable(start) and Readable(duration)) then return 0 end
+    if type(start) ~= "number" or type(duration) ~= "number" then return 0 end
+    if start <= 0 or duration <= 1.5 then return 0 end
+    return math.max(0, start + duration - GetTime())
+end
+
+-- The healthstone cooldown for the Restore Health button: icon, ready time,
+-- or nil (none cooling, or the button uses a healthstone itself).
+function HealthstoneCooling(m)
+    local rank = MADE and MADE.hpot and MADE.hpot.rank
+    if type(rank) ~= "table" then return nil end
+    local r = report[m.name]
+    if r and r.id and not r.spell and not r.making and rank[r.id] then return nil end
+    for id in pairs(rank) do
+        local left = ItemCooldownLeft(id)
+        if left > 0 then
+            healthstoneReady = GetTime() + left
+            healthstoneIcon = IconFor({ item = id })
+            return healthstoneIcon, healthstoneReady
+        end
+    end
+    -- the game may not answer for a healthstone you no longer carry (the last
+    -- one used): the time we noted when it was used (HealthstoneWatch)
+    if healthstoneReady and healthstoneReady > GetTime() then
+        return healthstoneIcon or IconFor({ item = next(rank) }), healthstoneReady
+    end
+    return nil
+end
+
+-- A healthstone used: always a 2 minute cooldown (Lewis). Noted from the cast
+-- of the healthstone's own Use spell, so the small icon shows even after the
+-- last one is gone. GetTime() goes on through /reload.
+HEALTHSTONE_COOLDOWN = 120
+healthstoneSpells = nil   -- Use spell ID -> healthstone item ID, built when first needed
+
+function HealthstoneSpells()
+    local rank = MADE and MADE.hpot and MADE.hpot.rank
+    if type(rank) ~= "table" then return {} end
+    local t, missing = {}, false
+    local get = (C_Item and C_Item.GetItemSpell) or GetItemSpell
+    for id in pairs(rank) do
+        local ok, _, spellID = pcall(get, id)
+        if ok and spellID then t[spellID] = id else missing = true end
+    end
+    if not missing then healthstoneSpells = t end   -- (else ask again: item data may come later)
+    return t
+end
+
+HealthstoneWatch = CreateFrame("Frame")
+pcall(HealthstoneWatch.RegisterUnitEvent, HealthstoneWatch, "UNIT_SPELLCAST_SUCCEEDED", "player")
+HealthstoneWatch:SetScript("OnEvent", function(_, _, unit, _, spellID)
+    if unit ~= "player" or not Readable(spellID) then return end
+    local item = (healthstoneSpells or HealthstoneSpells())[spellID]
+    if not item then return end
+    healthstoneReady = GetTime() + HEALTHSTONE_COOLDOWN
+    healthstoneIcon = IconFor({ item = item })
+    pcall(RefreshBandageMarks)
+end)
+
+-- The action button's own flash (like auto attack's): on for 0.4 s, off for
+-- 0.4 s, on our own frame over the button, Blizzard's flash art copied from it.
+FLASH_TIME = 0.4
+makeFlashes = {}
+
+function MakeFlash(b, on)
+    local f = makeFlashes[b]
+    if not on then
+        if f then f:Hide() end
+        return
+    end
+    if not f then
+        f = CreateFrame("Frame", nil, UIParent)
+        f.tex = f:CreateTexture(nil, "OVERLAY")
+        f.tex:SetAllPoints()
+        local src = b.Flash or (b.GetName and b:GetName() and _G[b:GetName() .. "Flash"])
+        local atlas = src and src.GetAtlas and src:GetAtlas()
+        local file = src and src.GetTexture and src:GetTexture()
+        if atlas and Readable(atlas) and atlas ~= "" then
+            f.tex:SetAtlas(atlas)
+        elseif file and Readable(file) then
+            f.tex:SetTexture(file)
+        else
+            f.tex:SetTexture("Interface\\Buttons\\UI-QuickslotRed")
+        end
+        f.tex:SetBlendMode("ADD")
+        local acc, lit = 0, true
+        f:SetScript("OnUpdate", function(self, elapsed)
+            acc = acc + elapsed
+            if acc < FLASH_TIME then return end
+            acc = 0
+            lit = not lit
+            self.tex:SetShown(lit)
+        end)
+        makeFlashes[b] = f
+    end
+    f:SetFrameStrata(b:GetFrameStrata())
+    f:SetFrameLevel(b:GetFrameLevel() + 4)
+    f:SetScale(b:GetEffectiveScale() / UIParent:GetEffectiveScale())
+    f:ClearAllPoints()
+    f:SetAllPoints(b)
+    f:Show()
+end
+
+-- The game's countdown on a bar button holding one of our macros shows plain
+-- seconds from 99 down, not "1:29" (Lewis). The cooldown's abbreviation
+-- threshold 0 = whole seconds (checked in game, DaylightUI bars); above 99 s
+-- left it is put back as it was, and a timer flips it at 99.
+SHORT_COUNTDOWN = 99
+countdownOrig = {}   -- cooldown frame -> its own threshold before we changed it
+countdownWake = 0
+
+function ButtonCooldownFrame(b)
+    local cd = b.cooldown or b.Cooldown or (b.GetName and b:GetName() and _G[b:GetName() .. "Cooldown"])
+    if type(cd) == "table" and cd.SetCountdownAbbrevThreshold then return cd end
+    for _, c in ipairs({ b:GetChildren() }) do
+        if c.GetObjectType and c:GetObjectType() == "Cooldown" and c.SetCountdownAbbrevThreshold then return c end
+    end
+    return nil
+end
+
+function RefreshCountdowns()
+    local soonest
+    for _, b in ipairs(buttons or {}) do
+        local cd = ButtonCooldownFrame(b)
+        local short = false
+        if cd and MacroOnButton(b) then
+            local ok, slot = pcall(ButtonSlot, b)
+            local start, duration
+            if ok and slot and GetActionCooldown then
+                local ok2, s, d = pcall(GetActionCooldown, slot)
+                if ok2 then start, duration = s, d end
+            end
+            if Readable(start) and Readable(duration) and type(start) == "number" and type(duration) == "number"
+                    and start > 0 and duration > 1.5 then
+                local left = start + duration - GetTime()
+                if left > 0 and left <= SHORT_COUNTDOWN + 0.5 then
+                    short = true
+                elseif left > SHORT_COUNTDOWN then
+                    local at = left - SHORT_COUNTDOWN
+                    if not soonest or at < soonest then soonest = at end
+                end
+            end
+        end
+        if short then
+            if countdownOrig[cd] == nil then
+                local okG, v = pcall(cd.GetCountdownAbbrevThreshold, cd)
+                countdownOrig[cd] = (okG and type(v) == "number") and v or false
+                pcall(cd.SetCountdownAbbrevThreshold, cd, 0)
+            end
+        elseif cd and countdownOrig[cd] ~= nil then
+            if countdownOrig[cd] then pcall(cd.SetCountdownAbbrevThreshold, cd, countdownOrig[cd]) end
+            countdownOrig[cd] = nil
+        end
+    end
+    -- a long cooldown reaching 99 s left: look again then
+    if soonest and C_Timer and C_Timer.After then
+        countdownWake = countdownWake + 1
+        local mine = countdownWake
+        C_Timer.After(soonest + 0.1, function()
+            if mine == countdownWake then pcall(RefreshCountdowns) end
+        end)
+    end
+end
+
+CountdownFrame = CreateFrame("Frame")
+for _, ev in ipairs({ "ACTIONBAR_UPDATE_COOLDOWN", "SPELL_UPDATE_COOLDOWN", "BAG_UPDATE_COOLDOWN",
+        "ACTIONBAR_SLOT_CHANGED", "PLAYER_ENTERING_WORLD" }) do
+    pcall(CountdownFrame.RegisterEvent, CountdownFrame, ev)
+end
+CountdownFrame:SetScript("OnEvent", function()
+    if C_Timer and C_Timer.After then
+        C_Timer.After(0, function() pcall(RefreshCountdowns) end)
+    else
+        pcall(RefreshCountdowns)
+    end
+end)
 
 ActiveIconFrame = CreateFrame("Frame")
 for _, ev in ipairs({ "UNIT_AURA", "UPDATE_SHAPESHIFT_FORM", "UPDATE_SHAPESHIFT_FORMS",

@@ -668,6 +668,25 @@ function SpellIcon(id)
     return icon or QUESTION_MARK
 end
 
+-- Seconds until spell id is ready again, not counting the global cooldown
+-- (0 = ready). Retail may hand back secret values in combat: then 0.
+function SpellCooldownLeft(id)
+    if not id then return 0 end
+    local start, duration
+    if C_Spell and C_Spell.GetSpellCooldown then
+        local ok, info = pcall(C_Spell.GetSpellCooldown, id)
+        if ok and type(info) == "table" then start, duration = info.startTime, info.duration end
+    end
+    if start == nil and GetSpellCooldown then
+        local ok, s, d = pcall(GetSpellCooldown, id)
+        if ok then start, duration = s, d end
+    end
+    if not (Readable(start) and Readable(duration)) then return 0 end
+    if type(start) ~= "number" or type(duration) ~= "number" then return 0 end
+    if start <= 0 or duration <= 1.5 then return 0 end   -- (ready, or only the global cooldown)
+    return math.max(0, start + duration - GetTime())
+end
+
 -- The spells of button m you know, in its order. byName (Professions): one
 -- per spell name, the last known rank in the list (they go up), at the place
 -- of the first, so "Alchemy" shows once whatever ranks the game counts as known.
