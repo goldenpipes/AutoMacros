@@ -41,12 +41,7 @@ you like: no extra bar to place, unlike AutoBar.
 - **Openable Items** button: clams, crates and boxes, with Pick Lock or the cheapest
   skeleton key for locked ones.
 
-See the [full changelog](https://github.com/goldenpipes/AutoMacros/blob/master/CHANGELOG.md)
-for every version.
-
-> Versions starting with `0.` are still in development, so expect changes. See the
-> [changelog](https://github.com/goldenpipes/AutoMacros/blob/master/CHANGELOG.md) for what
-> changed in each version.
+[See the full changelog](https://github.com/goldenpipes/AutoMacros/blob/master/CHANGELOG.md) for every version.
 
 ## Features
 
