@@ -191,7 +191,8 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   pre-release (notes: changelog since 0.120.0), then every older release deleted with its
   tag (`gh release delete <tag> --cleanup-tag --yes`). `git fetch --prune --prune-tags` also
   dropped the local-only tags v0.24.0/v0.25.0 (commits e2d8a82, 3b7af1a still there).
-  When publishing a new version, ask whether to delete the previous release again.
+  **Since 1.4.0 (Lewis, 2026-11-22): keep every release** on GitHub (and CurseForge); never
+  delete one or ask about it. Releases deleted before 1.4.0 stay gone (no backfill).
 - v0.128.1's CurseForge upload ran by itself off the release (run 40597397284, file id
   9347782): the automatic path works.
 
@@ -288,7 +289,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - **Released** 2026-11-21 as a **full release** v1.5.0 (Lewis: "full release"; notes: the full
   changelog), Latest on GitHub; CurseForge upload run 44986422774, file id 9745791, type
   release. README changed (New features 1.5.0, DaylightUI in Features): Lewis to paste it into
-  CurseForge. v1.4.0 release still up (asked whether to delete it).
+  CurseForge. v1.4.0 kept (old releases stay up from now on).
 
 ## 1.4.0 - Bandage swaps while its spell cools down (2026-11-21)
 - Lewis: if Cannibalize or (Rapid) Regeneration is on cooldown, the Bandage button uses
