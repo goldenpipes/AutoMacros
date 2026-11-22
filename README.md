@@ -13,6 +13,11 @@ you like: no extra bar to place, unlike AutoBar.
 
 ## New features
 
+**1.5.0** (2026-11-21)
+- **DaylightUI support:** the popout and settings previews can match your DaylightUI action
+  buttons (border, shadow, hover, accent color), switchable under General > Appearance.
+- AutoMacros' settings also appear in DaylightUI's own options window (`/dui`).
+
 **1.4.0** (2026-11-21)
 - **Bandage** switches to your best bandage while Cannibalize or Rapid Regeneration is on
   cooldown, then back to the spell when it's ready.
@@ -59,13 +64,14 @@ for every version.
   highlight (a solid border or a soft glow, in your color), and its tooltip says what's missing.
 - **Your own buttons:** drop any items or spells onto the + on the Buttons page.
 - **Works with any action bar addon:** the buttons are ordinary macros, so they go on
-  Blizzard's bars or any bar addon's (Bartender, Dominos, ElvUI, EllesmereUI and others). The
+  Blizzard's bars or any bar addon's (Bartender, Dominos, ElvUI, EllesmereUI, DaylightUI and others). The
   popout and highlight find the buttons wherever they are.
 - **Saves macro slots:** class buttons go in the character macro tab, everything else in the
   shared tab.
 - **Settings** in Esc > Options > AddOns > AutoMacros, with live previews. On game versions
   that EllesmereUI supports, the settings also appear inside EllesmereUI's own settings
-  window, in its style, and the popout can match your EllesmereUI action bars.
+  window, in its style, and the popout can match your EllesmereUI action bars. With
+  DaylightUI the same goes for DaylightUI's options window and action buttons.
 - Lightweight: no libraries needed. Work happens when your bags or bars change, not on a timer.
 
 ## Buttons
