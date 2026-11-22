@@ -284,6 +284,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   Our .toc Title has no "(DaylightUI Plugin)" tag, so DaylightUI's General > Plugins may note that.
   Custom.lua's picker host list now iterates by index (ipairs stopped at the nil InterfaceOptionsFrame
   on modern clients, so EllesmereUIFrame was never checked). Untested in game.
+- **Committed and pushed** 2026-11-21 (ff8dd31). Not released yet. Lewis: "looks good" (not itemised what he checked).
 
 ## 1.4.0 - Bandage swaps while its spell cools down (2026-11-21)
 - Lewis: if Cannibalize or (Rapid) Regeneration is on cooldown, the Bandage button uses
