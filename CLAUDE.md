@@ -51,7 +51,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 1.4.0.**
+- **Current version: 1.5.0.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   version** (once per session, not per iteration) (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -242,6 +242,48 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   notes in the CurseForge section are out of date.
 - .build.info now (2026-10-29): Forever 1.60.1.70685, retail 12.1.5.70575, Era
   1.15.9.70576, Anniversary 2.5.6.70577, MoP 5.5.4.70631.
+
+## 1.5.0 - DaylightUI look (2026-11-21)
+- Lewis (screenshot: Blizzard-look popout beside his DaylightUI bars): "i want amac to also work
+  with daylightui, just like it does for eui". DaylightUI (by Daylight, v2.2.1 in `_forever_`) has
+  a public API, `DaylightUI.API` (major 1, minor 13), documented in
+  `_forever_\Interface\AddOns\DaylightUI\API.md`. **Its licence: read its files to learn, never
+  copy its code, art or text** (AGENTS.md in each module). There is no API call that dresses an
+  arbitrary button as an action button; `DUI.ActionButtonLook` (DaylightUI_ActionBars Skin.lua, used
+  by its own OPie skin pack) is internal.
+- Ours (Art.lua): `DaylightAPI()`, `DaylightLook()` = API.GetSetting("ActionBars", "look") (nil
+  when the module is off or `Style("duiSkin") == false`) -> a look table like EUIButtonLook's plus
+  `daylight = true`, `shell` opts (borderPx, noBevel, flat, noBorder, shadowAlpha, cornerPx from
+  borderStyle / corners / shadow), `borderColor` (accent / class / custom), zoom 0.08 + zoom / 2,
+  hover / push fills from highlight / pressed + alphas. `ButtonLook()` = EUIButtonLook() or
+  DaylightLook(), now used everywhere EUIButtonLook() was (Rounded, glow, PopupArt, StyleEntry,
+  previews, UI.BlizzLook). `DaylightFrame(b, look)` (from StyleButtonArt): API.Skin(b, shell) (its
+  shell frame, behind the button), border color via DaylightUI.Style.SetShellColors (internal,
+  pcall'd), icon inset by the border, inner shadow API.Media("inner-shadow.png") at 0.55; nil look
+  hides them and puts the icon back to SetAllPoints. Count font API.Font().
+- Shapes other than square are drawn square. Settings: General > Appearance "Use DaylightUI
+  styling" (only when DaylightUI is loaded), Items note for the DaylightUI look; `EUIAccent()`
+  falls back to API.Accent() without EllesmereUI, the accent mode's label is `AccentLabel()`.
+  .toc OptionalDeps + DaylightUI, DaylightUI_ActionBars. Not a DaylightUI options page (EUI has
+  one); not asked yet. Untested in game.
+- Lewis: "can we also put amac options page into the dui settings window just like eui?" New file
+  **DaylightUI.lua** (after EllesmereUI.lua): `RegisterDUI()` (from Init) = DaylightUI:RegisterPlugin
+  ("AutoMacros", needs 1.3) + RegisterModule("AutoMacros", { plugin, defaults = {}, options = { pages } }),
+  page ids "AutoMacros.general|buttons|highlight|popout". DaylightUI's rows (Options/Registry.lua):
+  toggle / slider / dropdown (`choices()` -> values, order) / color take get / set (set returning
+  false = refused), `hidden(get)`, `disabled(get)`; `custom` = build(row), height(row), update(row).
+  **A page is built once and cached (no rebuild call)**, so `Rows()` maps every item and turns our
+  `when` into `hidden`; the Buttons page lists every CATALOG button for the class, hidden unless in
+  ALL (LiveButton) or `oneBuff`; Per-Button Overrides = all of UI.OwnPopoutItems (made with a stub
+  PopoutEntry), hidden until a button is picked, its Hover color's key worked out each call. Our
+  color = mode dropdown + DaylightUI swatch ("Color and opacity", SetColor). Custom rows (`CustomRow`,
+  rebuilt on a stamp / width change): the preview strips (UI.ShowHeader, group "Preview" first), the
+  learned list (UI.BuildLearnedList), your own buttons (UI.BuildCustomRows, stamp UI.CustomStamp).
+  `RefreshDUIPage()` (DaylightUI.OptionsPanel.Refresh, internal, pcall'd) from RefreshEUIPage.
+  `OpenDUIPage(page)` (OptionsPanel.Show(id)): OpenOptions tries EUI, then DaylightUI, then Blizzard.
+  Our .toc Title has no "(DaylightUI Plugin)" tag, so DaylightUI's General > Plugins may note that.
+  Custom.lua's picker host list now iterates by index (ipairs stopped at the nil InterfaceOptionsFrame
+  on modern clients, so EllesmereUIFrame was never checked). Untested in game.
 
 ## 1.4.0 - Bandage swaps while its spell cools down (2026-11-21)
 - Lewis: if Cannibalize or (Rapid) Regeneration is on cooldown, the Bandage button uses

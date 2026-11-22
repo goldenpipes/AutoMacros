@@ -4,6 +4,18 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): the middle number go
 features or changes, the last number for bug fixes only. Versions starting with `0.` were
 the beta.
 
+## 1.5.0 - 2026-11-21
+
+### Added
+- **DaylightUI support**: with DaylightUI's Action Bars on, popout items look like your
+  DaylightUI action buttons: its frame (border style, corners, shadow, border color), icon
+  zoom, inner shadow, and its hover and pressed shades. A "Use DaylightUI styling" switch
+  under General > Appearance turns it off. Color settings can use DaylightUI's accent.
+- **AutoMacros in DaylightUI's options window**: all four pages (General, Buttons, Highlight,
+  Popout) as a plugin section in `/dui`, with the previews, the learned items list and your own
+  buttons. `/amac` opens it there when DaylightUI is installed (EllesmereUI's window still comes
+  first; `/amac options blizzard` opens the game's).
+
 ## 1.4.0 - 2026-11-21
 
 ### Changed

@@ -285,7 +285,7 @@ end
 
 -- true while buttons use Blizzard's art (no EllesmereUI look): for settings
 -- that only apply then (an item's "when")
-function UI.BlizzLook() return EUIButtonLook() == nil end
+function UI.BlizzLook() return ButtonLook() == nil end
 
 UI.ButtonSize = BLIZZ_ART.BarButtonSize   -- (the demo button's size)
 
@@ -354,6 +354,13 @@ PAGES = {
                         RefreshOptions()
                     end },
             } },
+            -- DaylightUI (its Action Bars module): popout items in its button look
+            { type = "toggle", label = "Use DaylightUI styling", when = function() return DaylightAPI() ~= nil end,
+                get = function() return Style("duiSkin") ~= false end,
+                set = function(v)
+                    SetStyle("duiSkin", v)
+                    RefreshOptions()
+                end },
             { type = "button", label = "Reset appearance", action = function() ResetStyle() end, refreshAll = true },
         } },
         -- which version is running (from the .toc)
@@ -437,15 +444,18 @@ PAGES = {
             { type = "choice", label = "Texture", key = "tabTexture", list = function() return TextureChoices(false) end },
         } },
         { name = "Items", items = {
-            -- with EllesmereUI's look the items copy its Action Bars settings
+            -- with EllesmereUI's or DaylightUI's look the items copy its Action Bars settings
             { type = "text", height = 34, when = function() return EUIButtonLook() ~= nil end,
                 text = function() return "Items look like your EllesmereUI action bars: border, icon zoom, and the hover"
                     .. " and pushed effects from its Bar Animations page." end },
+            { type = "text", height = 34, when = function() return EUIButtonLook() == nil and DaylightLook() ~= nil end,
+                text = function() return "Items look like your DaylightUI action bars: border style, color, corners,"
+                    .. " shadow, icon zoom, and the hover and pressed shades." end },
             -- with Blizzard's look the selected item shows the button's checked
             -- border (as the pet bar marks its active button), Default its own color
             { type = "color", label = "Selected border", key = "selectedColor", alpha = true },
             { type = "range", label = "Selected border size", key = "selectedSize", min = 1, max = 6, step = 1,
-                when = function() return EUIButtonLook() ~= nil end },
+                when = function() return ButtonLook() ~= nil end },
             -- 0..200 so 100 (your action bar buttons' size) sits in the middle, half
             -- size to the left, double to the right; it stops at 50 (floor)
             { type = "range", label = "Item size", key = "itemScale", min = 0, max = 200, step = 10, fmt = "%d%%",

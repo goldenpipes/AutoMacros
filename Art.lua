@@ -99,6 +99,60 @@ function EUIButtonLook()
     return look
 end
 
+-- DaylightUI's public API (DaylightUI.API, major 1), or nil.
+function DaylightAPI()
+    local API = DaylightUI and DaylightUI.API
+    if type(API) ~= "table" or API.major ~= 1 then return nil end
+    return API
+end
+
+-- How DaylightUI draws action buttons, or nil: nil without DaylightUI, with its
+-- styling turned off here, or with its Action Bars module off. Read live from
+-- its Action Bars settings (API.GetSetting("ActionBars", "look"), every bar's
+-- look): border width and style (daylight band, flat, none), corners, shadow,
+-- border color, icon zoom, the hover wash and the pressed shade. The frame
+-- itself is DaylightUI's shell (API.Skin), drawn by StyleButtonArt. A button
+-- shape other than square (circle, hexagon...) is drawn square.
+function DaylightLook()
+    local API = DaylightAPI()
+    if not API or Style("duiSkin") == false then return nil end
+    local okE, on = pcall(API.IsModuleEnabled, "ActionBars")
+    if not (okE and on) then return nil end
+    local ok, L = pcall(API.GetSetting, "ActionBars", "look")
+    if not ok or type(L) ~= "table" then return nil end
+    local px = L.borderStyle == "none" and 0 or (tonumber(L.border) or 3)
+    local function rgb(c, d) return type(c) == "table" and c or d end
+    local h = rgb(L.highlight, { 1, 1, 1 })
+    local p = rgb(L.pressed, { 0, 0, 0 })
+    local look = { daylight = true, size = px,
+        zoom = 0.08 + (tonumber(L.zoom) or 0) / 2,   -- (DaylightUI's icons are cropped 8% before any zoom)
+        bg = { 0, 0, 0, 0 }, border = { 0, 0, 0, 0 },
+        hover = { kind = "fill", r = h[1], g = h[2], b = h[3], a = tonumber(L.highlightAlpha) or 0.12 },
+        push = { kind = "fill", r = p[1], g = p[2], b = p[3], a = tonumber(L.pressedAlpha) or 0.3 },
+        shell = { borderPx = px, noBevel = true,
+            flat = L.borderStyle == "flat" or nil, noBorder = px == 0 or nil,
+            shadowAlpha = L.shadow == false and 0 or nil, cornerPx = L.corners == "square" and 0 or nil } }
+    -- the border's color at rest (nil = the shell's own)
+    local m = L.borderColor
+    if m == "accent" and API.Accent then
+        local okA, r, g, b = pcall(API.Accent)
+        if okA and type(r) == "number" then look.borderColor = { r, g, b } end
+    elseif m == "class" and API.ClassColor then
+        local _, token = UnitClass("player")
+        local okC, r, g, b = pcall(API.ClassColor, token)
+        if okC and type(r) == "number" then look.borderColor = { r, g, b } end
+    elseif m == "custom" and type(L.borderCustom) == "table" then
+        look.borderColor = L.borderCustom
+    end
+    return look
+end
+
+-- The square look drawn by us in place of Blizzard's art: EllesmereUI's, else
+-- DaylightUI's; nil = Blizzard's.
+function ButtonLook()
+    return EUIButtonLook() or DaylightLook()
+end
+
 -- Blizzard's action buttons (retail's, with an icon mask) have cut corners:
 -- in the art (uiactionbar2x, the frame is 88 px wide) the straight top edge
 -- starts 9 px in from each side, and the frame is drawn 46 wide on a 45 wide
@@ -107,7 +161,7 @@ end
 BLIZZ_ART.CORNER = (9 / 88) * (46 / 45)
 function BLIZZ_ART.Rounded()
     local b = _G.ActionButton1
-    return not EUIButtonLook() and b ~= nil and b.IconMask ~= nil
+    return not ButtonLook() and b ~= nil and b.IconMask ~= nil
 end
 
 -- A solid border in the shape of Blizzard's buttons around frame g's edge,
@@ -196,7 +250,7 @@ end
 -- color, EllesmereUI's (its Bar Animations page) or Blizzard's pale yellow.
 -- Its opacity is only used by fill hovers.
 STYLE_DEFAULTS.entryHover = function()
-    local look = EUIButtonLook()
+    local look = ButtonLook()
     local h = look and look.hover
     if h and h.kind ~= "none" then return { h.r, h.g, h.b, 1 } end
     return { 1, 0.93, 0.6, 1 }
@@ -293,7 +347,7 @@ function StyleGlow(g, button)
     local t = math.max(1, math.min(5, tonumber(Style("glowThickness")) or 3))   -- 1 to 5
     local px = PixelSize(button)
     local soft = TextureInfo(Style("glowTexture")).glow
-    local look = EUIButtonLook()
+    local look = ButtonLook()
     local rounded = BLIZZ_ART.Rounded()   -- retail's buttons: cut corners
     -- always inside the button (inside EllesmereUI's border for its soft glow)
     local inset = (soft and look) and look.size * px or 0
@@ -404,6 +458,49 @@ function PaintInteraction(tex, edges, owner, spec)
     end
 end
 
+-- DaylightUI's frame on button b (look = DaylightLook()), or nil to take it off:
+-- DaylightUI's own shell (API.Skin: border, band, corners, shadow, background)
+-- behind the button, the icon inside its border with DaylightUI's inner shadow
+-- over it, as on its action bars. Only our own pieces and the shell (a plain
+-- child frame) change, so it is safe on the popout's secure items in combat.
+function DaylightFrame(b, look)
+    if not look then
+        if b.duiShell then
+            b.duiShell:Hide()
+            b.duiShade:Hide()
+            if b.icon then b.icon:ClearAllPoints(); b.icon:SetAllPoints(b) end
+        end
+        return
+    end
+    local API = DaylightAPI()
+    if not API then return end
+    local ok, s = pcall(API.Skin, b, look.shell)
+    if not ok or type(s) ~= "table" then return end
+    b.duiShell = s
+    s:Show()
+    -- its border color (accent, class, custom; nil = the shell's own); not in
+    -- DaylightUI's promised API, so a later version may drop it: then the shell's own
+    local St = DaylightUI.Style
+    if type(St) == "table" and St.SetShellColors then pcall(St.SetShellColors, s, look.borderColor, nil) end
+    local t = look.size * PixelSize(b)
+    if b.icon then
+        b.icon:ClearAllPoints()
+        b.icon:SetPoint("TOPLEFT", b, "TOPLEFT", t, -t)
+        b.icon:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -t, t)
+    end
+    if not b.duiShade then b.duiShade = b:CreateTexture(nil, "ARTWORK", nil, 0) end
+    local okM, file = pcall(API.Media, "inner-shadow.png")
+    if okM and type(file) == "string" and b.icon then
+        b.duiShade:SetTexture(file)
+        b.duiShade:SetVertexColor(1, 1, 1, 0.55)
+        b.duiShade:ClearAllPoints()
+        b.duiShade:SetAllPoints(b.icon)
+        b.duiShade:Show()
+    else
+        b.duiShade:Hide()
+    end
+end
+
 -- Draws b like an action button. o.look: EllesmereUI's look (EUIButtonLook) or
 -- nil for Blizzard's. o.size: its size (see BLIZZ_ART.Size). With Blizzard's
 -- look, o.hover recolors the hover. o.sel (+ o.selSize): the selected item's
@@ -443,13 +540,14 @@ function StyleButtonArt(b, o)
             end
         end
     end
+    DaylightFrame(b, look and look.daylight and look or nil)
     if look then
         b.normal:Hide()
         b.slot:SetColorTexture(look.bg[1], look.bg[2], look.bg[3], look.bg[4])
-        b.slot:Show()
+        b.slot:SetShown(not look.daylight)   -- (DaylightUI's shell has its own background)
         b.icon:SetTexCoord(look.zoom, 1 - look.zoom, look.zoom, 1 - look.zoom)
         for i = 1, 4 do b.edges[i]:SetColorTexture(look.border[1], look.border[2], look.border[3], look.border[4]) end
-        PlaceEdges(b.edges, b, look.size)
+        PlaceEdges(b.edges, b, (not look.daylight) and look.size or 0)   -- (DaylightUI: its shell's border)
         -- hover and pushed fill the icon inside the border, as on EllesmereUI's bars
         local t = look.size * PixelSize(b)
         for _, tex in ipairs({ b.hl, b.push }) do
@@ -503,7 +601,7 @@ end
 -- EllesmereUI's look one like your EllesmereUI bars. Hover: see ApplyHover.
 function StyleEntry(e)
     -- in the popup's units (the item itself may be scaled), on whole pixels
-    local o = ApplyHover({ look = EUIButtonLook(), size = BLIZZ_ART.ItemSize(e:GetParent()) })
+    local o = ApplyHover({ look = ButtonLook(), size = BLIZZ_ART.ItemSize(e:GetParent()) })
     if e.selected then
         o.sel, o.selSize = StyleColor("selectedColor"), Style("selectedSize")
         o.selTint = ColorMode("selectedColor") ~= "default"   -- Default: Blizzard's own color
@@ -511,6 +609,10 @@ function StyleEntry(e)
     StyleButtonArt(e, o)
     if SkinActive() and skin.GetFont then
         local ok, font = pcall(skin.GetFont)
+        if ok and type(font) == "string" then pcall(e.count.SetFont, e.count, font, 11, "OUTLINE") end
+    elseif o.look and o.look.daylight then
+        local API = DaylightAPI()
+        local ok, font = pcall(API.Font)
         if ok and type(font) == "string" then pcall(e.count.SetFont, e.count, font, 11, "OUTLINE") end
     end
 end
@@ -538,7 +640,7 @@ end
 
 -- true while the popup shows a background (Blizzard's look, switched on)
 function BLIZZ_ART.PopupArt()
-    return not EUIButtonLook() and Style("flyoutArt") ~= false
+    return not ButtonLook() and Style("flyoutArt") ~= false
 end
 
 -- How far the bar art reaches past the main bar's buttons on each side (left,

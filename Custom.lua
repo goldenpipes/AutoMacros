@@ -639,7 +639,12 @@ function UI.ShowDrop(key)
     UI.dropKey = key
     -- the settings window it opens from: Blizzard's, or EllesmereUI's
     UI.dropHost = nil
-    for _, win in ipairs({ SettingsPanel, InterfaceOptionsFrame, EllesmereUIFrame }) do
+    local duiFrame = DaylightUI and DaylightUI.OptionsPanel and DaylightUI.OptionsPanel.Frame
+    duiFrame = type(duiFrame) == "function" and select(2, pcall(duiFrame)) or nil
+    -- (by index: a window this client lacks is nil, and ipairs would stop there)
+    local wins = { SettingsPanel, InterfaceOptionsFrame, EllesmereUIFrame, duiFrame }
+    for i = 1, 4 do
+        local win = wins[i]
         if win and win.IsVisible and win:IsVisible() then UI.dropHost = win end
     end
     local f = UI.DropFrame()

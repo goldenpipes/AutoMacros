@@ -1,4 +1,4 @@
--- AutoMacros 1.4.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 1.5.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -164,6 +164,7 @@ STYLE_DEFAULTS = {
     closeDelay = 0.3,
     tooltipColor = { 1, 0.3, 0.3, 1 },
     euiSkin = true,
+    duiSkin = true,   -- DaylightUI's button look on the popout (1.5.0)
 }
 
 -- A button's own hover color (Per-Button Overrides) is the style key
@@ -203,7 +204,20 @@ function EUIAccent()
     if type(c) == "table" and type(c.r) == "number" and type(c.g) == "number" and type(c.b) == "number" then
         return c.r, c.g, c.b
     end
+    -- without EllesmereUI: DaylightUI's accent (its public API), read each time
+    local API = DaylightUI and DaylightUI.API
+    if type(API) == "table" and API.major == 1 and API.Accent then
+        local ok, r, g, b = pcall(API.Accent)
+        if ok and type(r) == "number" and type(g) == "number" and type(b) == "number" then return r, g, b end
+    end
     return nil
+end
+
+-- Whose accent the "accent" color mode uses, for its label.
+function AccentLabel()
+    if EllesmereUI then return "EllesmereUI accent" end
+    if DaylightUI and DaylightUI.API then return "DaylightUI accent" end
+    return "Accent"
 end
 
 function AccentRGB()
@@ -242,7 +256,11 @@ function ColorModeChoices(key)
     local list = {}
     if OwnHoverKey(key) then list[1] = { key = "global", label = "Global" } end
     for _, m in ipairs(COLOR_MODES) do
-        if m.key ~= "accent" or EUIAccent() then list[#list + 1] = m end
+        if m.key == "accent" then
+            if EUIAccent() then list[#list + 1] = { key = "accent", label = AccentLabel() } end
+        else
+            list[#list + 1] = m
+        end
     end
     return list
 end

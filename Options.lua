@@ -17,6 +17,7 @@ UI = {}   -- the settings code's own helpers, kept together in one table
 -- Re-reads the values shown on our EllesmereUI page while it is on screen;
 -- rebuild: builds the page again (rows added or gone, e.g. your own buttons).
 function RefreshEUIPage(rebuild)
+    if RefreshDUIPage then RefreshDUIPage() end   -- (DaylightUI's window too, DaylightUI.lua)
     local E = EllesmereUI
     if not (E and E.RefreshPage and E.GetActiveModule and E.GetPluginModuleKey) then return end
     pcall(function()
@@ -27,7 +28,7 @@ end
 -- Dresses a preview button like a real action button (see EUIButtonLook).
 -- Run again on every refresh, so switching EllesmereUI styling shows at once.
 function UI.StyleSample(b)
-    StyleButtonArt(b, ApplyHover({ look = EUIButtonLook() }))
+    StyleButtonArt(b, ApplyHover({ look = ButtonLook() }))
 end
 
 -- A preview button the size of an action button, drawn like the real ones.

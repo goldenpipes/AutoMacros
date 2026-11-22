@@ -20,6 +20,8 @@ function OpenOptions(blizzard, page)
         if not (ok and opened) then ok, opened = pcall(EllesmereUI.OpenPlugin, "AutoMacros") end
         if ok and opened then return end
     end
+    -- then DaylightUI's options window (our plugin section), when it is installed
+    if not blizzard and OpenDUIPage and OpenDUIPage(page) then return end
     -- the game's options window, at our page; the game does not let an addon
     -- open it in combat (ADDON_ACTION_BLOCKED), so then it opens when combat ends
     if InCombatLockdown() then
@@ -311,6 +313,7 @@ function Init()
         end
     end
     pcall(RegisterEUI)   -- in case EllesmereUI loaded after this addon
+    pcall(RegisterDUI)   -- our section in DaylightUI's options window
     local okPanel, errPanel = pcall(UI.RegisterBlizzPanel)   -- Esc > Options > AddOns
     if not okPanel then Fail("options page", errPanel) end
 end
