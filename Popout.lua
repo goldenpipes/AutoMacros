@@ -1027,7 +1027,15 @@ function BandageMarkTick(f)
         f:Hide()
         return
     end
-    f.time:SetText(f.expires and tostring(math.ceil(left)) or "")
+    f.time:SetText(f.expires and CountdownText(left) or "")
+end
+
+-- Seconds left as the bar buttons show them (1.5.1): plain seconds from 99
+-- down, "1:45" above that.
+function CountdownText(left)
+    local s = math.ceil(left)
+    if s <= SHORT_COUNTDOWN then return tostring(s) end
+    return string.format("%d:%02d", math.floor(s / 60), s % 60)
 end
 
 -- One small mark (icon + seconds left under it) per bar button and corner.
@@ -1230,6 +1238,10 @@ end
 -- threshold 0 = whole seconds (checked in game, DaylightUI bars); above 99 s
 -- left it is put back as it was, and a timer flips it at 99.
 SHORT_COUNTDOWN = 99
+-- What a cooldown is put back to when the threshold it had can't be used: the
+-- game may answer 0 while it uses its own default, and putting 0 back left
+-- plain seconds from 129 s down (Lewis, 1.5.1). Below this "1:45", above "10m".
+COUNTDOWN_LONG = 600
 countdownOrig = {}   -- cooldown frame -> its own threshold before we changed it
 countdownWake = 0
 
@@ -1268,11 +1280,14 @@ function RefreshCountdowns()
         if short then
             if countdownOrig[cd] == nil then
                 local okG, v = pcall(cd.GetCountdownAbbrevThreshold, cd)
-                countdownOrig[cd] = (okG and type(v) == "number") and v or false
+                -- only a threshold above 99 s gives "1:29" again; anything
+                -- else (0, nothing) is put back as COUNTDOWN_LONG
+                local keep = okG and Readable(v) and type(v) == "number" and v > SHORT_COUNTDOWN
+                countdownOrig[cd] = keep and v or COUNTDOWN_LONG
                 pcall(cd.SetCountdownAbbrevThreshold, cd, 0)
             end
         elseif cd and countdownOrig[cd] ~= nil then
-            if countdownOrig[cd] then pcall(cd.SetCountdownAbbrevThreshold, cd, countdownOrig[cd]) end
+            pcall(cd.SetCountdownAbbrevThreshold, cd, countdownOrig[cd])
             countdownOrig[cd] = nil
         end
     end

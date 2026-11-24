@@ -4,6 +4,14 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): the middle number go
 features or changes, the last number for bug fixes only. Versions starting with `0.` were
 the beta.
 
+## 1.5.1 - 2026-11-22
+
+### Fixed
+- Cooldowns on AutoMacros buttons showed plain seconds from 129 down after the first one,
+  instead of "1:29" and plain seconds only from 99.
+- Mini cooldowns count the same way: "1:45" above 99 seconds, plain seconds from 99 down
+  (they showed 120, 119...).
+
 ## 1.5.0 - 2026-11-21
 
 ### Added

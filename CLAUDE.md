@@ -51,7 +51,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 1.5.0.**
+- **Current version: 1.5.1.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   version** (once per session, not per iteration) (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -243,6 +243,24 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   notes in the CurseForge section are out of date.
 - .build.info now (2026-10-29): Forever 1.60.1.70685, retail 12.1.5.70575, Era
   1.15.9.70576, Anniversary 2.5.6.70577, MoP 5.5.4.70631.
+
+## 1.5.1 - countdowns (2026-11-22)
+- Lewis: mini cooldowns didn't count from 99, then "triple digits once under 129" on the bar.
+  Cooldown:GetCountdownAbbrevThreshold exists on Forever (Gethe forever branch docs: below it
+  "1:31" form). With threshold 0 the game shows plain seconds below ~129.5 s ("2m" above).
+  Cause (inferred, not confirmed): the threshold we saved and put back was 0 (the game's
+  "unset"?), so after the first cooldown every one showed seconds from 129. Now a saved value
+  <= 99 or unreadable is put back as COUNTDOWN_LONG 600. Mini marks: `CountdownText(left)` =
+  plain seconds <= 99, else "m:ss". **Confirmed in game** (Lewis, 2026-11-23: "Works"); the
+  saved-0 cause itself is still inferred.
+
+## Scrapped: crafting from a button (2026-11-22)
+- Tried as 1.6.0: Weapon Buff crafting a sharpening stone when none carried (any click) and on
+  right-click. The game only crafts with the profession window open, so the addon opened it
+  (C_TradeSkillUI.OpenRecipe on Forever, /cast <profession> on Classic), crafted
+  (CraftRecipe / DoTradeSkill) and closed it. Lewis: "its clunky, i dont like it" -> removed,
+  never committed; the version stays 1.5.0. Code: `releases\craft-scrapped-2026-11-22.patch`
+  (a diff against 269a326's files). Don't offer crafting from buttons again unless he asks.
 
 ## 1.5.0 - DaylightUI look (2026-11-21)
 - Lewis (screenshot: Blizzard-look popout beside his DaylightUI bars): "i want amac to also work
