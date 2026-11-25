@@ -253,6 +253,20 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   <= 99 or unreadable is put back as COUNTDOWN_LONG 600. Mini marks: `CountdownText(left)` =
   plain seconds <= 99, else "m:ss". **Confirmed in game** (Lewis, 2026-11-23: "Works"); the
   saved-0 cause itself is still inferred.
+- Lewis (2026-11-24, DaylightUI 2.2.7): Mana Potion 3827 not on Restore Mana. DaylightUI_Tooltip
+  (Tip.ShortenStats, an item post-call on **every** tooltip) rewrites "Use: Restores 455 to 585
+  mana." to "Use: |cff..455-585|r mana", our scan tooltip too, so no "restore" -> ignored.
+  **Cause confirmed offline**: the saved sigs of 3827 and 1710 hash to exactly that text.
+  `RawTooltipLines(getter, ...)` (Learning.lua): C_TooltipInfo.GetItemByID / GetBagItem (in the
+  Forever docs) used by TooltipLines / BagTooltipLines; the scan tooltip only where that API is
+  missing or errors. **Read item text from C_TooltipInfo, never from a shown
+  tooltip.** Same version (1.5.1 wasn't released). **Confirmed in game** (Lewis, 2026-11-24: mana potions show).
+- Lewis: recheck known items only after patches, not every session. learned / ignored records
+  get `build` (`GameBuild()` = version.build); LearnNew skips a record whose build is the current
+  one, else re-reads it once and stores the build (same sig) or re-sorts it. Old records have no
+  build, so everything is read once more: that fixes DaylightUI's wrong results, no CLASSIFIER
+  bump needed. New code that changes the rules still bumps CLASSIFIER. The full re-read is confirmed by that;
+  skipping on the same build and after a patch not checked.
 
 ## Scrapped: crafting from a button (2026-11-22)
 - Tried as 1.6.0: Weapon Buff crafting a sharpening stone when none carried (any click) and on

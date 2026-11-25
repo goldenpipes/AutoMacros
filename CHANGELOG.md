@@ -11,6 +11,12 @@ the beta.
   instead of "1:29" and plain seconds only from 99.
 - Mini cooldowns count the same way: "1:45" above 99 seconds, plain seconds from 99 down
   (they showed 120, 119...).
+- Potions, food and drink missing from their buttons while an addon changes item tooltips
+  (DaylightUI shortens "Restores 455 to 585 mana" to "455-585 mana"). Items are now read
+  from the game's own text.
+
+### Changed
+- Items already sorted are only checked again after a game patch, not every session.
 
 ## 1.5.0 - 2026-11-21
 

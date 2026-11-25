@@ -99,7 +99,27 @@ function ScanTipLines()
     return lines
 end
 
+-- The game's own text for an item, before any addon's tooltip changes: the
+-- scan tooltip gets those too (DaylightUI shortens "Restores 455 to 585 mana."
+-- to "455-585 mana", so potions and food fitted no button). nil on a client
+-- without C_TooltipInfo: the scan tooltip is read then. {} = no data yet.
+function RawTooltipLines(getter, ...)
+    local get = C_TooltipInfo and C_TooltipInfo[getter]
+    if type(get) ~= "function" then return nil end
+    local ok, data = pcall(get, ...)
+    if not ok then return nil end
+    local lines = {}
+    if type(data) ~= "table" or type(data.lines) ~= "table" then return lines end
+    for _, line in ipairs(data.lines) do
+        local text = line.leftText
+        if Readable(text) and type(text) == "string" then lines[#lines + 1] = text end
+    end
+    return lines
+end
+
 function TooltipLines(id)
+    local raw = RawTooltipLines("GetItemByID", id)
+    if raw then return raw end
     if not ScanTipReady() then return nil end
     local ok = pcall(scanTip.SetItemByID, scanTip, id)
     if not ok then pcall(scanTip.SetHyperlink, scanTip, "item:" .. id) end
@@ -109,6 +129,8 @@ end
 -- the tooltip of what is in a bag slot: this very item, so a lockbox that has
 -- been picked no longer says Locked (asked by item ID, it always does)
 function BagTooltipLines(bag, slot)
+    local raw = RawTooltipLines("GetBagItem", bag, slot)
+    if raw then return raw end
     if not ScanTipReady() then return nil end
     if not pcall(scanTip.SetBagItem, scanTip, bag, slot) then return nil end
     return ScanTipLines()
@@ -128,7 +150,7 @@ end
 -- The second result is the item's signature: a number made from everything the
 -- rules looked at (class, subclass, the "Use:" and "well fed" lines with their
 -- numbers left out, so cooldowns and scaling do not count). LearnNew compares
--- it once a session to notice an item Blizzard has changed.
+-- it after a game patch to notice an item Blizzard has changed.
 function Classify(id)
     local class, sub, _, _, _, slot = ItemInstant(id)
     if class == nil then return nil end
@@ -404,14 +426,22 @@ end
 sessionDone = {}   -- item IDs not worth looking at again this session
 attempts = {}      -- item ID -> tries while the game had no data for it
 
+-- the game version and build, "1.60.1.70685": changes with every patch
+function GameBuild()
+    local version, build = GetBuildInfo()
+    return tostring(version) .. "." .. tostring(build)
+end
+
 -- Each item is sorted once and the result saved with its signature (see
--- Classify). Once a session, the first time an item is in your bags, its
--- signature is worked out again; only when it differs (Blizzard changed the
--- item) is the item sorted again. Hand-made results (/amac assign, unassign)
--- are never touched. Saved as:
---   learned[id] = { sets = {...}, how = "auto" | "manual", sig = n }
---   ignored[id] = { sig = n }   checked, belongs nowhere
---   ignored[id] = "manual"      /amac unassign
+-- Classify) and the game build it was read on. On the same build its text is
+-- not read again; after a game patch, the first time the item is in your bags,
+-- its signature is worked out again, and only when it differs (Blizzard changed
+-- the item) is the item sorted again. (Before 1.5.1: once every session.)
+-- Hand-made results (/amac assign, unassign) are never touched. Saved as:
+--   learned[id] = { sets = {...}, how = "auto" | "manual", sig = n, build = "1.60.1.70685" }
+--   ignored[id] = { sig = n, build = ... }   checked, belongs nowhere
+--   ignored[id] = "manual"                   /amac unassign
+-- (No build: saved before 1.5.1, so checked once more.)
 -- (Before 0.85.0 both kinds of ignored were a number; those count as automatic
 -- and are checked once more.)
 -- Returns true while items are left to look at (no data yet, or over budget).
@@ -419,14 +449,16 @@ attempts = {}      -- item ID -> tries while the game had no data for it
 -- make are sorted quietly); nil = all.
 function LearnNew(have, loud)
     local db = DB()
+    local now = GameBuild()
     local budget, changed, waiting = 40, false, false
     for id in pairs(have) do
         if budget <= 0 then waiting = true break end
         local rec = type(db.learned) == "table" and db.learned[id] or nil
         local ign = type(db.ignored) == "table" and db.ignored[id] or nil
         local manual = (type(rec) == "table" and rec.how == "manual") or ign == "manual"
-        if not sessionDone[id] and manual then
-            sessionDone[id] = true
+        local old = type(rec) == "table" and rec or (type(ign) == "table" and ign) or nil
+        if not sessionDone[id] and (manual or (old and old.sig and old.build == now)) then
+            sessionDone[id] = true   -- made by hand, or already sorted on this game build
         end
         if not sessionDone[id] then
             local worth = WorthALook(id)
@@ -440,16 +472,17 @@ function LearnNew(have, loud)
                     if attempts[id] > 20 then sessionDone[id] = true else waiting = true end
                 else
                     sessionDone[id] = true
-                    local old = type(rec) == "table" and rec or (type(ign) == "table" and ign) or nil
-                    if not (old and old.sig == sig) then
+                    if old and old.sig == sig then
+                        old.build = now   -- unchanged
+                    else
                         -- new, changed, or saved before signatures (then usually the same result)
                         local before = old and old.sets and table.concat(old.sets, "+") or ""
                         if type(db.learned) ~= "table" then db.learned = {} end
                         if type(db.ignored) ~= "table" then db.ignored = {} end
                         if #sets == 0 then
-                            db.learned[id], db.ignored[id] = nil, { sig = sig }
+                            db.learned[id], db.ignored[id] = nil, { sig = sig, build = now }
                         else
-                            db.learned[id], db.ignored[id] = { sets = sets, how = "auto", sig = sig }, nil
+                            db.learned[id], db.ignored[id] = { sets = sets, how = "auto", sig = sig, build = now }, nil
                         end
                         if table.concat(sets, "+") ~= before then
                             changed = true
