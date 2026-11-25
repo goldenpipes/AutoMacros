@@ -13,6 +13,12 @@ you like: no extra bar to place, unlike AutoBar.
 
 ## New features
 
+**1.5.1** (2026-11-24)
+- Potions, food and drink no longer go missing from their buttons while an addon such as
+  DaylightUI shortens item tooltips.
+- Cooldowns and mini cooldowns count in plain seconds only from 99 down.
+- Items already sorted are only checked again after a game patch.
+
 **1.5.0** (2026-11-21)
 - **DaylightUI support:** the popout and settings previews can match your DaylightUI action
   buttons (border, shadow, hover, accent color), switchable under General > Appearance.

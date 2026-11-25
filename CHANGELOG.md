@@ -4,7 +4,7 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): the middle number go
 features or changes, the last number for bug fixes only. Versions starting with `0.` were
 the beta.
 
-## 1.5.1 - 2026-11-22
+## 1.5.1 - 2026-11-24
 
 ### Fixed
 - Cooldowns on AutoMacros buttons showed plain seconds from 129 down after the first one,
