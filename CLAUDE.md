@@ -267,6 +267,10 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   build, so everything is read once more: that fixes DaylightUI's wrong results, no CLASSIFIER
   bump needed. New code that changes the rules still bumps CLASSIFIER. The full re-read is confirmed by that;
   skipping on the same build and after a patch not checked.
+- **Committed and pushed** 2026-11-24 (a691d53). **Released** 2026-11-24 as a **full release**
+  v1.5.1 (Lewis: "release not pre-release"; notes: the full changelog), Latest on GitHub;
+  CurseForge upload run 45528729693, file id 9803881, type release. README changed (New
+  features 1.5.1): Lewis to paste it into CurseForge.
 
 ## Scrapped: crafting from a button (2026-11-22)
 - Tried as 1.6.0: Weapon Buff crafting a sharpening stone when none carried (any click) and on
