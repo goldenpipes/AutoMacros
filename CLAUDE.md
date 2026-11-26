@@ -257,6 +257,10 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   changed in place (SetText + SetTextColor). CleanTooltip is done when line 1 is the message
   (was: and lines == 1, which another addon's extra line would have made loop every frame).
   **Confirmed in game** (Lewis, 2026-11-25: blinking gone).
+- **Committed and pushed** 2026-11-25 (09c045c). **Released** 2026-11-25 as a **full release** v1.5.2
+  (Lewis: "Yes, full release"; notes: the full changelog), Latest on GitHub; CurseForge upload
+  run 45739409438, file id 9821267, type release. README changed (New features 1.5.2): Lewis to
+  paste it into CurseForge.
 
 ## 1.5.1 - countdowns (2026-11-22)
 - Lewis: mini cooldowns didn't count from 99, then "triple digits once under 129" on the bar.
