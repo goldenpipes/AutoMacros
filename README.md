@@ -13,6 +13,9 @@ you like: no extra bar to place, unlike AutoBar.
 
 ## New features
 
+**1.5.2** (2026-11-25)
+- Tooltips on empty buttons no longer blink with DaylightUI's Rich tooltips.
+
 **1.5.1** (2026-11-24)
 - Potions, food and drink no longer go missing from their buttons while an addon such as
   DaylightUI shortens item tooltips.
