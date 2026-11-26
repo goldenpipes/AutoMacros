@@ -4,6 +4,12 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): the middle number go
 features or changes, the last number for bug fixes only. Versions starting with `0.` were
 the beta.
 
+## 1.5.2 - 2026-11-24
+
+### Fixed
+- The tooltip of an empty button, and of Water and Food with their right-click line, blinking
+  with DaylightUI's Rich tooltips.
+
 ## 1.5.1 - 2026-11-24
 
 ### Fixed

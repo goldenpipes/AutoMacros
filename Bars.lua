@@ -355,7 +355,13 @@ end
 -- always through SetAction, so a one-off edit gets overwritten and the tooltip
 -- flickers between the two. The replacement is therefore done every time the
 -- tooltip is built, with a per-frame check as a backstop.
-function CleanTooltip(tip)
+--
+-- filling = the game is in the middle of building it and calls Show itself right
+-- after (TooltipDataProcessor's post-calls). Calling Show there too made
+-- DaylightUI's tooltip draw it twice per rebuild and fade the text in again each
+-- time, five times a second: text blinking. So: no Show then, and the line's
+-- text is changed in place rather than cleared and added again.
+function CleanTooltip(tip, filling)
     if DB().stockTooltip then return end
     local name = tip.GetName and tip:GetName()
     if not name then return end
@@ -383,17 +389,23 @@ function CleanTooltip(tip)
     if not message then return end
     local first = _G[name .. "TextLeft1"]
     local firstText = first and first:GetText()
-    if lines == 1 and Readable(firstText) and firstText == message then return end
-    tip:ClearLines()
+    -- (done already; lines below it are another addon's)
+    if Readable(firstText) and firstText == message then return end
     local tc = StyleColor("tooltipColor")
-    tip:AddLine(message, tc[1], tc[2], tc[3])
-    tip:Show()
+    if lines == 1 and first then
+        first:SetText(message)
+        first:SetTextColor(tc[1], tc[2], tc[3])
+    else
+        tip:ClearLines()
+        tip:AddLine(message, tc[1], tc[2], tc[3])
+    end
+    if not filling then tip:Show() end
 end
 
 -- Tooltip: on a Water or Food button whose right-click conjures (rightCast, set
 -- by UpdateCore), a last line saying so. Added once per build (the game builds
 -- an action tooltip afresh each time), skipped if it is there already.
-function RightClickHint(tip)
+function RightClickHint(tip, filling)
     local owner = tip.GetOwner and tip:GetOwner()
     if not owner or owner == UIParent then return end
     local ok, m = pcall(MacroOnButton, owner)
@@ -407,7 +419,7 @@ function RightClickHint(tip)
         if Readable(text) and text == line then return end
     end
     tip:AddLine(line, 0.25, 1, 0.25)
-    tip:Show()
+    if not filling then tip:Show() end   -- see CleanTooltip
 end
 
 if GameTooltip then
@@ -416,17 +428,17 @@ if GameTooltip then
     -- never throw an error into the game's own tooltip code)
     local function clean(tip) pcall(CleanTooltip, tip) end
     -- (a build: the tidy-up, then the right-click line; not on every frame)
-    local function built(tip)
-        clean(tip)
-        pcall(RightClickHint, tip)
+    local function built(tip, filling)
+        pcall(CleanTooltip, tip, filling)
+        pcall(RightClickHint, tip, filling)
     end
     if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
         pcall(TooltipDataProcessor.AddTooltipPostCall, TooltipDataProcessor.AllTypes,
-            function(tip) if tip == GameTooltip then built(tip) end end)
+            function(tip) if tip == GameTooltip then built(tip, true) end end)
     end
     -- older style tooltip building
     if hooksecurefunc then
-        pcall(hooksecurefunc, GameTooltip, "SetAction", built)
+        pcall(hooksecurefunc, GameTooltip, "SetAction", function(tip) built(tip) end)
     end
     -- backstop: undo it if the stock text comes back between rebuilds
     pcall(GameTooltip.HookScript, GameTooltip, "OnUpdate", clean)

@@ -51,7 +51,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 1.5.1.**
+- **Current version: 1.5.2.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   version** (once per session, not per iteration) (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -243,6 +243,20 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   notes in the CurseForge section are out of date.
 - .build.info now (2026-10-29): Forever 1.60.1.70685, retail 12.1.5.70575, Era
   1.15.9.70576, Anniversary 2.5.6.70577, MoP 5.5.4.70631.
+
+## 1.5.2 - tooltip blinking with DaylightUI (2026-11-24)
+- Lewis (GIF, DaylightUI 2.2.7 Rich tooltips): an empty button's "No explosives in inventory."
+  blinks (text gone, fading in again, ~5 times a second; the frame stays). Cause (read from
+  DaylightUI's Rich.lua, not traced in game): our TooltipDataProcessor post-call runs before
+  DaylightUI's, and its ClearLines + Show made DaylightUI build its card there without data
+  (kind "other"), then again at the game's own Show with data (kind "spell" for macros): another
+  key = "new content" = Panel.FadeBody. RightClickHint's Show did the same (other / item).
+- InternalProcessInfo (Blizzard TooltipDataHandler, forever and live) calls self:Show() right
+  after the post-calls. **Never Show or ClearLines inside a tooltip post-call**: CleanTooltip /
+  RightClickHint take `filling` (true from the post-call) = no Show; a one-line tooltip is
+  changed in place (SetText + SetTextColor). CleanTooltip is done when line 1 is the message
+  (was: and lines == 1, which another addon's extra line would have made loop every frame).
+  **Confirmed in game** (Lewis, 2026-11-25: blinking gone).
 
 ## 1.5.1 - countdowns (2026-11-22)
 - Lewis: mini cooldowns didn't count from 99, then "triple digits once under 129" on the bar.
