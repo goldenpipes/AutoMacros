@@ -64,3 +64,13 @@ CONJURE_WATER = { 10140, 10139, 10138, 6127, 5506, 5505, 5504 }
 -- Roll, 7 Cinnamon Roll; Conjure Food spells, best first.
 FOOD_RANK = { [5349] = 1, [1113] = 2, [1114] = 3, [1487] = 4, [8075] = 5, [8076] = 6, [22895] = 7 }
 CONJURE_FOOD = { 28612, 10145, 10144, 6129, 990, 597, 587 }
+-- Items used for a quest that the game doesn't mark as quest items (no "Quest
+-- Item" line, not the Quest class): they go on the Quest Item button. The value
+-- is the quest's ID (the item is a quest item only while that quest is in your
+-- log; you may keep it afterwards) or true (always).
+-- 213562 Bug Catching Net (Junk; quest 93176 "My Little Friends", Swamp of Sorrows)
+-- 211272 Empty Bait Cage (Junk; "Catch a critter to be used as bait"; quest unknown)
+QUEST_ITEMS = {
+    [213562] = 93176,
+    [211272] = true,
+}

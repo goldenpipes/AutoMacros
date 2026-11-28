@@ -1,4 +1,4 @@
--- AutoMacros 1.5.2 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
+-- AutoMacros 1.6.0 for WoW Forever, Classic Era, TBC Anniversary, MoP Classic and
 -- retail (Midnight); one addon for all of them, see the .toc's Interface line.
 -- Keeps one macro per category pointed at the best matching item in your bags,
 -- so the macro can be dragged onto any action bar. Macros are only rewritten
@@ -150,7 +150,7 @@ end
 --   noComboFallback   Food / Water do not borrow Food & Drink items when out (0.136.0)
 -- ---------------------------------------------------------------------------
 SCHEMA = 2
-CLASSIFIER = 27 -- (27: items that steal life; 26: items that begin a quest; 25: fishing lures; 23 was a build never released, skipped so its saved results are redone) raise when the learning rules change, so items are checked again
+CLASSIFIER = 28 -- (28: the built-in quest item lists; 27: items that steal life; 26: items that begin a quest; 25: fishing lures; 23 was a build never released, skipped so its saved results are redone) raise when the learning rules change, so items are checked again
 
 STYLE_DEFAULTS = {
     glowColor = { 1, 0.15, 0.15, 1 }, glowThickness = 3, glowTexture = "solid",
@@ -512,7 +512,43 @@ function HiddenButton(e)
     return false
 end
 
+-- Whether a quest is in your quest log (nil when the game can't say).
+function OnQuest(questID)
+    if C_QuestLog and C_QuestLog.IsOnQuest then
+        local ok, on = pcall(C_QuestLog.IsOnQuest, questID)
+        if ok then return on and true or false end
+    end
+    if GetQuestLogIndexByID then
+        local ok, index = pcall(GetQuestLogIndexByID, questID)
+        if ok then return (tonumber(index) or 0) > 0 end
+    end
+end
+
+-- Items on the built-in quest list (Games\<game>\Lists.lua) that name their
+-- quest: off the Quest Item button while that quest isn't in your log. An item
+-- you put there by hand stays.
+function QuestItemOff(id)
+    local quest = QUEST_ITEMS and QUEST_ITEMS[id]
+    if type(quest) ~= "number" then return false end
+    local rec = type(DB().learned) == "table" and DB().learned[id]
+    if type(rec) == "table" and rec.how == "manual" then return false end
+    return OnQuest(quest) == false
+end
+
+-- The state of those quests, so a quest log update only redoes the buttons
+-- when one of them was taken or finished.
+function QuestItemsStamp()
+    if not QUEST_ITEMS then return "" end
+    local parts = {}
+    for _, quest in pairs(QUEST_ITEMS) do
+        if type(quest) == "number" then parts[#parts + 1] = quest .. "=" .. tostring(OnQuest(quest)) end
+    end
+    table.sort(parts)
+    return table.concat(parts, ",")
+end
+
 function InSet(setName, id)
+    if setName == "quest" and QuestItemOff(id) then return false end
     if setName == "buff_class" then   -- the Buffs button: every part this character takes
         for part in pairs(BuffParts()) do
             if InSet("buff_" .. part, id) then return true end
@@ -525,6 +561,23 @@ function InSet(setName, id)
     if made and made.rank[id] then return true end
     local l = learnedIdx[setName]
     return l ~= nil and l[id] == true
+end
+
+-- An item put on a button by hand (/amac assign, or Shift+dropping it on the
+-- button): a manual learned record, which the rules never change (not after a
+-- patch either). /amac unassign takes it off again.
+function AssignItem(id, e)
+    local db = DB()
+    if type(db.learned) ~= "table" then db.learned = {} end
+    local rec = db.learned[id]
+    if type(rec) ~= "table" or rec.how ~= "manual" then rec = { sets = {}, how = "manual" } end
+    local have = false
+    for _, s in ipairs(rec.sets) do if s == e.set then have = true end end
+    if not have then rec.sets[#rec.sets + 1] = e.set end
+    db.learned[id] = rec
+    if type(db.ignored) == "table" then db.ignored[id] = nil end
+    RebuildLearned()
+    if Schedule then Schedule() end   -- (the button picks it up)
 end
 
 function RebuildLearned()

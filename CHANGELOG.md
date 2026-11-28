@@ -4,6 +4,19 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): the middle number go
 features or changes, the last number for bug fixes only. Versions starting with `0.` were
 the beta.
 
+## 1.6.0 - unreleased
+
+### Added
+- Put any item on a button yourself: hold Shift while you drop it from your bags onto the
+  button on your action bar. The button stays where it is (a plain drop still replaces it, as
+  always). Dropping an item on a button's icon on the Buttons settings page works too.
+  `/amac unassign <item>` takes it off again.
+- A built-in list of items used for quests that the game doesn't mark as quest items. These
+  go on the Quest Item button. So far (WoW Forever): Bug Catching Net ("My Little Friends" in
+  Swamp of Sorrows) and Empty Bait Cage. The Bug Catching Net is only on the button while
+  "My Little Friends" is in your quest log; you keep the net after the quest, and it leaves
+  the button then.
+
 ## 1.5.2 - 2026-11-25
 
 ### Fixed

@@ -215,14 +215,21 @@ UI.NEW_BUTTON_TIP = {
     "Rename it, reorder or take things out, or delete it under Custom at the bottom of this page.",
 }
 
--- an item or spell dropped on your own button's icon in the icon row: add it
+-- an item or spell dropped on a button's icon in the icon row: your own button
+-- takes it; another button that holds items takes an item onto its list
 function UI.AddToIcon(b)
     local e = b and b.entry
-    if not (e and e.custom) then return end
+    if not e then return end
     local kind, id = UI.CursorThing()
     if not kind then return end
-    ClearCursor()
-    UI.CustomAdd(e.key, kind, id)
+    if e.custom then
+        ClearCursor()
+        UI.CustomAdd(e.key, kind, id)
+    elseif e.set and kind == "items" then
+        ClearCursor()
+        AssignItem(id, e)
+        Print(ItemRef(id) .. " now goes on " .. e.title .. " (/amac unassign " .. id .. " takes it off)")
+    end
 end
 
 function UI.CustomEntry(key)

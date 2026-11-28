@@ -744,7 +744,7 @@ UI.HEADERS.buttons = function(f, width)
                     if GameTooltip:GetOwner() == self then self:GetScript("OnEnter")(self) end   -- (its Popout line)
                     return
                 end
-                if self.entry.custom and UI.CursorThing() then return UI.AddToIcon(self) end
+                if UI.CursorThing() and (self.entry.custom or self.entry.set) then return UI.AddToIcon(self) end
                 UI.SetEnabled(self.entry, not Enabled(self.entry))
             end)
             b:SetScript("OnReceiveDrag", function(self) UI.AddToIcon(self) end)
@@ -766,6 +766,8 @@ UI.HEADERS.buttons = function(f, width)
                 GameTooltip:AddLine("Shift+right-click to change what clicking an item does", 0.7, 0.7, 0.7)
                 if self.entry.custom then
                     GameTooltip:AddLine("Drop an item or spell on it to add it", 0.7, 0.7, 0.7)
+                elseif self.entry.set then
+                    GameTooltip:AddLine("Drop an item on it to add it to this button", 0.7, 0.7, 0.7)
                 end
                 GameTooltip:Show()
             end)

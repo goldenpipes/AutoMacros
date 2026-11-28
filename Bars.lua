@@ -443,3 +443,39 @@ if GameTooltip then
     -- backstop: undo it if the stock text comes back between rebuilds
     pcall(GameTooltip.HookScript, GameTooltip, "OnUpdate", clean)
 end
+
+-- Shift+drop an item from your bags onto one of our buttons on an action bar:
+-- the item goes on that button's list (your own buttons: added to it), and the
+-- button stays where it is. A plain drop still puts the item there, as always.
+-- By the time this runs the game has put the item in the slot and our macro on
+-- the cursor, so the macro goes back and the item back to the bag.
+function DroppedOnButton(slot)
+    if InCombatLockdown() or not IsShiftKeyDown() then return end
+    local kind, id = GetActionInfo(slot)
+    if not (Readable(kind) and Readable(id)) or kind ~= "item" then return end
+    local ckind, idx = GetCursorInfo()
+    if ckind ~= "macro" or not idx then return end
+    local name = GetMacroInfo(idx)
+    if not Readable(name) or not name then return end
+    local m
+    for i, mm in pairs(macroAt) do
+        if GetMacroInfo(i) == name then m = mm end
+    end
+    if not m then return end
+    PlaceAction(slot)   -- (our macro back in the slot, the item on the cursor)
+    ClearCursor()
+    id = tonumber(id)
+    if m.custom then
+        UI.CustomAdd(m.key, "items", id)
+        Print(ItemRef(id) .. " added to " .. m.title)
+    elseif m.set then
+        AssignItem(id, m)
+        Print(ItemRef(id) .. " now goes on " .. m.title .. " (/amac unassign " .. id .. " takes it off)")
+    else
+        Print(m.title .. " doesn't take items")
+    end
+end
+
+if hooksecurefunc and PlaceAction then
+    pcall(hooksecurefunc, "PlaceAction", function(slot) pcall(DroppedOnButton, slot) end)
+end

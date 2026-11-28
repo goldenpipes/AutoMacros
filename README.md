@@ -13,6 +13,11 @@ you like: no extra bar to place, unlike AutoBar.
 
 ## New features
 
+**1.6.0** (not released yet)
+- Hold **Shift** while dropping an item from your bags onto a button to put that item on it.
+- Quest items the game doesn't mark as quest items (such as the Bug Catching Net) go on the
+  Quest Item button.
+
 **1.5.2** (2026-11-25)
 - Tooltips on empty buttons no longer blink with DaylightUI's Rich tooltips.
 
@@ -142,7 +147,7 @@ Install it with the CurseForge app ([AutoMacros on CurseForge](https://www.curse
 | `/amac welcome` | Show the welcome window again |
 | `/amac list` | List every button and whether it is on |
 | `/amac add <name>` / `/amac remove <name>` | Switch a button on or off (off deletes its macro) |
-| `/amac assign <item> <name>` | Put an item on a button by hand (item ID or shift-click link) |
+| `/amac assign <item> <name>` | Put an item on a button by hand (item ID or shift-click link); or hold Shift and drop the item on the button |
 | `/amac unassign <item>` | Take an item off the button it was learned for |
 | `/amac learned` | Show the items learned so far |
 | `/amac next` | Mages: switch to the next untranslated scroll |

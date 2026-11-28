@@ -347,6 +347,12 @@ frame:SetScript("OnEvent", function(_, event)
         local ok, err = pcall(Init)
         if not ok then Fail("startup", err) end
     end
+    if event:find("^QUEST_") then
+        -- (only a quest the built-in quest item list names matters: QuestItemOff)
+        local stamp = QuestItemsStamp()
+        if stamp == questStamp then return end
+        questStamp = stamp
+    end
     if event:find("^TRADE_SKILL") then
         UI.QueueScan()   -- your recipes, while a profession window is open
         return
@@ -397,6 +403,7 @@ for _, event in ipairs({
     "UPDATE_BONUS_ACTIONBAR", "UPDATE_SHAPESHIFT_FORM",
     "TRADE_SKILL_SHOW", "TRADE_SKILL_UPDATE", "TRADE_SKILL_LIST_UPDATE",   -- a profession window (recipes)
     "MINIMAP_UPDATE_TRACKING",   -- tracking switched (the Tracking button follows it)
+    "QUEST_ACCEPTED", "QUEST_REMOVED", "QUEST_TURNED_IN", "QUEST_LOG_UPDATE",   -- (QUEST_ITEMS)
 }) do
     pcall(frame.RegisterEvent, frame, event)   -- skip events this client lacks
 end
@@ -516,15 +523,7 @@ SlashCmdList["AUTOMACROS"] = function(msg)
                 Print("assign needs an item category: " .. "/amac list shows them (spell categories cannot take items)")
                 return
             end
-            if type(db.learned) ~= "table" then db.learned = {} end
-            local rec = db.learned[id]
-            if type(rec) ~= "table" or rec.how ~= "manual" then rec = { sets = {}, how = "manual" } end
-            local have = false
-            for _, s in ipairs(rec.sets) do if s == e.set then have = true end end
-            if not have then rec.sets[#rec.sets + 1] = e.set end
-            db.learned[id] = rec
-            if type(db.ignored) == "table" then db.ignored[id] = nil end
-            RebuildLearned()
+            AssignItem(id, e)
             Print(ItemRef(id) .. " [" .. id .. "] now counts as " .. e.title .. (Enabled(e) and "" or (" (the button is off: /amac add " .. e.key .. ")")))
         end
     elseif msg:match("^%s*test") then

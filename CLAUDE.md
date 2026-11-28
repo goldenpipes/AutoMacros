@@ -51,7 +51,7 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
 - Keep previous versions; older builds go in a `previous/` folder (e.g. `previous/0.24.0/`).
   The top-level `AutoMacros.toc` and the `.lua` files it lists are always the current version
   (up to 0.101.0 it was one `AutoMacros.lua`).
-- **Current version: 1.5.2.**
+- **Current version: 1.6.0.**
 - **Copy the current files (`AutoMacros.toc` + every `.lua` the .toc lists, keeping the
   `Games\<game>\` subfolders) into `previous/<version>/` BEFORE the first edit of a new
   version** (once per session, not per iteration) (missed twice; 0.32.0 had to be rebuilt by reversing edits). Bump the version
@@ -243,6 +243,36 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   notes in the CurseForge section are out of date.
 - .build.info now (2026-10-29): Forever 1.60.1.70685, retail 12.1.5.70575, Era
   1.15.9.70576, Anniversary 2.5.6.70577, MoP 5.5.4.70631.
+
+## 1.6.0 - quest item list; Shift+drop onto a button (2026-11-26)
+- Lewis: Bug Catching Net **213562** (Wowhead Forever: 15.0 Junk, no "Quest Item" line, from
+  Entomology Starter Kit 213565) is for the quest "My Little Friends" (Swamp of Sorrows) but
+  wasn't on Quest Item. He chose a built-in list he adds to as he finds more: `QUEST_ITEMS`
+  (by item ID, per game in Games\<game>\Lists.lua; only Forever has one so far), checked in
+  Classify right after the sig, before WorthALook -> { "quest" }. CLASSIFIER 28 (so items
+  sorted on this build are read again). **Add new ones there.** Added since: Empty Bait Cage
+  **211272** (15.0 Junk, "Catch a critter to be used as bait"; Lewis Shift+dropped it on Quest
+  Item, found as a manual record in GOLDENPIPES' saved data 2026-11-26: so Shift+drop **works**
+  on his bars; the net 213562 sorted to quest by itself = the list works).
+- Lewis: the net stays after the quest; quest item only while the quest is in the log. QUEST_ITEMS
+  values are now a quest ID (Wowhead Forever: 93176 My Little Friends) or true. `QuestItemOff(id)`
+  (Core.lua, checked first in InSet for "quest"): a quest ID that `OnQuest` (C_QuestLog.IsOnQuest,
+  else GetQuestLogIndexByID; nil = can't tell = kept) says isn't in the log -> not in the set;
+  a manual record keeps it. Events QUEST_ACCEPTED / REMOVED / TURNED_IN / LOG_UPDATE run only
+  when `QuestItemsStamp()` changes (questStamp). Classify unchanged (still { "quest" }), no
+  CLASSIFIER bump. After the quest the net is on no button (there is no toy/fun button; Lewis
+  said "be a toy"; asked, he chose **leave it off buttons**: no Toys button). **Confirmed** (Lewis, 2026-11-27: after a
+  /reload the net left Quest Item; quest 93176 done: IsOnQuest false, flagged completed true).
+- Lewis: an easier in-game way to add items, e.g. dragging onto the button. He chose **Shift
+  held on drop** (a plain drop still replaces the action, the game's way). `DroppedOnButton
+  (slot)` (Bars.lua, end): hooksecurefunc("PlaceAction") -> out of combat, Shift down, slot now
+  holds an item and the cursor one of our macros (by name via macroAt) -> PlaceAction(slot)
+  again (macro back, item on cursor), ClearCursor, then custom -> UI.CustomAdd, set ->
+  `AssignItem(id, e)` (Core.lua; the /amac assign code moved there, + Schedule), else "doesn't
+  take items". **Unverified** that every bar's drop goes through the global PlaceAction (Blizzard
+  bars, EllesmereUI / DaylightUI bars), and that PlaceAction from the hook is allowed.
+  Buttons page icon strip: built-in buttons with a set also take item drops (UI.AddToIcon).
+  Untested in game.
 
 ## 1.5.2 - tooltip blinking with DaylightUI (2026-11-24)
 - Lewis (GIF, DaylightUI 2.2.7 Rich tooltips): an empty button's "No explosives in inventory."

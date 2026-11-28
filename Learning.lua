@@ -155,6 +155,8 @@ function Classify(id)
     local class, sub, _, _, _, slot = ItemInstant(id)
     if class == nil then return nil end
     local sig = class * 1000 + (tonumber(sub) or 0)
+    -- (the game's lists of quest items it doesn't mark: Games\<game>\Lists.lua)
+    if QUEST_ITEMS and QUEST_ITEMS[id] then return { "quest" }, sig end
     if WorthALook(id) == false then return {}, sig end
     if class == 0 and sub == 7 then return { "bandage" }, sig end
     if class == 0 and sub == 3 then return { "flask" }, sig end
