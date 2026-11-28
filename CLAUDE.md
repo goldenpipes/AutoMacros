@@ -273,6 +273,10 @@ replacing AutoBar's clunky dedicated bar. Includes a hover flyout to pick which 
   bars, EllesmereUI / DaylightUI bars), and that PlaceAction from the hook is allowed.
   Buttons page icon strip: built-in buttons with a set also take item drops (UI.AddToIcon).
   Untested in game.
+- **Committed and pushed** 2026-11-27 (93ef6a3, date e69aeae). **Released** 2026-11-27 as a
+  **full release** v1.6.0 (Lewis: "Full release"; notes: the full changelog), Latest on GitHub;
+  CurseForge upload run 46093889293, file id 9860549, type release. README changed (New
+  features 1.6.0): Lewis to paste it into CurseForge.
 
 ## 1.5.2 - tooltip blinking with DaylightUI (2026-11-24)
 - Lewis (GIF, DaylightUI 2.2.7 Rich tooltips): an empty button's "No explosives in inventory."
