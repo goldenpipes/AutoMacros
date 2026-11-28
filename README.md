@@ -13,7 +13,7 @@ you like: no extra bar to place, unlike AutoBar.
 
 ## New features
 
-**1.6.0** (not released yet)
+**1.6.0** (2026-11-27)
 - Hold **Shift** while dropping an item from your bags onto a button to put that item on it.
 - Quest items the game doesn't mark as quest items (such as the Bug Catching Net) go on the
   Quest Item button.

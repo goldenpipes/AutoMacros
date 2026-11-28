@@ -4,7 +4,7 @@ AutoMacros uses [Semantic Versioning](https://semver.org/): the middle number go
 features or changes, the last number for bug fixes only. Versions starting with `0.` were
 the beta.
 
-## 1.6.0 - unreleased
+## 1.6.0 - 2026-11-27
 
 ### Added
 - Put any item on a button yourself: hold Shift while you drop it from your bags onto the
